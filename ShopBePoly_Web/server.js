@@ -102,4 +102,66 @@ router.delete('/del_product/:id', async (req, res)=>{
     }
 })
 
+//User
+// lấy ds user 'http://localhost:3000/api/list_user'
+router.get('/list_user', async (req, res)=>{
+    await mongoose.connect(uri);
+    let user = await userModel.find();
+    res.send(user);
+});
+
+// thêm user 'http://localhost:3000/api/add_user'
+router.post('/add_user', async (req, res)=>{
+    
+    let data = req.body;
+    let kq = await userModel.create(data);
+
+    if(kq){
+        console.log('Thêm người dùng thành công');
+        let usr = await userModel.find();
+        res.send(usr);
+    } else{
+        console.log('Thêm người dùng không thành công');
+    }
+
+})
+
+// sửa user 'http://localhost:3000/api/up_user/ id'
+router.put('/up_user/:id', async (req, res)=>{
+    try{
+        const id = req.params.id;
+        const data = req.body;
+        
+        const kq = await userModel.findByIdAndUpdate(id, data, { new: true });
+
+        if(kq){
+            console.log('Sửa thành công');
+            let usr = await userModel.find();
+            res.send(usr);
+        } else{
+            res.send('Không tìm thấy người dùng để sửa');
+        }
+    } catch (error){
+        res.send('Lỗi khi sửa')
+    }
+})
+
+// xóa user 'http://localhost:3000/api/del_user/ id'
+router.delete('/del_user/:id', async (req, res)=>{
+    try{
+        let id = req.params.id;
+        const kq = await userModel.deleteOne({_id: id});
+        if(kq){
+            console.log('Xóa thành công');
+            let usr = await userModel.find();
+            res.send(usr);
+        } else{
+            res.send('Xóa không thành công');
+        }
+    } catch(error){
+        console.error('Lỗi khi xóa:', error);
+        res.status(500).json({ error: 'Lỗi server' });
+    }
+})
+
 app.use(express.json()); // bắt buộc để đọc req.body
