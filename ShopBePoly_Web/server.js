@@ -9,8 +9,14 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true}));
 
 
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+
 const productModel = require('./Database/productModel');
 const COMOMJS = require('./Database/COMOM');
+const userModel = require('./Database/userModel');
+const cartModel = require('./Database/cartModel');
 
 const uri = COMOMJS.uri;
 
@@ -163,5 +169,83 @@ router.delete('/del_user/:id', async (req, res)=>{
         res.status(500).json({ error: 'Lỗi server' });
     }
 })
+
+// Lấy giỏ hàng http://localhost:3000/api/:useId
+router.get('/api/cart/:userId', async (req, res) => {
+    try {
+        const cartItems = await cartModel.find({ id_user: req.params.userId });
+        res.json(cartItems);
+    } catch (error) {
+        console.error('Lỗi khi lấy giỏ hàng:', error);
+        res.status(500).json({ error: 'Lỗi khi lấy giỏ hàng' });
+    }
+});
+
+// thêm giỏ hàng http://localhost:3000/api/cart
+router.post('/cart', async (req, res) => {
+    const { id_user, id_product, nameproduct, image_product, quantity, price } = req.body;
+    try {
+        const total = quantity * price;
+
+        let existing = await cartModel.findOne({ id_user, id_product });
+
+        if (existing) {
+            existing.quantity += quantity;
+            existing.total = existing.quantity * price;
+            await existing.save();
+            return res.json(existing);
+        }
+
+        const item = new cartModel({ id_user, id_product, nameproduct, image_product, quantity, price, total });
+        await item.save();
+        res.status(201).json(item);
+    } catch (error) {
+        console.error('Lỗi thêm vào giỏ hàng:', error);
+        res.status(500).json({ error: 'Lỗi thêm vào giỏ hàng' });
+    }
+});
+
+// cập nhập só lượng trong giỏ hàng http://localhost:3000/api/cart/:idCart
+router.put('/cart/:idCart', async (req, res) => {
+    const { quantity } = req.body;
+    try {
+        const item = await cartModel.findById(req.params.idCart);
+        if (!item) return res.status(404).json({ error: 'Không tìm thấy sản phẩm trong giỏ' });
+
+        item.quantity = quantity;
+        item.total = quantity * item.price;
+        await item.save();
+        res.json(item);
+    } catch (error) {
+        console.error('Lỗi cập nhật giỏ hàng:', error);
+        res.status(500).json({ error: 'Lỗi cập nhật giỏ hàng' });
+    }
+});
+
+// xoá giỏ hàng http://localhost:3000/api/cart/user/:userId
+router.delete('/cart/:idCart', async (req, res) => {
+    try {
+        const result = await cartModel.deleteOne({ _id: req.params.idCart });
+        if (result.deletedCount === 0) return res.status(404).json({ error: 'Không tìm thấy sản phẩm để xóa' });
+
+        res.json({ message: 'Xóa sản phẩm thành công' });
+    } catch (error) {
+        console.error('Lỗi xóa sản phẩm:', error);
+        res.status(500).json({ error: 'Lỗi xóa sản phẩm' });
+    }
+});
+
+// xoá toàn bộ giỏ hàng http://localhost:3000/api/cart/user/:userId
+router.delete('/cart/user/:userId', async (req, res) => {
+    try {
+        await cartModel.deleteMany({ id_user: req.params.userId });
+        res.json({ message: 'Đã xóa toàn bộ giỏ hàng của người dùng' });
+    } catch (error) {
+        console.error('Lỗi xóa toàn bộ giỏ hàng:', error);
+        res.status(500).json({ error: 'Lỗi xóa toàn bộ giỏ hàng' });
+    }
+});
+
+
 
 app.use(express.json()); // bắt buộc để đọc req.body
