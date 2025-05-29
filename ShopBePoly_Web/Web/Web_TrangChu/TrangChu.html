@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Trang chủ quản trị</title>
+  <link rel="stylesheet" href="../Style_Sidebar/Sidebar.css">
+</head>
+<body>
+  
+    <div class="header">
+        <h1>Trang chủ</h1>
+    </div>
+
+    <div>
+        <!-- Nút mở menu -->
+        <button onclick="toggleSidebar()" class="menu-button">☰</button>
+        <!-- Overlay mờ nền -->
+        <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <span class="close-btn" onclick="toggleSidebar()">✖</span>
+            <h2>Quản trị</h2>
+            <a href="../Web_QL_Product/Ql_Product.html">Quản lý sản phẩm</a>
+            <a href="../Web_QL_Category/QL_Category.html">Quản lý thể loại giày</a>
+            <a href="../Web_QL_User/QL_User.html">Quản lý tài khoản</a>
+            <a href="#">Đăng xuất</a>
+        </div>
+
+        <div class="content">
+            <iframe id="mainFrame" src=""></iframe>
+        </div>
+    </div>
+
+  
+
+  <script src="../Style_Sidebar/Sidebar.js"></script>
+
+</body>
+</html>

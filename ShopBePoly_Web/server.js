@@ -2,11 +2,12 @@ const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
 const app = express();
+const cors = require('cors');
 const port = 3000;
 
 const bodyParser = require('body-parser');
 app.use(bodyParser.json());
-
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -32,6 +33,22 @@ mongoose.connect(uri, {
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
+
+const multer = require('multer');
+const path = require('path');
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/'); // đảm bảo thư mục này tồn tại
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + '-' + file.originalname);
+    }
+});
+
+const upload = multer({ storage });
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 
 app.get('/ds_product', async (req, res) => {
     try {
@@ -252,19 +269,24 @@ router.get('/list_category',async(req,res)=>{
     res.send(category);
 });
 
-router.post('/add_category',async(req,res)=>{
+router.post('/add_category', upload.single('imgTL'),async(req,res)=>{
 
-    let data = req.body;
-    let kq = await categoryModel.create(data);
-
-    if(kq){
-        console.log('Thêm thể loại thành công!');
-        let cate = await categoryModel.find();
-        res.send(cate);
-        
-    }else{
-        console.log('Thêm thể loại không thành công!');
-        
+    try{
+        const titleTL = req.body.titleTL;
+        const imgTL = req.file ? req.file.filename : null;
+        console.log("🟢 File:", req.file);
+        console.log("🟢 File name:", imgTL);
+        const newTL = new categoryModel({
+            title: titleTL,
+            cateImg: imgTL
+        });
+        const kq = await newTL.save();
+        console.log('Thêm thể loại thành công');
+        let category = await categoryModel.find();
+        res.send(category);
+    } catch (error) {
+        console.error('Thêm thể loại thất bại:', error);
+        res.status(500).send('Lỗi server');
     }
 })
 // sua category
