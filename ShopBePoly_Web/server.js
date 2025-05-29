@@ -6,8 +6,6 @@ const port = 3000;
 
 const bodyParser = require('body-parser');
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true}));
-
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -17,6 +15,7 @@ const productModel = require('./Database/productModel');
 const COMOMJS = require('./Database/COMOM');
 const userModel = require('./Database/userModel');
 const cartModel = require('./Database/cartModel');
+const categoryModel = require('./Database/categoryModel');
 
 const uri = COMOMJS.uri;
 
@@ -183,11 +182,11 @@ router.get('/api/cart/:userId', async (req, res) => {
 
 // thêm giỏ hàng http://localhost:3000/api/cart
 router.post('/cart', async (req, res) => {
-    const { id_user, id_product, nameproduct, image_product, quantity, price } = req.body;
+    const { id_user, id_product,nameproduct, image_product, quantity, price } = req.body;
     try {
         const total = quantity * price;
 
-        let existing = await cartModel.findOne({ id_user, id_product });
+        let existing = await cartModel.findOne({ id_user, id_product});
 
         if (existing) {
             existing.quantity += quantity;
@@ -245,7 +244,65 @@ router.delete('/cart/user/:userId', async (req, res) => {
         res.status(500).json({ error: 'Lỗi xóa toàn bộ giỏ hàng' });
     }
 });
+// category
+//lấy ds category 
+router.get('/list_category',async(req,res)=>{
+    await mongoose.connect(uri);
+    let category = await categoryModel.find();
+    res.send(category);
+});
 
+router.post('/add_category',async(req,res)=>{
 
+    let data = req.body;
+    let kq = await categoryModel.create(data);
+
+    if(kq){
+        console.log('Thêm thể loại thành công!');
+        let cate = await categoryModel.find();
+        res.send(cate);
+        
+    }else{
+        console.log('Thêm thể loại không thành công!');
+        
+    }
+})
+// sua category
+router.put('/edit_cate/:id',async (req,res)=>{
+    try{
+        const id = req.params.id;
+        const data = req.body;
+
+        const kq = await categoryModel.findByIdAndUpdate(id,data, {new: true});
+
+        if(kq){
+            console.log('Sửa thành công!');
+            let cate = await categoryModel.find();
+            res.send('Không tìm thấy thể loại để sửa!');
+            
+        }
+    }catch(err){
+        res.send('Lỗi khi sửa')
+    }
+})
+//xoa the loai
+router.delete('/del_category/:id',async (req,res)=>{
+    try{
+        let id = req.params.id;
+        const kq = await categoryModel.deleteOne({_id: id});
+        if(kq){
+            console.log('Xóa thể loại thành công!');
+            let cate = await categoryModel.find();
+            res.send(cate);
+            
+        }else{
+            res.send('Xóa thể loại không thành công!');
+        }
+    }catch(err){
+        console.error('Lỗi khi xóa: ', err);
+        res.status(500).json({error: 'Lỗi server khi xóa thể loại '});
+        
+    }
+})
 
 app.use(express.json()); // bắt buộc để đọc req.body
