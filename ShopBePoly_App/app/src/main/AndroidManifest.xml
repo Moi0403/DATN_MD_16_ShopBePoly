@@ -2,52 +2,30 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-permission android:name="android.permission.INTERNET" />
-
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="ShopBePoly"
-        android:networkSecurityConfig="@xml/network_security_config"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.ShopBePoly"
-        android:usesCleartextTraffic="true"
         tools:targetApi="31">
         <activity
-            android:name=".Gioithieu"
+            android:name=".LienHe"
             android:exported="false" />
         <activity
-            android:name=".Dathangthanhcong"
+            android:name=".DoiMatKhau"
             android:exported="false" />
         <activity
-            android:name=".ThanhToan"
-            android:exported="false" />
-        <activity
-            android:name=".Chitietdonhang"
-            android:exported="false" />
-        <activity
-            android:name=".Donhang"
-            android:exported="false" />
-        <activity
-            android:name=".Lichsugiaodich"
-            android:exported="false" />
-        <activity
-            android:name=".Chitietlichsugiaodich"
-            android:exported="false" />
-        <activity
-            android:name=".SuaThongTinCaNhan"
-            android:exported="false" />
-        <activity
-            android:name=".ThongTinCaNhan"
-            android:exported="false" />
-        <activity
-            android:name=".Profile"
+            android:name=".ChinhSachvaQuyenRiengTu"
             android:exported="false" />
         <activity
             android:name=".MainActivity"
+            android:exported="false" />
+        <activity
+            android:name=".HoSo"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
