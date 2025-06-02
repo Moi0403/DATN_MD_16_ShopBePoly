@@ -1,5 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <!-- Primary Colors -->
+    <color name="primary_red">#FF4757</color>
+    <color name="primary_red_pressed">#E03E4D</color>
+
+    <!-- Text Colors -->
+    <color name="text_primary">#1A1A1A</color>
+    <color name="text_secondary">#666666</color>
+    <color name="text_light">#999999</color>
+
+    <!-- Background Colors -->
+    <color name="background_light">#F8F9FA</color>
+    <color name="background_white">#FFFFFF</color>
+    <color name="background_gray">#F5F5F5</color>
+
+    <!-- Heart Colors -->
+    <color name="heart_color">#FF4757</color>
+    <color name="heart_outline_color">#CCCCCC</color>
+
+    <!-- Size Text Colors -->
+    <color name="size_text_default">#666666</color>
+    <color name="size_text_selected">#FFFFFF</color>
+
+    <!-- Border Colors -->
+    <color name="border_light">#E0E0E0</color>
+    <color name="border_medium">#CCCCCC</color>
+
+    <!-- Star Color -->
+    <color name="star_gold">#FFD700</color>
 </resources>

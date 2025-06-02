@@ -13,6 +13,21 @@
         android:theme="@style/Theme.ShopBePoly"
         tools:targetApi="31">
         <activity
+            android:name=".Screen.DanhGia"
+            android:exported="false" />
+        <activity
+            android:name=".Screen.TimKiem"
+            android:exported="false" />
+        <activity
+            android:name=".Screen.ThongBao"
+            android:exported="false" />
+        <activity
+            android:name=".Screen.ChiTietSanPham"
+            android:exported="false" />
+        <activity
+            android:name=".Screen.YeuThich"
+            android:exported="false" />
+        <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
