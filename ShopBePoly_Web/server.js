@@ -71,20 +71,38 @@ router.get('/list_product', async (req, res)=>{
 });
 
 // thêm product 'http://localhost:3000/api/add_product'
-router.post('/add_product', async (req, res)=>{
+router.post('/add_product', upload.fields([
+    {name: 'avt_imgpro', maxCount: 1},
+    {name: 'list_imgpro', maxCount: 10}
+]), async (req, res)=>{
     
-    let data = req.body;
-    let kq = await productModel.create(data);
-
-    if(kq){
-        console.log('Thêm sản phẩm thành công');
-        let pro = await productModel.find();
-        res.send(pro);
-    } else{
-        console.log('Thêm sản phẩm không thành công');
+    try{
+        const files = req.files;
+        const body = req.body;
+        
+        const newPro = await productModel.create({
+            nameproduct: body.name_pro,
+            id_category: body.category_pro,
+            price: 0,
+            quantity: body.slg_pro,
+            description: '',
+            avt_imgproduct: files.avt_imgpro?.[0]?.filename || '',
+            list_imgproduct: files.list_imgpro?.map(f => f.filename) || [],
+            size: body.size_pro,
+            color: body.color_pro,
+            stock: 0,
+            sold: 0
+        });
+        await newPro.save();
+        console.log('✅ Thêm sản phẩm thành công');
+        const allProducts = await productModel.find();
+        res.json(allProducts);
+    } catch (error) {
+        console.error('Thêm sản phẩm thất bại:', error);
+        res.status(500).send('Lỗi server');
     }
 
-})
+});
 
 // sửa product 'http://localhost:3000/api/up_product/ id'
 router.put('/up_product/:id', async (req, res)=>{
