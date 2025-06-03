@@ -1,0 +1,394 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F8F9FA">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Header with back button and cart -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:background="@android:color/white"
+            android:elevation="2dp"
+            android:paddingHorizontal="16dp">
+
+            <ImageView
+                android:id="@+id/btnBack"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_centerVertical="true"
+                android:src="@drawable/ic_arrow_back"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:padding="4dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:text="Chi tiết sản phẩm"
+                android:textColor="#1A1A1A"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <RelativeLayout
+                android:id="@+id/btnCart"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:padding="4dp">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_shopping_cart" />
+
+                <TextView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_marginTop="-6dp"
+                    android:layout_marginEnd="-6dp"
+                    android:background="@drawable/badge_background"
+                    android:gravity="center"
+                    android:text="1"
+                    android:textColor="@android:color/white"
+                    android:textSize="10sp" />
+            </RelativeLayout>
+
+        </RelativeLayout>
+
+        <!-- Product Image -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="280dp"
+            android:layout_margin="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp">
+
+            <ImageView
+                android:id="@+id/imgProduct"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@android:color/white"
+                android:padding="24dp"
+                android:scaleType="centerInside"
+                android:src="@drawable/shoe_placeholder" />
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Product Info -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:orientation="vertical">
+
+            <!-- Product Name and Heart -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp">
+
+                <TextView
+                    android:id="@+id/tvProductName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_toStartOf="@+id/btnFavorite"
+                    android:text="Rienevan Skate 2 – All WHITE"
+                    android:textColor="#1A1A1A"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:id="@+id/btnFavorite"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/ic_heart_filled"
+                    android:tint="#FF4757" />
+
+            </RelativeLayout>
+
+            <!-- Rating Stars -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_marginEnd="4dp"
+                    android:src="@drawable/ic_star_filled"
+                    android:tint="#FFD700" />
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_marginEnd="4dp"
+                    android:src="@drawable/ic_star_filled"
+                    android:tint="#FFD700" />
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_marginEnd="4dp"
+                    android:src="@drawable/ic_star_filled"
+                    android:tint="#FFD700" />
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_marginEnd="4dp"
+                    android:src="@drawable/ic_star_filled"
+                    android:tint="#FFD700" />
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_star_filled"
+                    android:tint="#FFD700" />
+
+            </LinearLayout>
+
+            <!-- Price -->
+            <TextView
+                android:id="@+id/tvPrice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                android:text="Giá: 500.000 đ"
+                android:textColor="#FF4757"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <!-- Color Selection -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:text="Màu"
+                android:textColor="#1A1A1A"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                android:orientation="horizontal">
+
+                <View
+                    android:id="@+id/colorWhite"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginEnd="12dp"
+                    android:background="@drawable/color_selector_white"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+                <View
+                    android:id="@+id/colorRed"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginEnd="12dp"
+                    android:background="@drawable/color_selector_red"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+                <View
+                    android:id="@+id/colorGray"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginEnd="12dp"
+                    android:background="@drawable/color_selector_gray"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+                <View
+                    android:id="@+id/colorOrange"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginEnd="12dp"
+                    android:background="@drawable/color_selector_orange"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+                <View
+                    android:id="@+id/colorLightGray"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="@drawable/color_selector_light_gray"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+            </LinearLayout>
+
+            <!-- Size Selection -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:text="Size"
+                android:textColor="#1A1A1A"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/size35"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_marginEnd="12dp"
+                    android:background="@drawable/size_selector"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="35"
+                    android:textColor="#666666"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/size38"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_marginEnd="12dp"
+                    android:background="@drawable/size_selector"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="38"
+                    android:textColor="#666666"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/size40"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_marginEnd="12dp"
+                    android:background="@drawable/size_selector_selected"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="40"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/size45"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="@drawable/size_selector"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="45"
+                    android:textColor="#666666"
+                    android:textSize="16sp" />
+
+            </LinearLayout>
+
+            <!-- Description -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="Mô tả:"
+                android:textColor="#1A1A1A"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvDescription"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="32dp"
+                android:lineSpacingExtra="4dp"
+                android:text="RieNevan là một thương hiệu giày thể thao và vớt trang có nguồn gốc tại Việt Nam. Được sản xuất của RieNevan đều được lấy cảm hứng từ văn hóa Việt Nam. Với thiết kế độc đáo và chất lượng cao hàng của chúng tôi luôn được người tiêu dùng đánh giá cao."
+                android:textColor="#666666"
+                android:textSize="14sp" />
+
+        </LinearLayout>
+
+        <!-- Bottom Action Bar -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="80dp"
+            android:background="@android:color/white"
+            android:elevation="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp">
+
+            <!-- Quantity Selector -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:layout_marginEnd="16dp"
+                android:background="@drawable/quantity_selector_background"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="4dp">
+
+                <ImageView
+                    android:id="@+id/btnDecrease"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_remove" />
+
+                <TextView
+                    android:id="@+id/tvQuantity"
+                    android:layout_width="40dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="1"
+                    android:textColor="#1A1A1A"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:id="@+id/btnIncrease"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_add" />
+
+            </LinearLayout>
+
+            <!-- Add to Cart Button -->
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btnAddToCart"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:background="@drawable/button_primary_background"
+                android:text="Mua hàng"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</ScrollView>
