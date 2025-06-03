@@ -61,6 +61,7 @@ const hienThiPro = async () => {
             const tdSTT = document.createElement('td');
             tdSTT.textContent = index + 1;
             tdSTT.style.textAlign = 'center';
+            tdSTT.style.alignContent ='center';
 
             const tdIMG = document.createElement('td');
             const img = document.createElement('img');
@@ -74,34 +75,70 @@ const hienThiPro = async () => {
             const tdName = document.createElement('td');
             tdName.textContent = item.nameproduct;
             tdName.style.textAlign = 'center';
+            tdName.style.alignContent ='center';
 
             const tdCate = document.createElement('td');
             tdCate.textContent = item.id_category ? item.id_category.title : 'N/A';
             tdCate.style.textAlign = 'center';
+            tdCate.style.alignContent ='center';
 
             const tdSlg = document.createElement('td');
             tdSlg.textContent = item.quantity;
             tdSlg.style.textAlign = 'center';
+            tdSlg.style.alignContent ='center';
 
             const tdSize = document.createElement('td');
             tdSize.textContent = item.size;
             tdSize.style.textAlign = 'center';
+            tdSize.style.alignContent ='center';
 
             const tdColor = document.createElement('td');
             tdColor.textContent = item.color;
             tdColor.style.textAlign = 'center';
+            tdColor.style.alignContent ='center';
 
             const tdStock = document.createElement('td');
             tdStock.textContent = item.stock;
             tdStock.style.textAlign = 'center';
+            tdStock.style.alignContent ='center';
 
             const tdSold = document.createElement('td');
             tdSold.textContent = item.sold;
             tdSold.style.textAlign = 'center';
+            tdSold.style.alignContent ='center';
 
             const tdPrice = document.createElement('td');
-            tdPrice.textContent = item.price;
+            tdPrice.textContent = item.price + ".000 đ";
             tdPrice.style.textAlign = 'center';
+            tdPrice.style.alignContent ='center';
+
+            const tdXL = document.createElement('td');
+            tdXL.classList.add('tdXL');
+            tdXL.style.alignContent ='center';
+
+            const btnDel = document.createElement('button');
+            btnDel.textContent = 'Xóa';
+            btnDel.classList.add('btn', 'btn-outline-primary');
+            btnDel.addEventListener('click', async ()=>{
+                try{
+                    const conf = confirm(`Bạn muốn xóa thể loại ${item.title} này ?`);
+                    if (conf) {
+                        const response = await fetch(`http://${config.host}:${config.port}/api/del_product/${item._id}`,{
+                        method: 'DELETE'
+                        });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    tr.remove();
+                    alert('Xóa thành công');
+                    hienThiTL();
+                    }
+                } catch (error) {
+                    console.error('Lỗi khi xóa thể loại:', error);
+                }
+            })
+            tdXL.appendChild(btnDel);
 
             tr.appendChild(tdSTT);
             tr.appendChild(tdIMG);
@@ -113,6 +150,7 @@ const hienThiPro = async () => {
             tr.appendChild(tdStock);
             tr.appendChild(tdSold);
             tr.appendChild(tdPrice);
+            tr.appendChild(tdXL);
 
             tbody.appendChild(tr);
         });

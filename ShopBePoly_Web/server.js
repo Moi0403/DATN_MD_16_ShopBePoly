@@ -64,10 +64,14 @@ app.get('/ds_product', async (req, res) => {
 app.use('/api', router);
 
 // lấy ds product 'http://localhost:3000/api/list_product'
-router.get('/list_product', async (req, res)=>{
-    await mongoose.connect(uri);
-    let product = await productModel.find();
-    res.send(product);
+router.get('/list_product', async (req, res) => {
+    try {
+        const products = await productModel.find().populate('id_category');
+        res.json(products);
+    } catch (error) {
+        console.error('Lỗi khi lấy danh sách sản phẩm:', error);
+        res.status(500).send('Lỗi server khi lấy sản phẩm');
+    }
 });
 
 // thêm product 'http://localhost:3000/api/add_product'
@@ -83,7 +87,7 @@ router.post('/add_product', upload.fields([
         const newPro = await productModel.create({
             nameproduct: body.name_pro,
             id_category: body.category_pro,
-            price: 0,
+            price: body.price_pro,
             quantity: body.slg_pro,
             description: '',
             avt_imgproduct: files.avt_imgpro?.[0]?.filename || '',
@@ -94,7 +98,7 @@ router.post('/add_product', upload.fields([
             sold: 0
         });
         await newPro.save();
-        console.log('✅ Thêm sản phẩm thành công');
+        console.log('Thêm sản phẩm thành công');
         const allProducts = await productModel.find();
         res.json(allProducts);
     } catch (error) {
