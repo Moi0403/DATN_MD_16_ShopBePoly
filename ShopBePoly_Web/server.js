@@ -16,7 +16,9 @@ const productModel = require('./Database/productModel');
 const COMOMJS = require('./Database/COMOM');
 const userModel = require('./Database/userModel');
 const cartModel = require('./Database/cartModel');
+const commentModel = require('./Database/commentModel');
 const categoryModel = require('./Database/categoryModel');
+const orderModel = require('./Database/order');
 
 const uri = COMOMJS.uri;
 
@@ -291,7 +293,9 @@ router.get('/list_category',async(req,res)=>{
     res.send(category);
 });
 
+
 router.post('/add_category', upload.single('imgTL'),async(req,res)=>{
+
 
     try{
         const titleTL = req.body.titleTL;
@@ -346,6 +350,47 @@ router.delete('/del_category/:id',async (req,res)=>{
         console.error('Lỗi khi xóa: ', err);
         res.status(500).json({error: 'Lỗi server khi xóa thể loại '});
         
+    }
+})
+
+// lấy ds don hang 'http://localhost:3000/api/list_order'
+router.get('/list_order', async (req, res)=>{
+    await mongoose.connect(uri);
+    let order = await orderModel.find();
+    res.send(order);
+});
+
+// thêm order 'http://localhost:3000/api/order'
+router.post('/add_order', async (req, res)=>{
+    
+    let data = req.body;
+    let kq = await orderModel.create(data);
+
+    if(kq){
+        console.log('Thêm don hang thành công');
+        let ord = await orderModel.find();
+        res.send(ord);
+    } else{
+        console.log('Thêm don hang không thành công');
+    }
+
+})
+
+// huy don hang 'http://localhost:3000/api/order/ id'
+router.delete('/del_order/:id', async (req, res)=>{
+    try{
+        let id = req.params.id;
+        const kq = await orderModel.deleteOne({_id: id});
+        if(kq){
+            console.log('Huy don hang thành công');
+            let ord = await orderModel.find();
+            res.send(ord);
+        } else{
+            res.send('Huy don hang không thành công');
+        }
+    } catch(error){
+        console.error('Lỗi khi xóa:', error);
+        res.status(500).json({ error: 'Lỗi server khi xóa sản phẩm' });
     }
 })
 
