@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".LienHe"
+    android:orientation="vertical"
+    android:layout_margin="20dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/back"
+            />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Liên Hệ"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            />
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:layout_margin="10dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="20sp"
+            android:textColor="#E61111"
+            android:textStyle="bold"
+            android:text="📞 LIÊN HỆ SHOPBEPOLY"
+            />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:textSize="12sp"
+            android:text="Chúng tôi luôn sẵn sàng hỗ trợ bạn mọi lúc, mọi nơi. Nếu bạn có bất kỳ thắc mắc, góp ý hoặc khiếu nại nào, vui lòng liên hệ với ShopbePoly qua các kênh sau:
+\n📧 Email hỗ trợ khách hàng
+\nHỗ trợ mua hàng: support@shopbepoly.com
+\nChính sách và bảo mật: privacy@shopbepoly.com
+\nHợp tác và phát triển: partner@shopbepoly.vn
+\n☎️ Hotline
+Tổng đài: 1900 1234 (7:30 – 22:00, kể cả T7, CN)
+\n💬 Mạng xã hội
+\nFacebook: fb.com/shopbepoly
+\nInstagram: @shopbepoly
+\nTikTok: @shopbepoly.official
+\n🛍️ Ứng dụng di động
+\nTải ứng dụng ShopbePoly ngay để nhận nhiều ưu đãi và hỗ trợ nhanh chóng:
+\niOS: App Store - ShopbePoly
+\nAndroid: Google Play - ShopbePoly"
+            />
+    </LinearLayout>
+
+</LinearLayout>
