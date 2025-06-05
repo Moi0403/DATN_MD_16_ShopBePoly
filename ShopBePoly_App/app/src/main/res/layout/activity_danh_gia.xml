@@ -21,7 +21,7 @@
             android:layout_height="24dp"
             android:layout_centerVertical="true"
             android:layout_marginStart="16dp"
-            android:src="@drawable/ic_arrow_back"
+            android:src="@drawable/back"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:padding="4dp" />
 
@@ -48,9 +48,8 @@
             android:id="@+id/img_product"
             android:layout_width="60dp"
             android:layout_height="60dp"
-            android:src="@drawable/product_image"
-            android:scaleType="centerCrop"
-            android:background="@drawable/rounded_corner_bg" />
+            android:src="@drawable/niker"
+            android:scaleType="centerCrop" />
 
         <TextView
             android:id="@+id/tv_product_name"
@@ -92,7 +91,7 @@
                 android:id="@+id/star1"
                 android:layout_width="32dp"
                 android:layout_height="32dp"
-                android:src="@drawable/ic_star_filled"
+                android:src="@drawable/star"
                 android:layout_marginEnd="4dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:padding="4dp" />
@@ -101,7 +100,7 @@
                 android:id="@+id/star2"
                 android:layout_width="32dp"
                 android:layout_height="32dp"
-                android:src="@drawable/ic_star_filled"
+                android:src="@drawable/star"
                 android:layout_marginEnd="4dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:padding="4dp" />
@@ -110,7 +109,7 @@
                 android:id="@+id/star3"
                 android:layout_width="32dp"
                 android:layout_height="32dp"
-                android:src="@drawable/ic_star_filled"
+                android:src="@drawable/star"
                 android:layout_marginEnd="4dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:padding="4dp" />
@@ -119,7 +118,7 @@
                 android:id="@+id/star4"
                 android:layout_width="32dp"
                 android:layout_height="32dp"
-                android:src="@drawable/ic_star_filled"
+                android:src="@drawable/star"
                 android:layout_marginEnd="4dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:padding="4dp" />
@@ -128,7 +127,7 @@
                 android:id="@+id/star5"
                 android:layout_width="32dp"
                 android:layout_height="32dp"
-                android:src="@drawable/ic_star_filled"
+                android:src="@drawable/star"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:padding="4dp" />
 
@@ -162,7 +161,7 @@
             android:textSize="14sp"
             android:textColor="#333333"
             android:textColorHint="#999999"
-            android:background="@drawable/edittext_border"
+            android:background="@drawable/brackground_edit"
             android:padding="12dp"
             android:gravity="top|start"
             android:inputType="textMultiLine"
@@ -177,11 +176,11 @@
         android:layout_width="match_parent"
         android:layout_height="48dp"
         android:layout_margin="16dp"
+        android:backgroundTint="#F44336"
         android:text="Gửi"
         android:textSize="16sp"
         android:textColor="#FFFFFF"
         android:textStyle="bold"
-        android:background="@drawable/button_red_bg"
         android:elevation="2dp" />
 
 </LinearLayout>

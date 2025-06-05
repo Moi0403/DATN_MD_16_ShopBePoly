@@ -24,7 +24,7 @@
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:layout_centerVertical="true"
-                android:src="@drawable/ic_arrow_back"
+                android:src="@drawable/back"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:padding="4dp" />
 
@@ -37,7 +37,7 @@
                 android:textSize="18sp"
                 android:textStyle="bold" />
 
-            <RelativeLayout
+            <LinearLayout
                 android:id="@+id/btnCart"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -50,23 +50,10 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_shopping_cart" />
-
-                <TextView
-                    android:layout_width="18dp"
-                    android:layout_height="18dp"
-                    android:layout_alignParentEnd="true"
-                    android:layout_marginTop="-6dp"
-                    android:layout_marginEnd="-6dp"
-                    android:background="@drawable/badge_background"
-                    android:gravity="center"
-                    android:text="1"
-                    android:textColor="@android:color/white"
-                    android:textSize="10sp" />
-            </RelativeLayout>
+            </LinearLayout>
 
         </RelativeLayout>
 
-        <!-- Product Image -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="280dp"
@@ -79,9 +66,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="@android:color/white"
-                android:padding="24dp"
                 android:scaleType="centerInside"
-                android:src="@drawable/shoe_placeholder" />
+                android:src="@drawable/niker" />
 
         </androidx.cardview.widget.CardView>
 
@@ -115,8 +101,7 @@
                     android:layout_alignParentEnd="true"
                     android:layout_centerVertical="true"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:src="@drawable/ic_heart_filled"
-                    android:tint="#FF4757" />
+                    android:src="@drawable/ic_heart_filled" />
 
             </RelativeLayout>
 
@@ -131,35 +116,30 @@
                     android:layout_width="20dp"
                     android:layout_height="20dp"
                     android:layout_marginEnd="4dp"
-                    android:src="@drawable/ic_star_filled"
-                    android:tint="#FFD700" />
+                    android:src="@drawable/star" />
 
                 <ImageView
                     android:layout_width="20dp"
                     android:layout_height="20dp"
                     android:layout_marginEnd="4dp"
-                    android:src="@drawable/ic_star_filled"
-                    android:tint="#FFD700" />
+                    android:src="@drawable/star" />
 
                 <ImageView
                     android:layout_width="20dp"
                     android:layout_height="20dp"
                     android:layout_marginEnd="4dp"
-                    android:src="@drawable/ic_star_filled"
-                    android:tint="#FFD700" />
+                    android:src="@drawable/star" />
 
                 <ImageView
                     android:layout_width="20dp"
                     android:layout_height="20dp"
                     android:layout_marginEnd="4dp"
-                    android:src="@drawable/ic_star_filled"
-                    android:tint="#FFD700" />
+                    android:src="@drawable/star" />
 
                 <ImageView
                     android:layout_width="20dp"
                     android:layout_height="20dp"
-                    android:src="@drawable/ic_star_filled"
-                    android:tint="#FFD700" />
+                    android:src="@drawable/star" />
 
             </LinearLayout>
 
@@ -353,7 +333,7 @@
                     android:layout_height="32dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:padding="8dp"
-                    android:src="@drawable/ic_remove" />
+                    android:src="@drawable/remore" />
 
                 <TextView
                     android:id="@+id/tvQuantity"
@@ -371,7 +351,7 @@
                     android:layout_height="32dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:padding="8dp"
-                    android:src="@drawable/ic_add" />
+                    android:src="@drawable/add" />
 
             </LinearLayout>
 
