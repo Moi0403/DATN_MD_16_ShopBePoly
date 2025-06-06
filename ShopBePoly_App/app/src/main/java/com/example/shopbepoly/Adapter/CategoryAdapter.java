@@ -11,6 +11,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.example.shopbepoly.API.ApiClient;
 import com.example.shopbepoly.DTO.Category;
 import com.example.shopbepoly.R;
 
@@ -52,8 +53,10 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.Catego
         Category category = categoryList.get(position);
         holder.tvTitle.setText(category.getTitle());
 
-        String baseUrl = "http://192.168.1.3:3000/uploads/";
-        Glide.with(context).load(baseUrl + category.getCateImg()).into(holder.imgCategory);
+        Glide.with(context)
+                .load(ApiClient.Constants.IMAGE_URL + category.getCateImg())
+                .into(holder.imgCategory);
+
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) {
                 listener.onCategoryClick(category);

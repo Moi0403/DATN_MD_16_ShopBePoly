@@ -14,6 +14,10 @@ public class ApiClient {
     // Thử các base URL khác nhau
     private static final String BASE_URL = "http://192.168.1.3:3000/";  // Bỏ /api/ ở cuối
     private static Retrofit retrofit;
+    public class Constants {
+        public static final String BASE_URL = "http://192.168.1.3:3000/";
+        public static final String IMAGE_URL = BASE_URL + "uploads/";
+    }
 
     public static Retrofit getRetrofit() {
         if (retrofit == null) {
