@@ -130,12 +130,6 @@ public class Product {
         this.sold = sold;
     }
 
-    public String getImageUrl() {
-        if (avt_imgproduct != null && !avt_imgproduct.isEmpty()) {
-            return "http://192.168.1.3:3000/uploads/" + avt_imgproduct;
-        }
-        return "";
-    }
 
     public String getFormattedPrice() {
         return String.format("%,d₫", price);

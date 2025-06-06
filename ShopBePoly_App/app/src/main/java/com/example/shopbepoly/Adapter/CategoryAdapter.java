@@ -54,8 +54,10 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.Catego
         holder.tvTitle.setText(category.getTitle());
 
         Glide.with(context)
-                .load(ApiClient.Constants.IMAGE_URL + category.getCateImg())
+                .load(ApiClient.IMAGE_URL + category.getCateImg())
                 .into(holder.imgCategory);
+
+
 
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) {
