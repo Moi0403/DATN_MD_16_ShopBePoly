@@ -286,6 +286,21 @@ router.delete('/cart/user/:userId', async (req, res) => {
     }
 });
 // category
+// lấy ds product theo thể loại
+router.get('/products_by_category/:categoryId', async (req, res) => {
+    try {
+        const categoryId = req.params.categoryId;
+        const products = await productModel.find({ id_category: categoryId }).populate('id_category');
+        if (!products || products.length === 0) {
+            return res.status(404).json({ message: 'Không tìm thấy sản phẩm nào thuộc thể loại này' });
+        }
+        res.json(products);
+    } catch (error) {
+        console.error('Lỗi khi lấy sản phẩm theo thể loại:', error);
+        res.status(500).json({ error: 'Lỗi server khi lấy sản phẩm theo thể loại' });
+    }
+});
+
 //lấy ds category 
 router.get('/list_category',async(req,res)=>{
     await mongoose.connect(uri);
