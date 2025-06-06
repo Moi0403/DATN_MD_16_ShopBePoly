@@ -112,19 +112,17 @@
                 android:clipToOutline="true"
                 android:src="@drawable/banner" />
 
-            <LinearLayout
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerViewCategories"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center"
                 android:layout_marginBottom="16dp"
-                android:weightSum="4">
-
-                <include layout="@layout/item_category" />
-                <include layout="@layout/item_category" />
-                <include layout="@layout/item_category" />
-                <include layout="@layout/item_category" />
-            </LinearLayout>
+                android:overScrollMode="never"
+                android:nestedScrollingEnabled="false"
+                android:scrollbars="horizontal"
+                android:orientation="horizontal"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                tools:listitem="@layout/item_category" />
 
             <TextView
                 android:layout_width="wrap_content"

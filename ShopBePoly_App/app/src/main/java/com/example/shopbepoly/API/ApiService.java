@@ -1,7 +1,10 @@
 package com.example.shopbepoly.API;
 
 import android.util.Log;
+
+import com.example.shopbepoly.DTO.Category;
 import com.example.shopbepoly.DTO.Order;
+import com.example.shopbepoly.DTO.Product;
 
 import java.util.List;
 
@@ -26,6 +29,14 @@ public interface ApiService {
 
     @DELETE("api/order/{id}")
     Call<Void> deleteOrder(@Path("id") String id);
+    @GET("api/list_product")
+    Call<List<Product>> getProducts();
+
+    @GET("list_category")
+    Call<List<Category>> getCategories();
+    @GET("products_by_category/{categoryId}")
+    Call<List<Product>> getProductsByCategory(@Path("categoryId") String categoryId);
+
 
 }
 
