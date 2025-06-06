@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="0dp"
+    android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:layout_weight="1"
     android:orientation="vertical"
@@ -24,8 +24,10 @@
     </LinearLayout>
 
     <TextView
-        android:id="@+id/tvCategory"
+        android:id="@+id/tvCategoryTitle"
         android:layout_width="wrap_content"
+        android:maxLines="1"
+        android:ellipsize="end"
         android:layout_height="wrap_content"
         android:text="Adidas"
         android:textColor="#1F2937"
