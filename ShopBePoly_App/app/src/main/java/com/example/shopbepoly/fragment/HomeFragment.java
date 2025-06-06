@@ -10,6 +10,8 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.shopbepoly.API.ApiClient;
+import com.example.shopbepoly.API.ApiService;
 import com.example.shopbepoly.Adapter.CategoryAdapter;
 import com.example.shopbepoly.Adapter.ProductAdapter;
 import com.example.shopbepoly.DTO.Category;
@@ -35,6 +37,10 @@ public class HomeFragment extends Fragment {
     private List<Category> categoryList = new ArrayList<>();
     private ProductAdapter productAdapter;
     private CategoryAdapter categoryAdapter;
+    private ApiService apiService;
+
+
+
 
 
     @Override
@@ -45,6 +51,7 @@ public class HomeFragment extends Fragment {
         recyclerViewProducts.setLayoutManager(new GridLayoutManager(getContext(), 2));
         productAdapter = new ProductAdapter(productList);
         recyclerViewProducts.setAdapter(productAdapter);
+        apiService = ApiClient.getApiService();
 
 
         recyclerViewCategories = view.findViewById(R.id.recyclerViewCategories);
@@ -62,14 +69,8 @@ public class HomeFragment extends Fragment {
         return view;
     }
 
-    private void loadProduct () {
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("http://192.168.1.3:3000/api/")
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-
-        ProductApi productApi = retrofit.create(ProductApi.class);
-        Call<List<Product>> call = productApi.getProducts();
+    private void loadProduct() {
+        Call<List<Product>> call = apiService.getProducts();
         call.enqueue(new Callback<List<Product>>() {
             @Override
             public void onResponse(Call<List<Product>> call, Response<List<Product>> response) {
@@ -85,18 +86,10 @@ public class HomeFragment extends Fragment {
                 t.printStackTrace();
             }
         });
-
     }
 
     private void loadCategories() {
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("http://192.168.1.3:3000/api/")
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-
-        CategoryApi categoryApi = retrofit.create(CategoryApi.class);
-        Call<List<Category>> call = categoryApi.getCategories();
-
+        Call<List<Category>> call = apiService.getCategories();
         call.enqueue(new Callback<List<Category>>() {
             @Override
             public void onResponse(Call<List<Category>> call, Response<List<Category>> response) {
@@ -115,14 +108,7 @@ public class HomeFragment extends Fragment {
     }
 
     private void loadProductsByCategory(String categoryId) {
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("http://192.168.1.3:3000/api/")
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-
-        ProductApi productApi = retrofit.create(ProductApi.class);
-        Call<List<Product>> call = productApi.getProductsByCategory(categoryId);
-
+        Call<List<Product>> call = apiService.getProductsByCategory(categoryId);
         call.enqueue(new Callback<List<Product>>() {
             @Override
             public void onResponse(Call<List<Product>> call, Response<List<Product>> response) {
@@ -139,20 +125,4 @@ public class HomeFragment extends Fragment {
             }
         });
     }
-
-    public interface ProductApi {
-        @GET("list_product")
-        Call<List<Product>> getProducts();
-
-        @GET("products_by_category/{categoryId}")
-        Call<List<Product>> getProductsByCategory(@Path("categoryId") String categoryId);
-
-    }
-
-    public interface CategoryApi {
-        @GET("list_category")
-        Call<List<Category>> getCategories();
-    }
-
-
 }

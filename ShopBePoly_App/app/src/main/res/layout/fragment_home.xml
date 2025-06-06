@@ -136,7 +136,6 @@
                 android:id="@+id/recyclerViewProducts"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:nestedScrollingEnabled="false"
                 android:overScrollMode="never"
                 tools:listitem="@layout/item_product" />
         </LinearLayout>
