@@ -29,13 +29,15 @@ public interface ApiService {
 
     @DELETE("api/order/{id}")
     Call<Void> deleteOrder(@Path("id") String id);
-    @GET("api/list_product")
+    // Product
+    @GET("list_product")
     Call<List<Product>> getProducts();
+
+    @GET("products_by_category/{categoryId}")
+    Call<List<Product>> getProductsByCategory(@Path("categoryId") String categoryId);
 
     @GET("list_category")
     Call<List<Category>> getCategories();
-    @GET("products_by_category/{categoryId}")
-    Call<List<Product>> getProductsByCategory(@Path("categoryId") String categoryId);
 
 
 }
