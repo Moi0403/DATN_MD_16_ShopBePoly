@@ -11,18 +11,17 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ApiClient {
     private static final String TAG = "ApiClient";
-    // Thử các base URL khác nhau
-    private static final String BASE_URL = "http://192.168.1.3:3000/";  // Bỏ /api/ ở cuối
+
+
+    public static final String BASE_URL = "http://192.168.1.3:3000/";
+    public static final String BASE_API_URL = BASE_URL + "api/";
+    public static final String IMAGE_URL = BASE_URL + "uploads/";
+
     private static Retrofit retrofit;
-    public class Constants {
-        public static final String BASE_URL = "http://192.168.1.3:3000/";
-        public static final String IMAGE_URL = BASE_URL + "uploads/";
-    }
 
     public static Retrofit getRetrofit() {
         if (retrofit == null) {
             try {
-                // Create logging interceptor with more detailed logging
                 HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor(message -> {
                     if (message.startsWith("-->") || message.startsWith("<--")) {
                         Log.d(TAG, "OkHttp: " + message);
@@ -32,7 +31,6 @@ public class ApiClient {
                 });
                 loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 
-                // Create OkHttpClient with timeout and logging
                 OkHttpClient client = new OkHttpClient.Builder()
                         .addInterceptor(loggingInterceptor)
                         .connectTimeout(30, TimeUnit.SECONDS)
@@ -40,14 +38,13 @@ public class ApiClient {
                         .writeTimeout(30, TimeUnit.SECONDS)
                         .build();
 
-                // Create Retrofit instance
                 retrofit = new Retrofit.Builder()
-                        .baseUrl(BASE_URL)
+                        .baseUrl(BASE_API_URL) // dùng BASE_API_URL
                         .client(client)
                         .addConverterFactory(GsonConverterFactory.create())
                         .build();
 
-                Log.d(TAG, "Retrofit instance created successfully with base URL: " + BASE_URL);
+                Log.d(TAG, "Retrofit instance created with base URL: " + BASE_API_URL);
             } catch (Exception e) {
                 Log.e(TAG, "Error creating Retrofit instance", e);
             }

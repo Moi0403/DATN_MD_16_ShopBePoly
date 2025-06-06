@@ -9,6 +9,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.shopbepoly.API.ApiClient;
 import com.example.shopbepoly.DTO.Product;
 import com.example.shopbepoly.R;
 import com.squareup.picasso.Picasso;
@@ -40,8 +41,8 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
 
         holder.tvProductSold.setText("Đã bán: " + product.getSold() + " sp");
 
-        // Tránh lỗi double upload URL, vì product.getImageUrl() đã có host
-        Picasso.get().load(product.getImageUrl()).into(holder.ivProductImage);
+        Picasso.get().load(ApiClient.IMAGE_URL + product.getAvt_imgproduct()).into(holder.ivProductImage);
+
     }
 
     @Override
