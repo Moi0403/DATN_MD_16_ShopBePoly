@@ -63,13 +63,12 @@
                     style="?android:attr/ratingBarStyleSmall"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:isIndicator="true"
                     android:numStars="5"
                     android:rating="4"
-                    android:stepSize="0.5"
-                    android:isIndicator="true"
-                    android:layout_marginEnd="4dp"
                     android:scaleX="0.8"
-                    android:scaleY="0.8" />
+                    android:scaleY="0.8"
+                    android:stepSize="0.4" />
 
                 <TextView
                     android:id="@+id/tvReviewCount"
@@ -85,9 +84,9 @@
             android:id="@+id/ivFavorite"
             android:layout_width="24dp"
             android:layout_height="24dp"
+            android:layout_margin="8dp"
             android:layout_alignParentTop="true"
             android:layout_alignParentEnd="true"
-            android:layout_margin="8dp"
             android:src="@drawable/ic_favorite_product"
             android:contentDescription="Favorite" />
 
