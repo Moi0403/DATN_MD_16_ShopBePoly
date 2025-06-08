@@ -11,7 +11,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ApiClient {
     private static final String TAG = "ApiClient";
-    public static final String BASE_URL = "http://192.168.1.3:3000/";
+    public static final String BASE_URL = "http://10.0.3.2:3000/";
     public static final String BASE_API_URL = BASE_URL + "api/";
     public static final String IMAGE_URL = BASE_URL + "uploads/";
 
