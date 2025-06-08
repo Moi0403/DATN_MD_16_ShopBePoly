@@ -7,6 +7,7 @@ import android.text.TextWatcher;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -38,7 +39,8 @@ import retrofit2.Response;
 
 public class TimKiem extends AppCompatActivity {
     private EditText etSearch;
-    private ImageButton btnBack, btnClearHistory;
+    private ImageButton btnBack;
+    private ImageView btnClearHistory;
     private RecyclerView rvSearchResults, rvSearchHistory;
     private TextView tvResultsCount;
     private ProductAdapter productAdapter;
