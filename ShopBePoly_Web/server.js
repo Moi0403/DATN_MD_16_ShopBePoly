@@ -148,6 +148,19 @@ router.delete('/del_product/:id', async (req, res)=>{
     }
 })
 
+// Tìm kiếm san pham 'http://localhost:3000/api/search_product'
+router.get('/search_product', async (req, res) => {
+    try {
+        const keyword = req.query.q;
+        const results = await productModel.find({ 
+            nameproduct: { $regex: keyword, $options: 'i' } 
+        }).populate('id_category');
+        res.json(results);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 //User
 // lấy ds user 'http://localhost:3000/api/list_user'
 router.get('/list_user', async (req, res)=>{
