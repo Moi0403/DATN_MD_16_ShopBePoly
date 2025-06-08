@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="6dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="2dp"
+    android:background="@android:color/white">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="12dp">
+
+        <!-- Product Image -->
+        <ImageView
+            android:id="@+id/img_product"
+            android:layout_width="match_parent"
+            android:layout_height="120dp"
+            android:layout_centerHorizontal="true"
+            android:scaleType="centerCrop"
+            android:background="#F8F8F8"
+            android:src="@drawable/niker" />
+
+        <!-- Product Name -->
+        <TextView
+            android:id="@+id/tv_product_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/img_product"
+            android:layout_marginTop="8dp"
+            android:text="Nike Wearallday Sneakers"
+            android:textSize="14sp"
+            android:textColor="@android:color/black"
+            android:textStyle="normal"
+            android:maxLines="2"
+            android:ellipsize="end" />
+
+        <!-- Product Price -->
+        <TextView
+            android:id="@+id/tv_product_price"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/tv_product_name"
+            android:layout_marginTop="4dp"
+            android:text="560000 VNĐ"
+            android:textSize="16sp"
+            android:textColor="#FF6B35"
+            android:textStyle="bold" />
+
+        <!-- Rating Bar -->
+        <RatingBar
+            android:id="@+id/rating_bar"
+            style="@style/Widget.AppCompat.RatingBar.Small"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/tv_product_price"
+            android:layout_marginTop="4dp"
+            android:numStars="5"
+            android:rating="4.5"
+            android:stepSize="0.1"
+            android:isIndicator="true"
+            android:progressTint="#FFD700"
+            android:progressBackgroundTint="#E0E0E0" />
+
+        <!-- Add to Cart Button -->
+        <ImageView
+            android:id="@+id/btn_add_to_cart"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentBottom="true"
+            android:src="@drawable/ic_shopping"
+            android:clickable="true"
+            android:focusable="true" />
+
+    </RelativeLayout>
+
+</androidx.cardview.widget.CardView>
