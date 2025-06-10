@@ -6,6 +6,9 @@ import com.example.shopbepoly.DTO.LoginRequest;
 import com.example.shopbepoly.DTO.LoginResponse;
 import com.example.shopbepoly.DTO.Order;
 import com.example.shopbepoly.DTO.User;
+import com.example.shopbepoly.DTO.Category;
+import com.example.shopbepoly.DTO.Order;
+import com.example.shopbepoly.DTO.Product;
 
 import java.util.List;
 
