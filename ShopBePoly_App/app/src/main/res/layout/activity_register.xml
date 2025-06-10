@@ -33,6 +33,7 @@
                 android:layout_marginBottom="8dp"/>
 
             <EditText
+                android:id="@+id/edtName"
                 android:layout_width="match_parent"
                 android:layout_height="46dp"
                 android:hint="Nhập họ tên"
@@ -55,6 +56,7 @@
                 android:layout_marginBottom="8dp"/>
 
             <EditText
+                android:id="@+id/edtEmail"
                 android:layout_width="match_parent"
                 android:layout_height="46dp"
                 android:hint="Nhập email"
@@ -78,6 +80,7 @@
                 android:layout_marginBottom="8dp"/>
 
             <EditText
+                android:id="@+id/edtPhone"
                 android:layout_width="match_parent"
                 android:layout_height="46dp"
                 android:hint="Nhập số điện thoại"
@@ -100,13 +103,31 @@
                 android:textSize="14dp"
                 android:layout_marginBottom="8dp"/>
 
-            <EditText
+            <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="46dp"
-                android:hint="Nhập mật khẩu"
-                android:inputType="textPassword"
                 android:background="@drawable/edittext_bg"
-                android:padding="12dp" />
+                android:layout_marginTop="4dp">
+
+                <EditText
+                    android:id="@+id/edtPassword"
+                    android:layout_width="match_parent"
+                    android:layout_height="46dp"
+                    android:hint="Nhập mật khẩu"
+                    android:inputType="textPassword"
+                    android:background="@drawable/edittext_bg"
+                    android:padding="12dp" />
+
+                <ImageView
+                    android:id="@+id/btnTogglePassword"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_eye_on"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:layout_marginEnd="12dp" />
+
+            </RelativeLayout>
 
         </LinearLayout>
 
@@ -123,13 +144,31 @@
                 android:textSize="14dp"
                 android:layout_marginBottom="8dp"/>
 
-            <EditText
+            <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="46dp"
-                android:hint="Nhập xác nhận mật khẩu"
-                android:inputType="textPassword"
                 android:background="@drawable/edittext_bg"
-                android:padding="12dp" />
+                android:layout_marginTop="4dp">
+
+                <EditText
+                    android:id="@+id/edtConfirmPassword"
+                    android:layout_width="match_parent"
+                    android:layout_height="46dp"
+                    android:hint="Nhập xác nhận mật khẩu"
+                    android:inputType="textPassword"
+                    android:background="@drawable/edittext_bg"
+                    android:padding="12dp" />
+
+                <ImageView
+                    android:id="@+id/btnToggleConfirmPassword"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_eye_on"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:layout_marginEnd="12dp" />
+
+            </RelativeLayout>
 
         </LinearLayout>
 
@@ -161,6 +200,7 @@
         </LinearLayout>
 
         <Button
+            android:id="@+id/btnRegister"
             android:layout_width="match_parent"
             android:layout_height="50dp"
             android:text="Đăng Ký"

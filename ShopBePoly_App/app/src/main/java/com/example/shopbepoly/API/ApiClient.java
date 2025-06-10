@@ -12,7 +12,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class ApiClient {
     private static final String TAG = "ApiClient";
     // Thử các base URL khác nhau
-    private static final String BASE_URL = "http://10.0.3.2:3000/";  // Bỏ /api/ ở cuối
+    private static final String BASE_URL = "http://10.0.2.2:3000/";  // Bỏ /api/ ở cuối
     private static Retrofit retrofit;
 
     public static Retrofit getRetrofit() {

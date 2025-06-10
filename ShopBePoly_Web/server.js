@@ -171,6 +171,79 @@ router.delete('/del_user/:id', async (req, res)=>{
     }
 })
 
+// Đăng ký
+router.post('/register', async (req, res) => {
+    let { username, password, name, email, phone_number } = req.body;
+
+    // Chuyển phone_number sang Number (nếu client gửi chuỗi)
+    phone_number = Number(phone_number);
+
+    try {
+        // Kiểm tra username đã tồn tại chưa
+        const existingUser = await userModel.findOne({ username });
+        if (existingUser) {
+            return res.status(400).json({ message: 'Tên người dùng đã tồn tại' });
+        }
+
+        // Tạo người dùng mới
+        const newUser = await userModel.create({
+            username,
+            password,
+            name,
+            email,
+            phone_number,
+            avt: [],
+            role: 0
+        });
+
+        res.status(201).json({
+            message: 'Đăng ký thành công',
+            user: {
+                id: newUser._id,
+                username: newUser.username,
+                name: newUser.name,
+                role: newUser.role
+            }
+        });
+
+    } catch (error) {
+        console.error('Lỗi đăng ký:', error);
+        res.status(500).json({ message: 'Lỗi server khi đăng ký' });
+    }
+});
+
+
+// Đăng nhập
+router.post('/login', async (req, res) => {
+    const { username, password } = req.body;
+
+    try {
+        const user = await userModel.findOne({ username });
+
+        if (!user) {
+            return res.status(401).json({ message: 'Tài khoản không tồn tại' });
+        }
+
+        if (user.password !== password) {
+            return res.status(401).json({ message: 'Sai mật khẩu' });
+        }
+
+        res.status(200).json({
+            message: 'Đăng nhập thành công',
+            user: {
+                id: user._id,
+                username: user.username,
+                name: user.name,
+                role: user.role
+            }
+        });
+
+    } catch (error) {
+        console.error('Lỗi khi đăng nhập:', error);
+        res.status(500).json({ message: 'Lỗi server khi đăng nhập' });
+    }
+});
+
 // Lấy giỏ hàng http://localhost:3000/api/:useId
 router.get('/api/cart/:userId', async (req, res) => {
     try {

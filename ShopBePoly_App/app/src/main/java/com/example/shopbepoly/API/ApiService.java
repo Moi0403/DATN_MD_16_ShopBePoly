@@ -1,7 +1,11 @@
 package com.example.shopbepoly.API;
 
 import android.util.Log;
+
+import com.example.shopbepoly.DTO.LoginRequest;
+import com.example.shopbepoly.DTO.LoginResponse;
 import com.example.shopbepoly.DTO.Order;
+import com.example.shopbepoly.DTO.User;
 
 import java.util.List;
 
@@ -26,6 +30,12 @@ public interface ApiService {
 
     @DELETE("api/order/{id}")
     Call<Void> deleteOrder(@Path("id") String id);
+
+    @POST("api/register")
+    Call<Void> register(@Body User user);
+
+    @POST("api/login")
+    Call<LoginResponse> login(@Body LoginRequest request);
 
 }
 
