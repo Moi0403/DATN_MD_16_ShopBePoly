@@ -3,8 +3,11 @@ package com.example.shopbepoly.API;
 import android.util.Log;
 
 import com.example.shopbepoly.DTO.Category;
+import com.example.shopbepoly.DTO.LoginRequest;
+import com.example.shopbepoly.DTO.LoginResponse;
 import com.example.shopbepoly.DTO.Order;
 import com.example.shopbepoly.DTO.Product;
+import com.example.shopbepoly.DTO.User;
 
 import java.util.List;
 
@@ -36,6 +39,12 @@ public interface ApiService {
 
     @GET("list_category")
     Call<List<Category>> getCategories();
+
+    @POST("register")
+    Call<Void> register(@Body User user);
+
+    @POST("login")
+    Call<LoginResponse> login(@Body LoginRequest request);
 
 }
 
