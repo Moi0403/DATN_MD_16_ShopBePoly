@@ -36,6 +36,7 @@
                 android:layout_marginBottom="8dp"/>
 
             <EditText
+                android:id="@+id/edtUsername"
                 android:layout_width="match_parent"
                 android:layout_height="46dp"
                 android:hint="Nhập email hoặc số điện thoại"
@@ -80,7 +81,7 @@
                     android:id="@+id/btnTogglePassword"
                     android:layout_width="24dp"
                     android:layout_height="24dp"
-                    android:src="@drawable/ic_eye"
+                    android:src="@drawable/ic_eye_on"
                     android:layout_alignParentEnd="true"
                     android:layout_centerVertical="true"
                     android:layout_marginEnd="12dp" />
@@ -96,6 +97,7 @@
             android:gravity="center_vertical">
 
             <CheckBox
+                android:id="@+id/checkboxRemember"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content" />
 
