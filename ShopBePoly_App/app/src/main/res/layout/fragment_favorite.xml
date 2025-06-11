@@ -5,10 +5,29 @@
     android:layout_height="match_parent"
     tools:context=".fragment.FavoriteFragment">
 
-    <!-- TODO: Update blank fragment layout -->
-    <TextView
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:text="@string/hello_blank_fragment" />
+        android:layout_height="match_parent">
+
+        <TextView
+            android:id="@+id/tv_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Yêu thích"
+            android:textColor="#1A1A1A"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textAlignment="center"
+            />
+        <!-- TODO: Update blank fragment layout -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:layout_below="@id/tv_title"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:id="@+id/rvFavorites"
+            android:layout_margin="20dp"
+            />
+    </RelativeLayout>
+
 
 </FrameLayout>
