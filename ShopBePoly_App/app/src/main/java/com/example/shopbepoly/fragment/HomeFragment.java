@@ -55,7 +55,7 @@ public class HomeFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_home, container, false);
         recyclerViewProducts = view.findViewById(R.id.recyclerViewProducts);
         recyclerViewProducts.setLayoutManager(new GridLayoutManager(getContext(), 2));
-        productAdapter = new ProductAdapter(productList);
+        productAdapter = new ProductAdapter(getContext(),productList);
         recyclerViewProducts.setAdapter(productAdapter);
         apiService = ApiClient.getApiService();
 

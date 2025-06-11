@@ -9,11 +9,14 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
 
+import com.example.shopbepoly.API.ApiClient;
+import com.example.shopbepoly.DTO.Product;
 import com.example.shopbepoly.R;
+import com.squareup.picasso.Picasso;
 
 public class ChiTietSanPham extends AppCompatActivity {
 
-    private ImageView btnBack, btnFavorite, btnDecrease, btnIncrease;
+    private ImageView btnBack, btnFavorite, btnDecrease, btnIncrease,imgProduct;
     private TextView tvQuantity, tvProductName, tvPrice, tvDescription;
     private AppCompatButton btnAddToCart;
     private View colorWhite, colorRed, colorGray, colorOrange, colorLightGray;
@@ -32,7 +35,14 @@ public class ChiTietSanPham extends AppCompatActivity {
         initViews();
         setupClickListeners();
         updateUI();
+        Product product = (Product) getIntent().getSerializableExtra("product");
+        if (product!= null){
+            tvProductName.setText(product.getNameproduct());
+            tvPrice.setText(String.valueOf(product.getPrice()));
+            tvDescription.setText(product.getDescription());
 
+            Picasso.get().load(ApiClient.IMAGE_URL + product.getAvt_imgproduct()).into(imgProduct);
+        }
     }
 
     private void initViews() {
@@ -45,6 +55,7 @@ public class ChiTietSanPham extends AppCompatActivity {
         tvPrice = findViewById(R.id.tvPrice);
         tvDescription = findViewById(R.id.tvDescription);
         btnAddToCart = findViewById(R.id.btnAddToCart);
+        imgProduct = findViewById(R.id.imgProduct);
 
         // Color selectors
         colorWhite = findViewById(R.id.colorWhite);

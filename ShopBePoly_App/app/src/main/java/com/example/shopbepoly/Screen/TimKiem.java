@@ -73,7 +73,7 @@ public class TimKiem extends AppCompatActivity {
         
         // Setup RecyclerViews
         rvSearchResults.setLayoutManager(new GridLayoutManager(this, 2));
-        productAdapter = new ProductAdapter(new ArrayList<>());
+        productAdapter = new ProductAdapter(getApplicationContext(),new ArrayList<>());
         rvSearchResults.setAdapter(productAdapter);
         
         rvSearchHistory.setLayoutManager(new LinearLayoutManager(this));
@@ -116,7 +116,7 @@ public class TimKiem extends AppCompatActivity {
                     searchHistoryContainer.setVisibility(View.GONE);
                     searchResultsContainer.setVisibility(View.VISIBLE);
                 } else {
-                    productAdapter = new ProductAdapter(new ArrayList<>());
+                    productAdapter = new ProductAdapter(getApplicationContext(),new ArrayList<>());
                     rvSearchResults.setAdapter(productAdapter);
                     tvResultsCount.setText("Kết quả tìm kiếm");
                     searchHistoryContainer.setVisibility(View.VISIBLE);
@@ -143,11 +143,11 @@ public class TimKiem extends AppCompatActivity {
                         // Save to search history
                         saveToSearchHistory(keyword);
                     }
-                    productAdapter = new ProductAdapter(searchResults);
+                    productAdapter = new ProductAdapter(getApplicationContext(),searchResults);
                     rvSearchResults.setAdapter(productAdapter);
                 } else {
                     Toast.makeText(TimKiem.this, "Không tìm thấy sản phẩm", Toast.LENGTH_SHORT).show();
-                    productAdapter = new ProductAdapter(new ArrayList<>());
+                    productAdapter = new ProductAdapter(getApplicationContext(),new ArrayList<>());
                     rvSearchResults.setAdapter(productAdapter);
                     tvResultsCount.setText("Không tìm thấy sản phẩm");
                 }
@@ -156,7 +156,7 @@ public class TimKiem extends AppCompatActivity {
             @Override
             public void onFailure(Call<List<Product>> call, Throwable t) {
                 Toast.makeText(TimKiem.this, "Lỗi khi tìm kiếm sản phẩm", Toast.LENGTH_SHORT).show();
-                productAdapter = new ProductAdapter(new ArrayList<>());
+                productAdapter = new ProductAdapter(getApplicationContext(),new ArrayList<>());
                 rvSearchResults.setAdapter(productAdapter);
                 tvResultsCount.setText("Lỗi khi tìm kiếm");
             }

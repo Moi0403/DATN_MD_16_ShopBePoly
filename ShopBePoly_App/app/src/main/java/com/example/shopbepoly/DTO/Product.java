@@ -1,8 +1,9 @@
 package com.example.shopbepoly.DTO;
 
+import java.io.Serializable;
 import java.util.List;
 
-public class Product {
+public class Product implements Serializable {
     private String _id;
     private String nameproduct;
     private Category id_category;  // đổi từ String thành Category
@@ -133,5 +134,17 @@ public class Product {
 
     public String getFormattedPrice() {
         return String.format("%,d₫", price);
+    }
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Product)) return false;
+        Product p = (Product) o;
+        return _id != null && _id.equals(p._id);   // so sánh theo id
+    }
+
+    @Override
+    public int hashCode() {
+        return _id != null ? _id.hashCode() : 0;
     }
 }
