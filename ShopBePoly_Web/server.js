@@ -91,12 +91,12 @@ router.post('/add_product', upload.fields([
             id_category: body.category_pro,
             price: body.price_pro,
             quantity: body.slg_pro,
-            description: '',
+            description: body.mota_pro,
             avt_imgproduct: files.avt_imgpro?.[0]?.filename || '',
             list_imgproduct: files.list_imgpro?.map(f => f.filename) || [],
             size: body.size_pro,
             color: body.color_pro,
-            stock: 0,
+            stock: body.slg_pro,
             sold: 0
         });
         await newPro.save();
