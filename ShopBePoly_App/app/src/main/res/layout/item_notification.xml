@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:background="@android:color/white"
+    android:padding="16dp"
+    android:layout_marginHorizontal="12dp"
+    android:layout_marginVertical="4dp"
+    android:elevation="1dp"
+    android:clickable="true"
+    android:focusable="true">
+
+    <!-- App Icon -->
+    <ImageView
+        android:id="@+id/imgAppIcon"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@drawable/niker"
+        android:background="@drawable/brackground_edit"
+        android:padding="8dp"
+        android:layout_marginEnd="12dp" />
+
+    <!-- Content -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <!-- App Name -->
+        <TextView
+            android:id="@+id/txtAppName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="ZapHealth: Adidas | "
+            android:textSize="14sp"
+            android:textColor="#666666"
+            android:layout_marginBottom="2dp" />
+
+        <!-- Notification Title -->
+        <TextView
+            android:id="@+id/txtNotificationTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="1 bày phần"
+            android:textSize="16sp"
+            android:textColor="#333333"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+
+    <!-- Time -->
+    <TextView
+        android:id="@+id/txtTime"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Sáng 21"
+        android:textSize="12sp"
+        android:textColor="#999999"
+        android:layout_gravity="top" />
+
+</LinearLayout>

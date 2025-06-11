@@ -5,5 +5,6 @@ const categorySchema = new mongoose.Schema({
     cateImg:String
 });
 
-const categoryModel = mongoose.model('category', categorySchema);
+
+const categoryModel = mongoose.models.category || mongoose.model('category', categorySchema);
 module.exports = categoryModel;

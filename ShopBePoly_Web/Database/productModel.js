@@ -10,12 +10,13 @@ const productSchema = new mongoose.Schema({
     price: Number,
     quantity: Number,
     description: String,
-    image_product: [],
+    avt_imgproduct: String,
+    list_imgproduct: [String],
     size: Number,
     color: String,
     stock: Number,
     sold: Number,
 });
 
-const productModel = mongoose.model('product', productSchema);
+const productModel = mongoose.models.product || mongoose.model('product', productSchema);
 module.exports = productModel;
