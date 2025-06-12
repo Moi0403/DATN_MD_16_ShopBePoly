@@ -1,9 +1,9 @@
 package com.example.shopbepoly.Adapter;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -13,8 +13,10 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.shopbepoly.R;
 
 import java.util.List;
+import java.util.ArrayList;
 
 public class SearchHistoryAdapter extends RecyclerView.Adapter<SearchHistoryAdapter.ViewHolder> {
+    private static final String TAG = "SearchHistoryAdapter";
     private List<String> searchHistory;
     private OnSearchHistoryClickListener listener;
     private OnDeleteItemClickListener deleteListener;
@@ -27,8 +29,8 @@ public class SearchHistoryAdapter extends RecyclerView.Adapter<SearchHistoryAdap
         void onDeleteItemClick(String query);
     }
 
-    public SearchHistoryAdapter(List<String> searchHistory, OnSearchHistoryClickListener listener) {
-        this.searchHistory = searchHistory;
+    public SearchHistoryAdapter(OnSearchHistoryClickListener listener) {
+        this.searchHistory = new ArrayList<>();
         this.listener = listener;
     }
 
@@ -66,10 +68,11 @@ public class SearchHistoryAdapter extends RecyclerView.Adapter<SearchHistoryAdap
 
     @Override
     public int getItemCount() {
-        return searchHistory.size();
+        return searchHistory != null ? searchHistory.size() : 0;
     }
 
     public void updateData(List<String> newHistory) {
+        Log.d(TAG, "Updating data with size: " + (newHistory != null ? newHistory.size() : 0));
         this.searchHistory = newHistory;
         notifyDataSetChanged();
     }
