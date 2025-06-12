@@ -13,8 +13,93 @@
    <div class="container">
         <div class="header">
             <h1>Quản lý tài khoản</h1>
-        </div>
-        <div>
+
+        <div class="form">
+            <form id="themUser" enctype="multipart/form-data" method="POST">
+                <div class="row md-3">
+                    <div class="col-md-6">
+                        <label>Chọn ảnh đại diện:</label>
+                        <input type="file" id="avt_user" name="avt_user" class="form-control" required />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label>Chọn loại tài khoản:</label>
+                        <select id="role_user" name="role_user" class="form-select" required>
+                        <option value="">-- Chọn loại tài khoản --</option>
+                        <option value="2">Admin</option>
+                        <option value="1">Nhân viên</option>
+                        <option value="0">Người dùng</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row md-3">
+                    <div class="col-md-4">
+                        <label>Họ và tên:</label>
+                        <input type="text" id="name_user" name="name_user" class="form-control" required />
+                    </div>
+                    <div class="col-md-4">
+                        <label>Số điện thoại:</label>
+                        <input type="number" id="phone_user" name="phone_user" class="form-control" required />
+                    </div>
+                    <div class="col-md-4">
+                        <label>Email:</label>
+                        <input type="email" id="email_user" name="email_user" class="form-control" required />
+                    </div>
+                </div>
+
+                <div class="row md-3">
+                    <div class="col-md-6">
+                        <label>Tên đăng nhập:</label>
+                        <input type="text" id="username_user" name="username_user" class="form-control" required />
+                    </div>
+                    <div class="col-md-6">
+                        <label>Mật khẩu:</label>
+                        <input type="text" id="password_user" name="password_user" class="form-control" required />
+                    </div>
+                </div>
+
+                <br>
+                
+                <button type="submit" id="ThemUser" class="btn btn-primary">Nhập</button>
+                
+                
+            </form>
+
+            <!-- Bảng -->
+            
+
+                <table class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th colspan="9">
+                            <label>Phân loại:</label>
+                            <select id="pl_role" name="pl_role" required>
+                                <option value="3">-- Tất cả --</option>
+                                <option value="2">-- Admin --</option>
+                                <option value="1">-- Nhân viên --</option>
+                                <option value="0">-- Người dùng --</option>
+                            </select>
+                            </th>
+                        </tr>
+                    <tr>
+                    <th>STT</th>
+                    <th>Ảnh đại diện</th>
+                    <th>Họ và tên</th>
+                    <th>Số điện thoại</th>
+                    <th>Email</th>
+                    <th>Tên đăng nhập</th>
+                    <th>Mật khẩu</th>
+                    <th>Loại tài khoản</th>
+                    <th>Xử lý</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody">
+                    <!-- Dữ liệu JS sẽ hiển thị ở đây -->
+                </tbody>
+                </table>
+            </div>
+            </div>
             <!-- Nút mở menu -->
             <button onclick="toggleSidebar()" class="menu-button">☰</button>
         
@@ -36,8 +121,11 @@
 
         </div>
    </div>
+        </div>
     
 
     <script src="../Style_Sidebar/Sidebar.js"></script>
+    <script src="../../Database/config.js"></script>
+    <script src="./QL_User.js"></script>
 </body>
 </html>

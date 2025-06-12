@@ -6,7 +6,7 @@ const userSchema = new mongoose.Schema({
     name: String,
     email: String,
     phone_number: Number,
-    avt: [],
+    avt_user: String,
     role: Number
 });
 

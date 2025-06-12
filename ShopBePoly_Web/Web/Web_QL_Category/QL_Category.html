@@ -14,27 +14,31 @@
             
             <div class="form">
                 <form id="themTL">
-                    <label>Nhập tên thể loại:</label>
-                    <input type="text" id="titleTL" name="titleTL" placeholder="Nhập tên thể loại...">
-                    <label>Chọn ảnh:</label>
-                    <input type="file" id="imgTL" name="imgTL">
-                    <button type="submit" id="ThemTL" class="btn btn-primary">Nhập</button>
+                <label for="titleTL">Nhập tên thể loại:</label>
+                <input type="text" id="titleTL" name="titleTL" class="form-control" placeholder="Nhập tên thể loại..." required>
+                <label for="imgTL">Chọn ảnh:</label>
+                <input type="file" id="imgTL" name="imgTL" class="form-control" required>
+                <br>
+                <button type="submit" id="ThemTL" class="btn btn-primary">Nhập</button>
                 </form>
 
+                <div class="table-container">
                 <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>STT</th>
-                            <th>Ảnh thể loại</th>
-                            <th>Tên thể loại</th>
-                            <th>Xử lý</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tbody">
-        
-                   </tbody>    
+                <thead class="table-dark">
+                    <tr>
+                    <th>STT</th>
+                    <th>Ảnh thể loại</th>
+                    <th>Tên thể loại</th>
+                    <th>Xử lý</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody">
+                    <!-- Dữ liệu sẽ được thêm vào đây bằng JS -->
+                </tbody>
                 </table>
             </div>
+            </div>
+
             
         </div>
          

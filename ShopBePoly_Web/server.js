@@ -78,26 +78,27 @@ router.get('/list_product', async (req, res) => {
 
 // thêm product 'http://localhost:3000/api/add_product'
 router.post('/add_product', upload.fields([
-    {name: 'avt_imgpro', maxCount: 1},
-    {name: 'list_imgpro', maxCount: 10}
-]), async (req, res)=>{
-    
-    try{
+    { name: 'avt_imgpro', maxCount: 1 },
+    { name: 'list_imgpro', maxCount: 10 }
+]), async (req, res) => {
+    try {
         const files = req.files;
         const body = req.body;
-        
+
+        // Parse variations từ chuỗi JSON gửi từ form
+        let variations = [];
+        if (body.variations) {
+            variations = JSON.parse(body.variations);
+        }
+
         const newPro = await productModel.create({
             nameproduct: body.name_pro,
             id_category: body.category_pro,
             price: body.price_pro,
-            quantity: body.slg_pro,
-            description: body.mota_pro,
+            description: body.mota_pro, // có thể thêm sau
             avt_imgproduct: files.avt_imgpro?.[0]?.filename || '',
             list_imgproduct: files.list_imgpro?.map(f => f.filename) || [],
-            size: body.size_pro,
-            color: body.color_pro,
-            stock: body.slg_pro,
-            sold: 0
+            variations // <-- sử dụng mảng variations
         });
         await newPro.save();
         console.log('Thêm sản phẩm thành công');
@@ -107,8 +108,8 @@ router.post('/add_product', upload.fields([
         console.error('Thêm sản phẩm thất bại:', error);
         res.status(500).send('Lỗi server');
     }
-
 });
+
 
 // sửa product 'http://localhost:3000/api/up_product/ id'
 router.put('/up_product/:id', async (req, res)=>{
@@ -170,17 +171,30 @@ router.get('/list_user', async (req, res)=>{
 });
 
 // thêm user 'http://localhost:3000/api/add_user'
-router.post('/add_user', async (req, res)=>{
+router.post('/add_user', upload.fields([
+    {name: 'avt_user', maxCount: 1},
+]), async (req, res)=>{
     
-    let data = req.body;
-    let kq = await userModel.create(data);
-
-    if(kq){
-        console.log('Thêm người dùng thành công');
-        let usr = await userModel.find();
-        res.send(usr);
-    } else{
-        console.log('Thêm người dùng không thành công');
+    try{
+        const files = req.files;
+        const body = req.body;
+        
+        const newUser = await userModel.create({
+            username: body.username_user,
+            password: body.password_user,
+            name: body.name_user,
+            email: body.email_user,
+            phone_number: body.phone_user,
+            avt_user: files.avt_user?.[0]?.filename || '',
+            role: body.role_user
+        });
+        await newUser.save();
+        console.log('Thêm tài khoản thành công');
+        const allUsers = await userModel.find();
+        res.json(allUsers);
+    } catch (error) {
+        console.error('Thêm tài khoản thất bại:', error);
+        res.status(500).send('Lỗi server');
     }
 
 })
@@ -243,7 +257,7 @@ router.post('/register', async (req, res) => {
             name,
             email,
             phone_number,
-            avt: [],
+            avt_user: "",
             role: 0
         });
 
@@ -433,24 +447,26 @@ router.put('/edit_cate/:id',async (req,res)=>{
     }
 })
 //xoa the loai
-router.delete('/del_category/:id',async (req,res)=>{
-    try{
-        let id = req.params.id;
-        const kq = await categoryModel.deleteOne({_id: id});
-        if(kq){
-            console.log('Xóa thể loại thành công!');
-            let cate = await categoryModel.find();
-            res.send(cate);
-            
-        }else{
-            res.send('Xóa thể loại không thành công!');
+router.delete('/del_category/:id', async (req, res) => {
+    const categoryId = req.params.id;
+
+    try {
+        // Kiểm tra xem có sản phẩm nào liên kết không
+        const linkedProducts = await productModel.find({ id_category: categoryId });
+
+        if (linkedProducts.length > 0) {
+            return res.status(400).json({ message: 'Không thể xóa. Thể loại đang liên kết với sản phẩm.' });
         }
-    }catch(err){
-        console.error('Lỗi khi xóa: ', err);
-        res.status(500).json({error: 'Lỗi server khi xóa thể loại '});
-        
+
+        // Nếu không liên kết thì xóa
+        await categoryModel.findByIdAndDelete(categoryId);
+        res.json({ message: 'Xóa thành công' });
+    } catch (error) {
+        console.error('Lỗi khi xóa thể loại:', error);
+        res.status(500).json({ message: 'Lỗi server' });
     }
-})
+});
+
 
 // lấy ds don hang 'http://localhost:3000/api/list_order'
 router.get('/list_order', async (req, res)=>{

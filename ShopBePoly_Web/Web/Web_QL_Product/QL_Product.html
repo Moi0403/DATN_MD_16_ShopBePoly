@@ -16,101 +16,85 @@
 
             <div class="form">
                 <form id="themPro" enctype="multipart/form-data" method="POST">
-
-                    <div class="formitem">
-                        <div class="form1_1">
-                            <label>Chọn ảnh đại diện giày:</label>
-                            <input type="file" id="avt_imgpro" name="avt_imgpro" required>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="avt_imgpro" class="form-label">Ảnh đại diện giày:</label>
+                            <input type="file" class="form-control" id="avt_imgpro" name="avt_imgpro" required>
                         </div>
-
-                        <div class="form1_2">
-                            <label>Chọn ảnh giới thiệu:</label>
-                            <input type="file" id="list_imgpro" name="list_imgpro" multiple> 
+                        <div class="col-md-6">
+                            <label for="list_imgpro" class="form-label">Ảnh giới thiệu:</label>
+                            <input type="file" class="form-control" id="list_imgpro" name="list_imgpro" multiple>
                         </div>
                     </div>
 
-                    <br>
-                    
-                    <div class="formitem">
-                        
-                        <div class="form3_1">
-                            <label>Chọn hãng giày:</label>
-                            <select id="category_pro" name="category_pro" required>
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="category_pro" class="form-label">Hãng giày:</label>
+                            <select id="category_pro" name="category_pro" class="form-select" required>
                                 <option value="">-- Chọn hãng giày --</option>
-                                <!-- <option value="">...</option>
-                                <option value="">...</option>
-                                <option value="">...</option>
-                                <option value="">...</option> -->
                             </select>
                         </div>
-                    
-                    <div class="form3_2">
-                        <label>Chọn size giày:</label>
-                        <select id="size_pro" name="size_pro" required>
-                            <option value="">-- Chọn size giày --</option>
-                            <option value="37">37</option>
-                            <option value="38">38</option>
-                            <option value="39">39</option>
-                            <option value="40">40</option>
-                            <option value="41">41</option>
-                        </select>
-                    </div>
 
-                    <div class="form3_3">
-                        <label>Chọn màu giày:</label>
-                        <select id="color_pro" name="color_pro" required>
-                            <option value="">-- Chọn màu giày --</option>
-                            <option value="Trắng">Màu trắng</option>
-                            <option value="Đen">Màu đen</option>
-                            <option value="">...</option>
-                        </select>
-                    </div>
-                    </div>
-
-                    <br>
-
-                    <div class="formitem">
-                        <div class="form2_1">
-                            <label>Nhập tên giày:</label>
-                            <input type="text" id="name_pro" name="name_pro" placeholder="Nhập tên thể loại..." required>
+                        <div class="col-md-4">
+                            <label for="name_pro" class="form-label">Tên giày:</label>
+                            <input type="text" class="form-control" id="name_pro" name="name_pro" required>
                         </div>
-
-                        <div class="form2_2">
-                            <label>Nhập số lượng giày:</label>
-                            <input type="number" id="slg_pro" name="slg_pro" placeholder="Nhập số lượng sản phẩm..." required>
+                        <div class="col-md-4">
+                            <label for="price_pro" class="form-label">Giá sản phẩm:</label>
+                            <input type="number" class="form-control" id="price_pro" name="price_pro" required>
                         </div>
-
-                        <div class="form2_3">
-                            <label>Nhập giá sản phẩm:</label>
-                            <input type="number" id="price_pro" name="price_pro" placeholder="Nhập giá sản phẩm..." required>
-                        </div>
-
-                    </div>
                     
-                    <br>
-                    
-                    <div class="formitem">
-                        <div class="form4_1">
-                            <label>Mô tả:</label>
-                            <textarea id="mota_pro" name="mota_pro" placeholder="Nhập mô tả" required></textarea>
-                        </div>
-                        <button type="submit" id="ThemPro" class="btn btn-primary">Nhập</button>
                     </div>
 
+                    <div class="row mb-3">
+                        <div>
+                            <label class="form-label">Chọn size và tồn kho:</label>
+                            <div id="variation-wrapper">
+                                <div class="variation-row d-flex gap-2 mb-3">
+                                    <select class="form-select var-size" required>
+                                        <option value="">-- Chọn size --</option>
+                                        <option value="37">37</option>
+                                        <option value="38">38</option>
+                                        <option value="39">39</option>
+                                        <option value="40">40</option>
+                                        <option value="41">41</option>
+                                    </select>
+                                    <input type="number" class="form-control var-stock" placeholder="Tồn kho" required>
+                                    <button type="button" class="btn btn-danger btn-remove-size">X</button>
+                                    
+                                </div>
+                            </div>
+                            <button type="button" id="add-variation" class="btn btn-primary mt-2">Thêm size</button>
+                        </div>
+                        
+                    </div>
 
-                    
+                    <div class="mb-3">
+                        <label for="mota_pro" class="form-label">Mô tả:</label>
+                        <textarea id="mota_pro" name="mota_pro" class="form-control" rows="3" required></textarea>
+                    </div>
+
+                    <button type="submit" id="ThemPro" class="btn btn-primary">Nhập</button>
                 </form>
 
-                <table class="table table-striped">
+
+                
+                    <table class="table table-bordered table-striped">
                     <thead>
+                        <tr>
+                            <th colspan="9">
+                                <label>Phân loại:</label>
+                                <select id="pl_pro" name="pl_pro" required>
+                                    <option value="0">-- Tất cả --</option>
+                                </select>
+                            </th>
+                        </tr>
                         <tr>
                             <th>STT</th>
                             <th>Ảnh đại diện</th>
                             <th>Tên sản phẩm</th>
                             <th>Hãng giày</th>
-                            <th>Số lượng giày</th>
                             <th>Size giày</th>
-                            <th>Màu giày</th>
                             <th>Số lượng còn hàng (stock)</th>
                             <th>Số lượng bán (sold)</th>
                             <th>Giá</th>
@@ -121,6 +105,7 @@
         
                    </tbody>    
                 </table>
+        
             </div>
         </div>
     
