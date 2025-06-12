@@ -57,11 +57,15 @@
         </LinearLayout>
         <ImageView
             android:id="@+id/iv_search"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:src="@drawable/search"
             android:layout_marginStart="8dp"
-            android:alpha="0.6" />
+            android:padding="8dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:contentDescription="Search" />
     </LinearLayout>
 
     <!-- Search History Section -->
@@ -71,7 +75,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:background="@color/white"
-        android:visibility="gone">
+        android:visibility="visible">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -88,11 +92,13 @@
                 android:textSize="16sp"
                 android:textStyle="bold"/>
 
-            <ImageView
+            <TextView
                 android:id="@+id/btn_clear_history"
-                android:layout_width="24dp"
+                android:layout_width="80dp"
                 android:layout_height="24dp"
-                android:src="@drawable/ic_exit"
+                android:text="Xóa tất cả"
+                android:textColor="#FF0000"
+                android:gravity="center"
                 android:contentDescription="Clear history"/>
         </LinearLayout>
 
@@ -100,9 +106,31 @@
             android:id="@+id/rv_search_history"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:maxHeight="200dp"
-            android:paddingHorizontal="16dp"
-            android:paddingBottom="8dp"/>
+            android:orientation="vertical"
+            android:padding="8dp"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+            tools:listitem="@layout/item_search_history" />
+
+        <!-- Suggested Products Section -->
+        <TextView
+            android:id="@+id/tv_suggested_products"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Gợi ý sản phẩm"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:padding="16dp"
+            android:visibility="visible"/>
+
+        <!-- Suggested Products RecyclerView -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_suggested_products"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="8dp"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+            tools:listitem="@layout/item_product" />
 
     </LinearLayout>
 
@@ -112,7 +140,8 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:visibility="gone">
 
         <!-- Results Header -->
         <TextView

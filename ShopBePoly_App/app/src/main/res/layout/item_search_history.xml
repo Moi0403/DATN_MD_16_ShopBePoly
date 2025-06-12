@@ -19,13 +19,17 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:textSize="14sp"
-        android:textColor="#333333"/>
+        android:textColor="#333333"
+        android:maxLines="1"
+        android:ellipsize="end"/>
 
     <ImageView
         android:id="@+id/btn_delete_item"
         android:layout_width="24dp"
         android:layout_height="24dp"
         android:src="@drawable/ic_exit"
+        android:padding="4dp"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
         android:contentDescription="Delete item"/>
 
 </LinearLayout> 

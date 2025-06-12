@@ -4,31 +4,28 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.shopbepoly.API.ApiClient;
-import com.example.shopbepoly.API.ApiService;
 import com.example.shopbepoly.Adapter.ProductAdapter;
 import com.example.shopbepoly.Adapter.SearchHistoryAdapter;
+import com.example.shopbepoly.API.ApiClient;
+import com.example.shopbepoly.API.ApiService;
 import com.example.shopbepoly.DTO.Product;
 import com.example.shopbepoly.R;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -40,13 +37,15 @@ import retrofit2.Response;
 public class TimKiem extends AppCompatActivity {
     private EditText etSearch;
     private ImageButton btnBack;
-    private ImageView btnClearHistory;
-    private RecyclerView rvSearchResults, rvSearchHistory;
-    private TextView tvResultsCount;
+    private TextView btnClearHistory;
+    private RecyclerView rvSearchResults;
+    private RecyclerView rvSearchHistory;
+    private RecyclerView rvSuggestedProducts;
     private ProductAdapter productAdapter;
     private SearchHistoryAdapter historyAdapter;
     private ApiService apiService;
     private LinearLayout searchHistoryContainer, searchResultsContainer;
+    private TextView tvSuggestedProducts;
     private SharedPreferences sharedPreferences;
     private static final String PREF_NAME = "SearchHistory";
     private static final String KEY_HISTORY = "history";
@@ -55,31 +54,39 @@ public class TimKiem extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_tim_kiem);
-        
+
         // Initialize views
         etSearch = findViewById(R.id.et_search);
         btnBack = findViewById(R.id.btn_back);
         btnClearHistory = findViewById(R.id.btn_clear_history);
         rvSearchResults = findViewById(R.id.rv_search_results);
         rvSearchHistory = findViewById(R.id.rv_search_history);
-        tvResultsCount = findViewById(R.id.tv_results_count);
-        searchHistoryContainer = findViewById(R.id.search_history_container);
+        rvSuggestedProducts = findViewById(R.id.rv_suggested_products);
         searchResultsContainer = findViewById(R.id.search_results_container);
-        
+        searchHistoryContainer = findViewById(R.id.search_history_container);
+        tvSuggestedProducts = findViewById(R.id.tv_suggested_products);
+
         // Initialize SharedPreferences
         sharedPreferences = getSharedPreferences(PREF_NAME, MODE_PRIVATE);
-        
+
         // Setup RecyclerViews
         rvSearchResults.setLayoutManager(new GridLayoutManager(this, 2));
         productAdapter = new ProductAdapter(getApplicationContext(),new ArrayList<>());
         rvSearchResults.setAdapter(productAdapter);
         
         rvSearchHistory.setLayoutManager(new LinearLayoutManager(this));
-        historyAdapter = new SearchHistoryAdapter(new ArrayList<>(), this::onSearchHistoryClick);
-        historyAdapter.setOnDeleteItemClickListener(this::onDeleteHistoryItem);
+        historyAdapter = new SearchHistoryAdapter(query -> {
+            etSearch.setText(query);
+            showSearchResults(query);
+        });
+        historyAdapter.setOnDeleteItemClickListener(query -> {
+            onDeleteHistoryItem(query);
+        });
         rvSearchHistory.setAdapter(historyAdapter);
+        
+        rvSuggestedProducts.setLayoutManager(new GridLayoutManager(this, 2));
+        rvSuggestedProducts.setAdapter(productAdapter);
         
         // Initialize API service
         apiService = ApiClient.getApiService();
@@ -93,113 +100,204 @@ public class TimKiem extends AppCompatActivity {
         // Setup clear history button
         btnClearHistory.setOnClickListener(v -> clearSearchHistory());
         
-        // Load search history
-        loadSearchHistory();
-        
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
+        // Show search history and suggested products initially
+        showSearchHistory();
     }
-    
+
     private void setupSearch() {
         etSearch.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
             @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                String query = s.toString().trim();
-                if (query.length() > 0) {
-                    searchProducts(query);
-                    searchHistoryContainer.setVisibility(View.GONE);
-                    searchResultsContainer.setVisibility(View.VISIBLE);
-                } else {
-                    productAdapter = new ProductAdapter(getApplicationContext(),new ArrayList<>());
-                    rvSearchResults.setAdapter(productAdapter);
-                    tvResultsCount.setText("Kết quả tìm kiếm");
-                    searchHistoryContainer.setVisibility(View.VISIBLE);
-                    searchResultsContainer.setVisibility(View.GONE);
-                }
-            }
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
 
             @Override
-            public void afterTextChanged(Editable s) {}
+            public void afterTextChanged(Editable s) {
+                String query = s.toString().trim();
+                if (query.isEmpty()) {
+                    showSearchHistory();
+                } else {
+                    showSearchResults(query);
+                }
+            }
         });
     }
-    
-    private void searchProducts(String keyword) {
-        apiService.searchProduct(keyword).enqueue(new Callback<List<Product>>() {
+
+    private void showSearchHistory() {
+        // Load and show search history
+        String historyJson = sharedPreferences.getString(KEY_HISTORY, "[]");
+        List<String> historyList = new ArrayList<>();
+        
+        // Parse the JSON string to get the list
+        if (!historyJson.equals("[]")) {
+            String[] items = historyJson.substring(1, historyJson.length() - 1).split(",");
+            for (String item : items) {
+                if (!item.isEmpty()) {
+                    historyList.add(item.replace("\"", "").trim());
+                }
+            }
+        }
+        
+        // Update adapter with history data
+        historyAdapter.updateData(historyList);
+        
+        // Show clear history button if there's history
+        btnClearHistory.setVisibility(historyList.isEmpty() ? View.GONE : View.VISIBLE);
+        
+        // Show search history container
+        searchHistoryContainer.setVisibility(View.VISIBLE);
+        
+        // Hide search results
+        searchResultsContainer.setVisibility(View.GONE);
+        
+        // Show suggested products
+        tvSuggestedProducts.setVisibility(View.VISIBLE);
+        loadSuggestedProducts();
+    }
+
+    private void showSearchResults(String query) {
+        // Save to search history
+        saveToSearchHistory(query);
+        
+        // Show search results container
+        searchHistoryContainer.setVisibility(View.GONE);
+        searchResultsContainer.setVisibility(View.VISIBLE);
+        
+        // Search products
+        apiService.searchProduct(query).enqueue(new Callback<List<Product>>() {
             @Override
             public void onResponse(Call<List<Product>> call, Response<List<Product>> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    List<Product> searchResults = response.body();
-                    if (searchResults.isEmpty()) {
-                        Toast.makeText(TimKiem.this, "Không tìm thấy sản phẩm", Toast.LENGTH_SHORT).show();
-                        tvResultsCount.setText("Không tìm thấy sản phẩm");
-                    } else {
-                        tvResultsCount.setText("Tìm thấy " + searchResults.size() + " sản phẩm");
-                        // Save to search history
-                        saveToSearchHistory(keyword);
-                    }
-                    productAdapter = new ProductAdapter(getApplicationContext(),searchResults);
-                    rvSearchResults.setAdapter(productAdapter);
+                    List<Product> products = response.body();
+                    productAdapter.setData(products);
                 } else {
-                    Toast.makeText(TimKiem.this, "Không tìm thấy sản phẩm", Toast.LENGTH_SHORT).show();
-                    productAdapter = new ProductAdapter(getApplicationContext(),new ArrayList<>());
-                    rvSearchResults.setAdapter(productAdapter);
-                    tvResultsCount.setText("Không tìm thấy sản phẩm");
+                    productAdapter.setData(new ArrayList<>());
                 }
             }
 
             @Override
             public void onFailure(Call<List<Product>> call, Throwable t) {
-                Toast.makeText(TimKiem.this, "Lỗi khi tìm kiếm sản phẩm", Toast.LENGTH_SHORT).show();
-                productAdapter = new ProductAdapter(getApplicationContext(),new ArrayList<>());
-                rvSearchResults.setAdapter(productAdapter);
-                tvResultsCount.setText("Lỗi khi tìm kiếm");
+                productAdapter.setData(new ArrayList<>());
+                Toast.makeText(TimKiem.this, "Lỗi kết nối", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
     private void saveToSearchHistory(String query) {
-        Set<String> history = new HashSet<>(sharedPreferences.getStringSet(KEY_HISTORY, new HashSet<>()));
-        history.add(query);
-        
-        // Keep only the most recent items
-        if (history.size() > MAX_HISTORY_ITEMS) {
-            List<String> historyList = new ArrayList<>(history);
-            history.clear();
-            for (int i = historyList.size() - MAX_HISTORY_ITEMS; i < historyList.size(); i++) {
-                history.add(historyList.get(i));
-            }
+        if (query == null || query.trim().isEmpty()) {
+            return;
         }
         
-        sharedPreferences.edit().putStringSet(KEY_HISTORY, history).apply();
-        loadSearchHistory();
-    }
-
-    private void loadSearchHistory() {
-        Set<String> history = sharedPreferences.getStringSet(KEY_HISTORY, new HashSet<>());
-        List<String> historyList = new ArrayList<>(history);
-        historyAdapter.updateData(historyList);
-    }
-
-    private void clearSearchHistory() {
-        sharedPreferences.edit().remove(KEY_HISTORY).apply();
-        historyAdapter.updateData(new ArrayList<>());
+        try {
+            // Get current history as a list
+            String historyJson = sharedPreferences.getString(KEY_HISTORY, "[]");
+            List<String> historyList = new ArrayList<>();
+            
+            // Parse the JSON string to get the list
+            if (!historyJson.equals("[]")) {
+                String[] items = historyJson.substring(1, historyJson.length() - 1).split(",");
+                for (String item : items) {
+                    if (!item.isEmpty()) {
+                        historyList.add(item.replace("\"", "").trim());
+                    }
+                }
+            }
+            
+            // Remove the query if it exists
+            historyList.remove(query);
+            
+            // Add the new query at the beginning
+            historyList.add(0, query);
+            
+            // Keep only the most recent items
+            if (historyList.size() > MAX_HISTORY_ITEMS) {
+                historyList = historyList.subList(0, MAX_HISTORY_ITEMS);
+            }
+            
+            // Convert list to JSON string and save
+            String newHistoryJson = historyList.toString();
+            sharedPreferences.edit().putString(KEY_HISTORY, newHistoryJson).apply();
+            
+            // Update the UI
+            showSearchHistory();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void onSearchHistoryClick(String query) {
         etSearch.setText(query);
-        searchProducts(query);
+        showSearchResults(query);
     }
 
     private void onDeleteHistoryItem(String query) {
-        Set<String> history = new HashSet<>(sharedPreferences.getStringSet(KEY_HISTORY, new HashSet<>()));
-        history.remove(query);
-        sharedPreferences.edit().putStringSet(KEY_HISTORY, history).apply();
-        loadSearchHistory();
+        try {
+            // Get current history as a list
+            String historyJson = sharedPreferences.getString(KEY_HISTORY, "[]");
+            List<String> historyList = new ArrayList<>();
+            
+            // Parse the JSON string to get the list
+            if (!historyJson.equals("[]")) {
+                String[] items = historyJson.substring(1, historyJson.length() - 1).split(",");
+                for (String item : items) {
+                    if (!item.isEmpty()) {
+                        historyList.add(item.replace("\"", "").trim());
+                    }
+                }
+            }
+            
+            // Remove the query
+            historyList.remove(query);
+            
+            // Convert list to JSON string and save
+            String newHistoryJson = historyList.toString();
+            sharedPreferences.edit().putString(KEY_HISTORY, newHistoryJson).apply();
+            
+            // Update the UI
+            showSearchHistory();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void clearSearchHistory() {
+        try {
+            sharedPreferences.edit().putString(KEY_HISTORY, "[]").apply();
+            historyAdapter.updateData(new ArrayList<>());
+            btnClearHistory.setVisibility(View.GONE);
+            searchHistoryContainer.setVisibility(View.VISIBLE);
+            Toast.makeText(this, "Đã xóa lịch sử tìm kiếm", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void loadSuggestedProducts() {
+        apiService.getProducts().enqueue(new Callback<List<Product>>() {
+            @Override
+            public void onResponse(Call<List<Product>> call, Response<List<Product>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    List<Product> allProducts = response.body();
+                    List<Product> suggestedProducts = getRandomProducts(allProducts, 4);
+                    productAdapter.setData(suggestedProducts);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<Product>> call, Throwable t) {
+                Log.e("TimKiem", "Error loading suggested products", t);
+            }
+        });
+    }
+
+    private List<Product> getRandomProducts(List<Product> products, int count) {
+        if (products == null || products.isEmpty() || count <= 0) {
+            return new ArrayList<>();
+        }
+
+        List<Product> shuffled = new ArrayList<>(products);
+        Collections.shuffle(shuffled);
+        return shuffled.subList(0, Math.min(count, shuffled.size()));
     }
 }
