@@ -1,29 +1,84 @@
 const host = window.config;
 
-window.addEventListener('DOMContentLoaded', async () =>{
+window.addEventListener('DOMContentLoaded', async () => {
     const cate_selet = document.getElementById('category_pro');
+    const plSelect = document.getElementById('pl_pro');
     try {
         const response = await fetch(`http://${config.host}:${config.port}/api/list_category`);
         const categories = await response.json();
 
-        // Xoá các option cũ (nếu cần)
         cate_selet.innerHTML = '<option value="">-- Chọn hãng giày --</option>';
+        plSelect.innerHTML = '<option value="0">-- Tất cả --</option>';
 
         categories.forEach(cat => {
             const option = document.createElement('option');
-            option.value = cat._id; // hoặc cat.id nếu bạn dùng SQL
-            option.textContent = cat.title; // tuỳ theo cấu trúc DB
+            option.value = cat._id;
+            option.textContent = cat.title;
             cate_selet.appendChild(option);
+
+            const opt = document.createElement('option');
+            opt.value = cat._id;
+            opt.textContent = "-- " + cat.title + " --";
+            plSelect.appendChild(opt);
         });
     } catch (error) {
         console.error('Lỗi khi lấy danh sách category:', error);
     }
-})
+});
+document.getElementById('add-variation').addEventListener('click', () => {
+    const wrapper = document.getElementById('variation-wrapper');
+    const newRow = document.createElement('div');
+    newRow.classList.add('variation-row', 'd-flex', 'gap-2', 'mb-3');
+    newRow.innerHTML = `
+        <select class="form-select var-size" required>
+            <option value="">-- Chọn size --</option>
+            <option value="37">37</option>
+            <option value="38">38</option>
+            <option value="39">39</option>
+            <option value="40">40</option>
+            <option value="41">41</option>
+        </select>
+        <input type="number" class="form-control var-stock" placeholder="Tồn kho" required>
+        <button type="button" class="btn btn-danger btn-remove-size">X</button>
+    `;
+    wrapper.appendChild(newRow);
+});
+
+// Xử lý nút xóa
+document.getElementById('variation-wrapper').addEventListener('click', (e) => {
+    if (e.target.classList.contains('btn-remove-size')) {
+        e.target.closest('.variation-row').remove();
+    }
+});
 const ThemPro = () => {
     document.getElementById('themPro').addEventListener('submit', async (event) => {
         event.preventDefault();
 
         const formData = new FormData(event.target);
+
+        const variationElements = document.querySelectorAll('.variation-row');
+        const variations = [];
+
+        variationElements.forEach(row => {
+            const size = row.querySelector('select.var-size').value;
+            const stock = row.querySelector('.var-stock').value;
+
+            if (size && stock) {
+                // Check if size already exists to merge stock
+                const existing = variations.find(v => v.size == size);
+                if (existing) {
+                    existing.stock += Number(stock);
+                } else {
+                    variations.push({
+                        size: size,
+                        stock: Number(stock),
+                        sold: 0
+                    });
+                }
+            }
+        });
+
+        formData.append("variations", JSON.stringify(variations));
 
         try {
             const response = await fetch(`http://${config.host}:${config.port}/api/add_product`, {
@@ -41,17 +96,26 @@ const ThemPro = () => {
             console.error('Lỗi khi thêm sản phẩm:', error);
         }
     });
-}
+};
 ThemPro();
+
+document.getElementById('pl_pro').addEventListener('change', function () {
+    const selectedCate = this.value;
+    const rows = document.querySelectorAll('#tbody tr');
+
+    rows.forEach(row => {
+        const rowCate = row.getAttribute('data-category');
+        row.style.display = (selectedCate === "0" || selectedCate === "") || rowCate === selectedCate ? "" : "none";
+    });
+});
 
 const hienThiPro = async () => {
     const tbody = document.querySelector('#tbody');
 
     try {
         const api = await fetch(`http://${config.host}:${config.port}/api/list_product`);
-        if (!api.ok) {
-            throw new Error(`HTTP error! Status: ${api.status}`);
-        }
+        if (!api.ok) throw new Error(`HTTP error! Status: ${api.status}`);
+
         const data = await api.json();
         tbody.innerHTML = '';
 
@@ -61,7 +125,6 @@ const hienThiPro = async () => {
             const tdSTT = document.createElement('td');
             tdSTT.textContent = index + 1;
             tdSTT.style.textAlign = 'center';
-            tdSTT.style.alignContent ='center';
 
             const tdIMG = document.createElement('td');
             const img = document.createElement('img');
@@ -75,82 +138,68 @@ const hienThiPro = async () => {
             const tdName = document.createElement('td');
             tdName.textContent = item.nameproduct;
             tdName.style.textAlign = 'center';
-            tdName.style.alignContent ='center';
 
             const tdCate = document.createElement('td');
-            tdCate.textContent = item.id_category ? item.id_category.title : 'N/A';
+            tdCate.textContent = item.id_category?.title || 'N/A';
             tdCate.style.textAlign = 'center';
-            tdCate.style.alignContent ='center';
-
-            const tdSlg = document.createElement('td');
-            tdSlg.textContent = item.quantity;
-            tdSlg.style.textAlign = 'center';
-            tdSlg.style.alignContent ='center';
 
             const tdSize = document.createElement('td');
-            tdSize.textContent = item.size;
-            tdSize.style.textAlign = 'center';
-            tdSize.style.alignContent ='center';
-
-            const tdColor = document.createElement('td');
-            tdColor.textContent = item.color;
-            tdColor.style.textAlign = 'center';
-            tdColor.style.alignContent ='center';
-
             const tdStock = document.createElement('td');
-            tdStock.textContent = item.stock;
-            tdStock.style.textAlign = 'center';
-            tdStock.style.alignContent ='center';
-
             const tdSold = document.createElement('td');
-            tdSold.textContent = item.sold;
-            tdSold.style.textAlign = 'center';
-            tdSold.style.alignContent ='center';
+
+            if (item.variations?.length > 0) {
+                tdSize.innerHTML = item.variations.map(v => v.size).join('<br>');
+                tdStock.innerHTML = item.variations.map(v => v.stock).join('<br>');
+                tdSold.innerHTML = item.variations.map(v => v.sold).join('<br>');
+            } else {
+                tdSize.textContent = tdStock.textContent = tdSold.textContent = 'N/A';
+            }
+
+            [tdSize, tdStock, tdSold].forEach(td => td.style.textAlign = 'center');
 
             const tdPrice = document.createElement('td');
             tdPrice.textContent = item.price + ".000 đ";
             tdPrice.style.textAlign = 'center';
-            tdPrice.style.alignContent ='center';
 
             const tdXL = document.createElement('td');
             tdXL.classList.add('tdXL');
-            tdXL.style.alignContent ='center';
+            tdXL.style.textAlign = 'center';
 
             const btnDel = document.createElement('button');
             btnDel.textContent = 'Xóa';
             btnDel.classList.add('btn', 'btn-outline-primary');
-            btnDel.addEventListener('click', async ()=>{
-                try{
-                    const conf = confirm(`Bạn muốn xóa thể loại ${item.title} này ?`);
+            btnDel.addEventListener('click', async () => {
+                try {
+                    const conf = confirm(`Bạn muốn xóa sản phẩm này?`);
                     if (conf) {
-                        const response = await fetch(`http://${config.host}:${config.port}/api/del_product/${item._id}`,{
-                        method: 'DELETE'
+                        const response = await fetch(`http://${config.host}:${config.port}/api/del_product/${item._id}`, {
+                            method: 'DELETE'
                         });
-                    
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! Status: ${response.status}`);
-                    }
-                    tr.remove();
-                    alert('Xóa thành công');
-                    hienThiTL();
+
+                        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+
+                        tr.remove();
+                        alert('Xóa thành công');
+                        hienThiPro();
                     }
                 } catch (error) {
-                    console.error('Lỗi khi xóa thể loại:', error);
+                    console.error('Lỗi khi xóa sản phẩm:', error);
                 }
-            })
+            });
+
             tdXL.appendChild(btnDel);
 
             tr.appendChild(tdSTT);
             tr.appendChild(tdIMG);
             tr.appendChild(tdName);
             tr.appendChild(tdCate);
-            tr.appendChild(tdSlg);
             tr.appendChild(tdSize);
-            tr.appendChild(tdColor);
             tr.appendChild(tdStock);
             tr.appendChild(tdSold);
             tr.appendChild(tdPrice);
             tr.appendChild(tdXL);
+
+            tr.setAttribute('data-category', item.id_category?._id || '');
 
             tbody.appendChild(tr);
         });
@@ -158,5 +207,4 @@ const hienThiPro = async () => {
         console.error('Fetch error:', error);
     }
 };
-
 hienThiPro();

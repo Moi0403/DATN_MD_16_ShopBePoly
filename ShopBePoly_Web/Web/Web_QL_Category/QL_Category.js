@@ -18,6 +18,7 @@ const ThemTL = () => {
 
             const data = await response.json();
             alert('Thêm thể loại thành công');
+            hienThiTL();
         } catch (error) {
             console.error('Lỗi khi thêm thể loại:', error);
         }
@@ -61,25 +62,30 @@ const hienThiTL = async() => {
             const btnDel = document.createElement('button');
             btnDel.textContent = 'Xóa';
             btnDel.classList.add('btn', 'btn-outline-primary');
-            btnDel.addEventListener('click', async ()=>{
-                try{
+            btnDel.addEventListener('click', async () => {
+                try {
                     const conf = confirm(`Bạn muốn xóa thể loại ${item.title} này ?`);
                     if (conf) {
-                        const response = await fetch(`http://${config.host}:${config.port}/api/del_category/${item._id}`,{
-                        method: 'DELETE'
+                        const response = await fetch(`http://${config.host}:${config.port}/api/del_category/${item._id}`, {
+                            method: 'DELETE'
                         });
-                    
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! Status: ${response.status}`);
-                    }
-                    tr.remove();
-                    alert('Xóa thành công');
-                    hienThiTL();
+
+                        const result = await response.json();
+
+                        if (!response.ok) {
+                            alert('Bạn không thể xóa vì đang liên kết với sản phẩm !!!');
+                            return;
+                        }
+
+                        tr.remove();
+                        alert('Xóa thành công');
+                        hienThiTL();
                     }
                 } catch (error) {
                     console.error('Lỗi khi xóa thể loại:', error);
                 }
-            })
+            });
+
             tdXL.appendChild(btnDel);
 
             tr.appendChild(tdSTT);

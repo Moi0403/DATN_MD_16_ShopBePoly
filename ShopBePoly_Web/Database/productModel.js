@@ -8,14 +8,14 @@ const productSchema = new mongoose.Schema({
         required: true,
     },
     price: Number,
-    quantity: Number,
     description: String,
     avt_imgproduct: String,
     list_imgproduct: [String],
-    size: Number,
-    color: String,
-    stock: Number,
-    sold: Number,
+    variations: [{
+        size: Number,
+        stock: Number,
+        sold: Number   
+    }]
 });
 
 const productModel = mongoose.models.product || mongoose.model('product', productSchema);
