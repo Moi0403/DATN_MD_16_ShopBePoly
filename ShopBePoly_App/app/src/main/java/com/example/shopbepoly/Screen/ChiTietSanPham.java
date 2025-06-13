@@ -12,6 +12,7 @@ import androidx.appcompat.widget.AppCompatButton;
 import com.example.shopbepoly.API.ApiClient;
 import com.example.shopbepoly.DTO.Product;
 import com.example.shopbepoly.R;
+import com.example.shopbepoly.fragment.FavoriteFragment;
 import com.squareup.picasso.Picasso;
 
 public class ChiTietSanPham extends AppCompatActivity {
@@ -26,6 +27,7 @@ public class ChiTietSanPham extends AppCompatActivity {
     private boolean isFavorite = true;
     private String selectedColor = "white";
     private String selectedSize = "40";
+    private Product product;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,15 +36,18 @@ public class ChiTietSanPham extends AppCompatActivity {
 
         initViews();
         setupClickListeners();
-        updateUI();
-        Product product = (Product) getIntent().getSerializableExtra("product");
+
+        product = (Product) getIntent().getSerializableExtra("product");
         if (product!= null){
             tvProductName.setText(product.getNameproduct());
             tvPrice.setText(String.valueOf(product.getPrice()));
             tvDescription.setText(product.getDescription());
 
             Picasso.get().load(ApiClient.IMAGE_URL + product.getAvt_imgproduct()).into(imgProduct);
+            isFavorite = FavoriteFragment.isFavorite(product);
+            updateFavoriteButton();
         }
+        updateUI();
     }
 
     private void initViews() {
@@ -75,6 +80,14 @@ public class ChiTietSanPham extends AppCompatActivity {
         btnBack.setOnClickListener(v -> finish());
 
         btnFavorite.setOnClickListener(v -> {
+            if (product == null) return;
+
+            if (isFavorite) {
+                FavoriteFragment.remove(product);
+            } else {
+                FavoriteFragment.add(product);
+            }
+
             isFavorite = !isFavorite;
             updateFavoriteButton();
         });
