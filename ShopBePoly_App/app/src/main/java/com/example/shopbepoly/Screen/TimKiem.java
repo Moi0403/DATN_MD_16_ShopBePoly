@@ -1,5 +1,6 @@
 package com.example.shopbepoly.Screen;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.Editable;
@@ -72,7 +73,7 @@ public class TimKiem extends AppCompatActivity {
 
         // Setup RecyclerViews
         rvSearchResults.setLayoutManager(new GridLayoutManager(this, 2));
-        productAdapter = new ProductAdapter(getApplicationContext(),new ArrayList<>());
+        productAdapter = new ProductAdapter(TimKiem.this,new ArrayList<>());
         rvSearchResults.setAdapter(productAdapter);
         
         rvSearchHistory.setLayoutManager(new LinearLayoutManager(this));
@@ -102,6 +103,7 @@ public class TimKiem extends AppCompatActivity {
         
         // Show search history and suggested products initially
         showSearchHistory();
+
     }
 
     private void setupSearch() {

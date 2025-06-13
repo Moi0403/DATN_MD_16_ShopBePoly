@@ -12,12 +12,14 @@ public class Product implements Serializable {
     private String description;
     private String avt_imgproduct;
     private List<String> list_imgproduct;
-    private int size;
     private String color;
-    private int stock;
     private int sold;
+    private List<Variation> variations;
 
     public Product() {
+    }
+    public List<Variation> getVariations() {
+        return variations;
     }
 
     public Product(String _id, String nameproduct, Category id_category, int price, int quantity, String description, String avt_imgproduct, List<String> list_imgproduct, int size, String color, int stock, int sold) {
@@ -29,10 +31,12 @@ public class Product implements Serializable {
         this.description = description;
         this.avt_imgproduct = avt_imgproduct;
         this.list_imgproduct = list_imgproduct;
-        this.size = size;
         this.color = color;
-        this.stock = stock;
         this.sold = sold;
+
+    }
+    public void setVariations(List<Variation> variations) {
+        this.variations = variations;
     }
 
     public String get_id() {
@@ -99,13 +103,6 @@ public class Product implements Serializable {
         this.list_imgproduct = list_imgproduct;
     }
 
-    public int getSize() {
-        return size;
-    }
-
-    public void setSize(int size) {
-        this.size = size;
-    }
 
     public String getColor() {
         return color;
@@ -115,14 +112,6 @@ public class Product implements Serializable {
         this.color = color;
     }
 
-    public int getStock() {
-        return stock;
-    }
-
-    public void setStock(int stock) {
-        this.stock = stock;
-    }
-
     public int getSold() {
         return sold;
     }
@@ -130,8 +119,6 @@ public class Product implements Serializable {
     public void setSold(int sold) {
         this.sold = sold;
     }
-
-
     public String getFormattedPrice() {
         return String.format("%,d₫", price);
     }
