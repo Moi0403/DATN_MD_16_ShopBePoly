@@ -62,12 +62,12 @@ public class ChiTietSanPham extends AppCompatActivity {
         btnAddToCart = findViewById(R.id.btnAddToCart);
         imgProduct = findViewById(R.id.imgProduct);
 
-        // Color selectors
-        colorWhite = findViewById(R.id.colorWhite);
-        colorRed = findViewById(R.id.colorRed);
-        colorGray = findViewById(R.id.colorGray);
-        colorOrange = findViewById(R.id.colorOrange);
-        colorLightGray = findViewById(R.id.colorLightGray);
+//        // Color selectors
+//        colorWhite = findViewById(R.id.colorWhite);
+//        colorRed = findViewById(R.id.colorRed);
+//        colorGray = findViewById(R.id.colorGray);
+//        colorOrange = findViewById(R.id.colorOrange);
+//        colorLightGray = findViewById(R.id.colorLightGray);
 
         // Size selectors
         size35 = findViewById(R.id.size35);
@@ -109,12 +109,12 @@ public class ChiTietSanPham extends AppCompatActivity {
                     Toast.LENGTH_SHORT).show();
         });
 
-        // Color selection
-        colorWhite.setOnClickListener(v -> selectColor("white", colorWhite));
-        colorRed.setOnClickListener(v -> selectColor("red", colorRed));
-        colorGray.setOnClickListener(v -> selectColor("gray", colorGray));
-        colorOrange.setOnClickListener(v -> selectColor("orange", colorOrange));
-        colorLightGray.setOnClickListener(v -> selectColor("lightgray", colorLightGray));
+//        // Color selection
+//        colorWhite.setOnClickListener(v -> selectColor("white", colorWhite));
+//        colorRed.setOnClickListener(v -> selectColor("red", colorRed));
+//        colorGray.setOnClickListener(v -> selectColor("gray", colorGray));
+//        colorOrange.setOnClickListener(v -> selectColor("orange", colorOrange));
+//        colorLightGray.setOnClickListener(v -> selectColor("lightgray", colorLightGray));
 
         // Size selection
         size35.setOnClickListener(v -> selectSize("35", size35));
@@ -123,19 +123,19 @@ public class ChiTietSanPham extends AppCompatActivity {
         size45.setOnClickListener(v -> selectSize("45", size45));
     }
 
-    private void selectColor(String color, View colorView) {
-        selectedColor = color;
-
-        // Reset all color selections
-        colorWhite.setSelected(false);
-        colorRed.setSelected(false);
-        colorGray.setSelected(false);
-        colorOrange.setSelected(false);
-        colorLightGray.setSelected(false);
-
-        // Set selected color
-        colorView.setSelected(true);
-    }
+//    private void selectColor(String color, View colorView) {
+//        selectedColor = color;
+//
+//        // Reset all color selections
+//        colorWhite.setSelected(false);
+//        colorRed.setSelected(false);
+//        colorGray.setSelected(false);
+//        colorOrange.setSelected(false);
+//        colorLightGray.setSelected(false);
+//
+//        // Set selected color
+//        colorView.setSelected(true);
+//    }
 
     private void selectSize(String size, TextView sizeView) {
         selectedSize = size;
@@ -179,8 +179,8 @@ public class ChiTietSanPham extends AppCompatActivity {
         updateQuantity();
         updateFavoriteButton();
 
-        // Set default selections
-        colorWhite.setSelected(true);
+//        // Set default selections
+//        colorWhite.setSelected(true);
     }
 
 }
