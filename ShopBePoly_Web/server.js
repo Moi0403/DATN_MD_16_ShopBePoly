@@ -257,7 +257,7 @@ router.post('/register', async (req, res) => {
             name,
             email,
             phone_number,
-            avt_user: [],
+            avt_user: "",
             role: 0
         });
 
@@ -279,7 +279,7 @@ router.post('/register', async (req, res) => {
 
 
 // Đăng nhập
-router.post('/login', async (req, res) => {
+router.post('/api/login', async (req, res) => {
     const { username, password } = req.body;
 
     try {
@@ -447,7 +447,6 @@ router.put('/edit_cate/:id',async (req,res)=>{
     }
 })
 //xoa the loai
-
 router.delete('/del_category/:id', async (req, res) => {
     const categoryId = req.params.id;
 
@@ -467,6 +466,7 @@ router.delete('/del_category/:id', async (req, res) => {
         res.status(500).json({ message: 'Lỗi server' });
     }
 });
+
 
 // lấy ds don hang 'http://localhost:3000/api/list_order'
 router.get('/list_order', async (req, res)=>{

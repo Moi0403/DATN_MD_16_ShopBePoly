@@ -109,15 +109,38 @@ body {
   display: flex;
   justify-content: space-between;
 }
-/* textarea {
-    width: 100%;
-    height: 100px;
-    padding: 8px;
-    font-size: 14px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    resize: vertical;
-} */
+
+/* CSS QL_CART */
+.talkbar {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 30px;
+  padding: 10px;
+  
+}
+
+.talkbar a {
+  text-decoration: none;
+  padding: 10px 20px;
+  color: black;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border: 2px solid black;
+}
+
+.talkbar a:hover {
+  background-color: #0056b3;
+  transform: translateY(-2px);
+}
+.table{
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  padding: 20px;
+  margin-top: 50px;
+}
 
 
     
