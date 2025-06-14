@@ -148,6 +148,19 @@ router.delete('/del_product/:id', async (req, res)=>{
     }
 })
 
+// Tìm kiếm san pham 'http://localhost:3000/api/search_product'
+router.get('/search_product', async (req, res) => {
+    try {
+        const keyword = req.query.q;
+        const results = await productModel.find({ 
+            nameproduct: { $regex: keyword, $options: 'i' } 
+        }).populate('id_category');
+        res.json(results);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 //User
 // lấy ds user 'http://localhost:3000/api/list_user'
 router.get('/list_user', async (req, res)=>{
@@ -286,6 +299,21 @@ router.delete('/cart/user/:userId', async (req, res) => {
     }
 });
 // category
+// lấy ds product theo thể loại
+router.get('/products_by_category/:categoryId', async (req, res) => {
+    try {
+        const categoryId = req.params.categoryId;
+        const products = await productModel.find({ id_category: categoryId }).populate('id_category');
+        if (!products || products.length === 0) {
+            return res.status(404).json({ message: 'Không tìm thấy sản phẩm nào thuộc thể loại này' });
+        }
+        res.json(products);
+    } catch (error) {
+        console.error('Lỗi khi lấy sản phẩm theo thể loại:', error);
+        res.status(500).json({ error: 'Lỗi server khi lấy sản phẩm theo thể loại' });
+    }
+});
+
 //lấy ds category 
 router.get('/list_category',async(req,res)=>{
     await mongoose.connect(uri);
@@ -391,6 +419,54 @@ router.delete('/del_order/:id', async (req, res)=>{
     } catch(error){
         console.error('Lỗi khi xóa:', error);
         res.status(500).json({ error: 'Lỗi server khi xóa sản phẩm' });
+    }
+})
+
+//Comment
+// ds comment 'http://localhost:3000/api/list_comment'
+router.get('/api/list_comment/:userId', async (req, res) => {
+    try {
+        const cartItems = await cartModel.find({ id_user: req.params.userId });
+        res.json(cartItems);
+    } catch (error) {
+        console.error('Lỗi', error);
+        res.status(500).json({ error: 'Lỗi' });
+    }
+});
+
+// thêm comment 'http://localhost:3000/api/add_comment'
+router.post('/add_comment', async (req, res)=>{
+    
+    let data = req.body;
+    let kq = await commentModel.create(data);
+
+    if(kq){
+        console.log('Thêm comment thành công');
+        let comment = await commentModel.find();
+        res.send(comment);
+    } else{
+        console.log('Thêm comment không thành công');
+    }
+
+})
+
+// sửa comment 'http://localhost:3000/api/up_comment/ id'
+router.put('/up_comment/:id', async (req, res)=>{
+    try{
+        const id = req.params.id;
+        const data = req.body;
+        
+        const kq = await commentModel.findByIdAndUpdate(id, data, { new: true });
+
+        if(kq){
+            console.log('Sửa thành công');
+            let usr = await commentModel.find();
+            res.send(usr);
+        } else{
+            res.send('Không tìm thấy comment để sửa');
+        }
+    } catch (error){
+        res.send('Lỗi khi sửa')
     }
 })
 

@@ -55,7 +55,8 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintStart_toStartOf="parent"
-        tools:layout_editor_absoluteY="461dp" />
+        tools:layout_editor_absoluteY="461dp"
+        tools:ignore="MissingConstraints" />
 
     <Button
         android:id="@+id/btnClearCache"

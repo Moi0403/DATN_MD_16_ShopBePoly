@@ -1,63 +1,144 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:background="@android:color/white"
-    android:padding="16dp"
-    android:layout_marginHorizontal="12dp"
-    android:layout_marginVertical="4dp"
-    android:elevation="1dp"
-    android:clickable="true"
-    android:focusable="true">
+    android:layout_marginBottom="12dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="2dp"
+    android:background="@android:color/white">
 
-    <!-- App Icon -->
-    <ImageView
-        android:id="@+id/imgAppIcon"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:src="@drawable/ic_app_placeholder"
-        android:background="@drawable/circle_background"
-        android:padding="8dp"
-        android:layout_marginEnd="12dp" />
+<!--    <LinearLayout-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:orientation="horizontal"-->
+<!--        android:padding="16dp">-->
 
-    <!-- Content -->
+<!--        &lt;!&ndash; Status Icon &ndash;&gt;-->
+<!--        <ImageView-->
+<!--            android:id="@+id/imgStatus"-->
+<!--            android:layout_width="24dp"-->
+<!--            android:layout_height="24dp"-->
+<!--            android:layout_gravity="top"-->
+<!--            android:layout_marginEnd="12dp"-->
+<!--            android:src="@drawable/ic_check_circle_green" />-->
+
+<!--        &lt;!&ndash; Content &ndash;&gt;-->
+<!--        <LinearLayout-->
+<!--            android:layout_width="0dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_weight="1"-->
+<!--            android:orientation="vertical">-->
+
+<!--            <TextView-->
+<!--                android:id="@+id/tvTitle"-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:text="Đặt hàng thành công"-->
+<!--                android:textSize="14sp"-->
+<!--                android:textStyle="bold"-->
+<!--                android:textColor="@color/success_green"-->
+<!--                android:layout_marginBottom="4dp" />-->
+
+<!--            <TextView-->
+<!--                android:id="@+id/tvProductName"-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:text="2 epartilas Addidas"-->
+<!--                android:textSize="14sp"-->
+<!--                android:textColor="@android:color/black"-->
+<!--                android:layout_marginBottom="2dp" />-->
+
+<!--            <LinearLayout-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:orientation="horizontal">-->
+
+<!--                <TextView-->
+<!--                    android:id="@+id/tvQuantity"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:text="3 sản phẩm"-->
+<!--                    android:textSize="12sp"-->
+<!--                    android:textColor="#666666"-->
+<!--                    android:layout_marginEnd="16dp" />-->
+
+<!--                <TextView-->
+<!--                    android:id="@+id/tvSize"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:text="Size 41"-->
+<!--                    android:textSize="12sp"-->
+<!--                    android:textColor="#666666" />-->
+
+<!--            </LinearLayout>-->
+
+<!--        </LinearLayout>-->
+
+<!--        &lt;!&ndash; Product Image &ndash;&gt;-->
+<!--        <ImageView-->
+<!--            android:id="@+id/imgProduct"-->
+<!--            android:layout_width="60dp"-->
+<!--            android:layout_height="60dp"-->
+<!--            android:layout_gravity="center_vertical"-->
+<!--            android:scaleType="centerCrop"-->
+<!--            android:background="@drawable/bg_image_rounded"-->
+<!--            android:src="@drawable/adidas_shoe" />-->
+
+<!--    </LinearLayout>-->
+
+
     <LinearLayout
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="vertical">
+        android:orientation="horizontal"
+        android:padding="16dp">
 
-        <!-- App Name -->
+        <ImageView
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:scaleType="centerCrop"
+            android:src="@drawable/niker" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="12dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Đặt hàng thành công"
+                android:textColor="#4CAF50"
+                android:textSize="12sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Zapatillas Adidas"
+                android:textColor="#000000"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="3 Sản phẩm"
+                android:textColor="#666666"
+                android:textSize="14sp" />
+
+        </LinearLayout>
+
         <TextView
-            android:id="@+id/txtAppName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="ZapHealth: Adidas | "
-            android:textSize="14sp"
+            android:text="Size 41"
             android:textColor="#666666"
-            android:layout_marginBottom="2dp" />
-
-        <!-- Notification Title -->
-        <TextView
-            android:id="@+id/txtNotificationTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="1 bày phần"
-            android:textSize="16sp"
-            android:textColor="#333333"
-            android:textStyle="bold" />
+            android:textSize="14sp"
+            android:layout_gravity="center_vertical" />
 
     </LinearLayout>
 
-    <!-- Time -->
-    <TextView
-        android:id="@+id/txtTime"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Sáng 21"
-        android:textSize="12sp"
-        android:textColor="#999999"
-        android:layout_gravity="top" />
-
-</LinearLayout>
+</androidx.cardview.widget.CardView>

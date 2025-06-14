@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:card_view="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    card_view:cardCornerRadius="8dp"
+    card_view:cardElevation="2dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:gravity="center">
+
+        <CheckBox
+            android:id="@+id/checkbox_select"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <ImageView
+            android:id="@+id/image_product"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_marginStart="8dp"
+            android:src="@drawable/niker" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="8dp">
+
+            <TextView
+                android:id="@+id/text_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Nike Wearallday Sneakers"
+                android:textStyle="bold"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/text_price"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="560.000 VNĐ"
+                android:textColor="@android:color/holo_red_dark" />
+
+            <TextView
+                android:id="@+id/text_size"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Size: 39" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="4dp"
+                android:gravity="center_vertical">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginEnd="30dp">
+
+                    <ImageView
+                        android:id="@+id/btnDecrease"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:src="@drawable/ic_remove" />
+
+                    <TextView
+                        android:id="@+id/text_quantity"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:gravity="center"
+                        android:text="1" />
+
+                    <ImageView
+                        android:id="@+id/btnIncrease"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:src="@drawable/ic_add" />
+
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Xóa"
+                    android:textStyle="bold"
+                    android:textColor="#D91717"
+                    android:textSize="18sp"/>
+
+            </LinearLayout>
+
+
+
+        </LinearLayout>
+
+    </LinearLayout>
+</androidx.cardview.widget.CardView>
+
+<!--<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"-->
+<!--    xmlns:app="http://schemas.android.com/apk/res-auto"-->
+<!--    android:layout_width="match_parent"-->
+<!--    android:layout_height="wrap_content"-->
+<!--    android:layout_marginHorizontal="16dp"-->
+<!--    android:layout_marginVertical="4dp"-->
+<!--    app:cardCornerRadius="8dp"-->
+<!--    app:cardElevation="2dp">-->
+
+<!--    <LinearLayout-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:orientation="horizontal"-->
+<!--        android:padding="16dp"-->
+<!--        android:gravity="center_vertical">-->
+
+<!--        &lt;!&ndash; Checkbox &ndash;&gt;-->
+<!--        <CheckBox-->
+<!--            android:id="@+id/checkbox_item"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:checked="true"-->
+<!--            android:layout_marginEnd="12dp" />-->
+
+<!--        &lt;!&ndash; Product Image &ndash;&gt;-->
+<!--        <ImageView-->
+<!--            android:id="@+id/iv_product"-->
+<!--            android:layout_width="80dp"-->
+<!--            android:layout_height="80dp"-->
+<!--            android:src="@drawable/nike_shoe_placeholder"-->
+<!--            android:scaleType="centerCrop"-->
+<!--            android:background="@drawable/product_image_bg"-->
+<!--            android:layout_marginEnd="12dp" />-->
+
+<!--        &lt;!&ndash; Product Details &ndash;&gt;-->
+<!--        <LinearLayout-->
+<!--            android:layout_width="0dp"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_weight="1"-->
+<!--            android:orientation="vertical">-->
+
+<!--            <TextView-->
+<!--                android:id="@+id/tv_name"-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:text="Nike Wearallday Sneakers"-->
+<!--                android:textSize="16sp"-->
+<!--                android:textStyle="bold"-->
+<!--                android:textColor="@android:color/black"-->
+<!--                android:maxLines="2"-->
+<!--                android:ellipsize="end" />-->
+
+<!--            <TextView-->
+<!--                android:id="@+id/tv_price"-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:text="560,000 VNĐ"-->
+<!--                android:textSize="14sp"-->
+<!--                android:textColor="#FF6B6B"-->
+<!--                android:textStyle="bold"-->
+<!--                android:layout_marginTop="4dp" />-->
+
+<!--            <TextView-->
+<!--                android:id="@+id/tv_size"-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:text="Size: 39"-->
+<!--                android:textSize="12sp"-->
+<!--                android:textColor="@android:color/darker_gray"-->
+<!--                android:layout_marginTop="2dp" />-->
+
+<!--            <TextView-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:text="Xóa"-->
+<!--                android:textSize="12sp"-->
+<!--                android:textColor="#FF6B6B"-->
+<!--                android:layout_marginTop="4dp"-->
+<!--                android:background="?attr/selectableItemBackground"-->
+<!--                android:padding="4dp" />-->
+
+<!--        </LinearLayout>-->
+
+<!--        &lt;!&ndash; Quantity Controls &ndash;&gt;-->
+<!--        <LinearLayout-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:orientation="horizontal"-->
+<!--            android:gravity="center_vertical"-->
+<!--            android:background="@drawable/quantity_bg"-->
+<!--            android:padding="4dp">-->
+
+<!--            <ImageView-->
+<!--                android:id="@+id/btn_decrease"-->
+<!--                android:layout_width="32dp"-->
+<!--                android:layout_height="32dp"-->
+<!--                android:src="@drawable/ic_remove"-->
+<!--                android:background="?attr/selectableItemBackgroundBorderless"-->
+<!--                android:padding="8dp"-->
+<!--                android:tint="@android:color/darker_gray" />-->
+
+<!--            <TextView-->
+<!--                android:id="@+id/tv_quantity"-->
+<!--                android:layout_width="40dp"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:text="1"-->
+<!--                android:textSize="16sp"-->
+<!--                android:textColor="@android:color/black"-->
+<!--                android:gravity="center"-->
+<!--                android:layout_marginHorizontal="8dp" />-->
+
+<!--            <ImageView-->
+<!--                android:id="@+id/btn_increase"-->
+<!--                android:layout_width="32dp"-->
+<!--                android:layout_height="32dp"-->
+<!--                android:src="@drawable/ic_add"-->
+<!--                android:background="?attr/selectableItemBackgroundBorderless"-->
+<!--                android:padding="8dp"-->
+<!--                android:tint="@android:color/darker_gray" />-->
+
+<!--        </LinearLayout>-->
+
+<!--    </LinearLayout>-->
+
+<!--</androidx.cardview.widget.CardView>-->
