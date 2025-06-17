@@ -1,8 +1,11 @@
 package com.example.shopbepoly.DTO;
 
+import com.google.gson.annotations.SerializedName;
+
 import java.io.Serializable;
 
 public class Category implements Serializable {
+    @SerializedName("_id")
     private String _id;
     private String title;
     private String cateImg;

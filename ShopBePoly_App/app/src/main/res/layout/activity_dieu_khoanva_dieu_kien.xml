@@ -1,64 +1,277 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/main"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".DieuKhoanvaDieuKien"
-    android:orientation="vertical"
-    android:layout_margin="20dp">
+    android:background="#FFFFFF"
+
+    android:padding="16dp">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
 
-        <ImageView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@drawable/back"
-            />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageButton
+                android:id="@+id/btnBack"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Back"
+                android:padding="4dp"
+                android:src="@drawable/ic_back" />
+
+            <TextView
+                android:id="@+id/txtTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center_horizontal"
+                android:text="Điều khoản và điều kiện"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <View
+                android:layout_width="24dp"
+                android:layout_height="24dp" />
+        </LinearLayout>
+
         <TextView
+            android:id="@+id/subtitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Điều khoản và điều kiện"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:gravity="center"
-            />
-    </LinearLayout>
+            android:layout_marginBottom="8dp"
+            android:fontFamily="sans-serif"
+            android:text="ĐIỀU KHOẢN SỬ DỤNG ỨNG DỤNG SHOPEEPOELY"
+            android:textColor="#000000"
+            android:textSize="14sp"
+            android:textStyle="bold" />
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:textSize="12sp"
-        android:layout_margin="15dp"
-        android:text="ĐIỀU KHOẢN SỬ DỤNG ỨNG DỤNG SHOPBEPOLY\n
-Cảm ơn bạn đã sử dụng ứng dụng ShopbePoly – nền tảng mua sắm giày\n thể thao chất lượng và uy tín. Khi sử dụng ứng dụng này, bạn đồng ý với các điều khoản dưới đây. Vui lòng đọc kỹ trước khi tiếp tục.
-\n1. Chấp nhận điều khoản
-Bằng việc tải xuống, truy cập hoặc sử dụng ứng dụng ShopbePoly, bạn xác nhận rằng bạn đã đọc, hiểu và đồng ý tuân thủ các điều khoản sử dụng này.
-\n2. Tài khoản người dùng
-Người dùng phải cung cấp thông tin chính xác khi đăng ký tài khoản.
+        <TextView
+            android:id="@+id/intro"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:fontFamily="sans-serif"
+            android:text="Chạm > bàn đã sử dụng ứng dụng ShopeePoely – nền tảng mua sắm giám thiệu cho chất lượng và uy tín. Khi sử dụng ứng dụng này, bạn đồng ý với các điều khoản dưới đây. Vui lòng đọc kỹ trước khi tiếp tục."
+            android:textColor="#000000"
+            android:textSize="12sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif"
+                android:text="1. Chấp nhận điều khoản"
+                android:textColor="#000000"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:fontFamily="sans-serif"
+                android:text="Bằng việc tải xuống, truy cập hoặc sử dụng ứng dụng ShopeePoely, bạn xác nhận rằng bạn đã đọc, hiểu và đồng ý tuân thủ các điều khoản sử dụng này."
+                android:textColor="#000000"
+                android:textSize="12sp" />
+
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif"
+                android:text="2. Tài khoản người dùng"
+                android:textColor="#000000"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:fontFamily="sans-serif"
+                android:text="Người dùng phải cung cấp thông tin chính xác khi đăng ký tài khoản.
 Bạn chịu trách nhiệm bảo mật thông tin đăng nhập của mình.
-ShopbePoly có quyền tạm khóa hoặc xóa tài khoản nếu phát hiện hành vi gian lận, lạm dụng hoặc vi phạm điều khoản.
-\n3. Đặt hàng và thanh toán
-Mọi đơn hàng sẽ được xác nhận qua email hoặc thông báo trong ứng dụng.
+ShopbePoly có quyền tạm khóa hoặc xóa tài khoản nếu phát hiện hành vi gian lận, lạm dụng hoặc vi phạm điều khoản."
+                android:textColor="#000000"
+                android:textSize="12sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif"
+                android:text="3. Đặt hàng và thanh toán"
+                android:textColor="#000000"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif"
+                android:layout_marginBottom="12dp"                android:text="Mọi đơn hàng sẽ được xác nhận qua email hoặc thông báo trong ứng dụng.
 Giá sản phẩm đã bao gồm hoặc chưa bao gồm thuế (tùy theo quy định tại từng thời điểm).
-Người dùng có thể thanh toán bằng các hình thức: ví điện tử, thẻ ngân hàng hoặc COD (thanh toán khi nhận hàng).
-\n4. Giao hàng và đổi trả
-ShopbePoly cam kết giao hàng đúng thời gian dự kiến, tuy nhiên có thể chậm trễ do yếu tố khách quan.
-Người dùng có thể yêu cầu đổi/trả sản phẩm trong vòng 7 ngày nếu có lỗi từ nhà sản xuất hoặc sản phẩm không đúng mô tả.
-\n5. Quyền sở hữu trí tuệ
-Tất cả nội dung hiển thị trong ứng dụng (hình ảnh, logo, văn bản...) thuộc sở hữu của ShopbePoly và được bảo hộ theo luật pháp. Người dùng không được phép sao chép, sử dụng lại mà không có sự cho phép.
-\n6. Bảo mật thông tin
-Chúng tôi cam kết bảo mật thông tin cá nhân của người dùng và chỉ sử dụng vào mục đích nâng cao trải nghiệm mua sắm. Mọi hành vi vi phạm bảo mật sẽ bị xử lý theo quy định pháp luật.
-\n7. Giới hạn trách nhiệm
-ShopbePoly không chịu trách nhiệm với các thiệt hại phát sinh từ việc người dùng sử dụng ứng dụng không đúng cách hoặc bị bên thứ ba xâm nhập.
-\n8. Thay đổi điều khoản
-Chúng tôi có quyền thay đổi nội dung Điều khoản Sử dụng bất kỳ lúc nào. Mọi cập nhật sẽ được thông báo rõ ràng trên ứng dụng.
-\n9. Liên hệ
-Nếu bạn có bất kỳ thắc mắc nào về điều khoản, vui lòng liên hệ:
-\n📧 Email: support@shopbepoly.com
-\n📞 Hotline: 1900 1234"
-        />
-</LinearLayout>
+Người dùng có thể thanh toán bằng các hình thức: ví điện tử, thẻ ngân hàng hoặc COD (thanh toán khi nhận hàng)."
+                android:textColor="#000000"
+                android:textSize="12sp" />
+
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif"
+                android:text="4. Giao hàng và đổi trả"
+                android:textColor="#000000"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif"
+                android:layout_marginBottom="12dp"
+                android:text="ShopbePoly cam kết giao hàng đúng thời gian dự kiến, tuy nhiên có thể chậm trễ do yếu tố khách quan.
+Người dùng có thể yêu cầu đổi/trả sản phẩm trong vòng 7 ngày nếu có lỗi từ nhà sản xuất hoặc sản phẩm không đúng mô tả."
+                android:textColor="#000000"
+                android:textSize="12sp" />
+
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif"
+                android:text="5. Quyền sở hữu trí tuệ"
+                android:textColor="#000000"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:fontFamily="sans-serif"
+                android:text="Tất cả nội dung hiển thị trong ứng dụng (hình ảnh, logo, văn bản...) thuộc sở hữu của ShopeePoely và được bảo hộ theo luật pháp. Người dùng không được phép sao chép, sử dụng lại mà không có sự cho phép."
+                android:textColor="#000000"
+                android:textSize="12sp" />
+
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif"
+                android:text="6. Bảo mật thông tin"
+                android:textColor="#000000"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:fontFamily="sans-serif"
+                android:text="Chúng tôi cam kết bảo mật thông tin cá nhân của người dùng và chỉ sử dụng vào mục đích nâng cao trải nghiệm mua sắm. Mọi hành vi vi phạm bảo mật sẽ bị xử lý theo quy định pháp luật."
+                android:textColor="#000000"
+                android:textSize="12sp" />
+
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif"
+                android:text="7. Giới hạn trách nhiệm"
+                android:textColor="#000000"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:fontFamily="sans-serif"
+                android:text="ShopeePoely không chịu trách nhiệm với các thiết hại phát sinh từ việc vi phạm điều khoản (nếu dùng không đúng cách hoặc bị bên thứ ba xâm nhập)."
+                android:textColor="#000000"
+                android:textSize="12sp" />
+
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif"
+                android:text="8. Thay đổi điều khoản"
+                android:textColor="#000000"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:fontFamily="sans-serif"
+                android:text="Chúng tôi có quyền thay đổi nội dung điều khoản Sử dụng bất kỳ lúc nào. Mọi cập nhật sẽ được thông báo trên trang trên ứng dụng."
+                android:textColor="#000000"
+                android:textSize="12sp" />
+
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif"
+                android:text="11. Liên hệ"
+                android:textColor="#000000"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="3dp"
+                android:fontFamily="sans-serif"
+                android:text="Nếu bạn có bất kỳ thắc mắc nào về điều khoản, vui lòng liên hệ:"
+                android:textColor="#000000"
+                android:textSize="12sp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif"
+                    android:text="📧 Email: support@shopbepoly.com"
+                    android:textColor="#000000"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif"
+                    android:text="📞 Hotline: 1900 1234"
+                    android:textColor="#000000"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+    =
+</ScrollView>

@@ -11,11 +11,11 @@ const cartSchema = new mongoose.Schema({
         ref: 'product',
         required: true,
     },
-    nameproduct: String,
-    image_product: [],
     quantity: Number,
-    total: Number,
     price: Number,
+    size: Number,
+    total: Number,
+    status: Number
 });
 
 const cartModel = mongoose.model('cart', cartSchema);

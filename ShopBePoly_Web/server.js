@@ -19,6 +19,8 @@ const cartModel = require('./Database/cartModel');
 const commentModel = require('./Database/commentModel');
 const categoryModel = require('./Database/categoryModel');
 const orderModel = require('./Database/order');
+const messageModel = require('./Database/messageModel');
+
 
 const uri = COMOMJS.uri;
 
@@ -309,9 +311,13 @@ router.post('/login', async (req, res) => {
     }
 });
 // Lấy giỏ hàng http://localhost:3000/api/:useId
-router.get('/api/cart/:userId', async (req, res) => {
+router.get('/list_cart/:userId', async (req, res) => {
     try {
-        const cartItems = await cartModel.find({ id_user: req.params.userId });
+        const cartItems = await cartModel.find({ id_user: req.params.userId })
+            .populate({
+                path: 'id_product',
+                populate: { path: 'id_category' }  // <- thêm dòng này để populate category bên trong product
+            });
         res.json(cartItems);
     } catch (error) {
         console.error('Lỗi khi lấy giỏ hàng:', error);
@@ -319,70 +325,116 @@ router.get('/api/cart/:userId', async (req, res) => {
     }
 });
 
-// thêm giỏ hàng http://localhost:3000/api/cart
-router.post('/cart', async (req, res) => {
-    const { id_user, id_product,nameproduct, image_product, quantity, price } = req.body;
+
+// thêm giỏ hàng http://localhost:3000/api/add_cart
+router.post('/add_cart', async (req, res) => {
     try {
+        const {
+            id_user,
+            id_product,
+            quantity,
+            price,
+            size,
+            status
+        } = req.body;
+
+        // Tính tổng tiền
         const total = quantity * price;
 
-        let existing = await cartModel.findOne({ id_user, id_product});
+        const newCartItem = new cartModel({
+            id_user,
+            id_product,
+            quantity,
+            price,
+            size,
+            total,
+            status
+        });
 
-        if (existing) {
-            existing.quantity += quantity;
-            existing.total = existing.quantity * price;
-            await existing.save();
-            return res.json(existing);
-        }
+        const savedCart = await newCartItem.save();
 
-        const item = new cartModel({ id_user, id_product, nameproduct, image_product, quantity, price, total });
-        await item.save();
-        res.status(201).json(item);
-    } catch (error) {
-        console.error('Lỗi thêm vào giỏ hàng:', error);
-        res.status(500).json({ error: 'Lỗi thêm vào giỏ hàng' });
+        res.status(201).json({
+            message: 'Thêm sản phẩm vào giỏ hàng thành công',
+            data: savedCart
+        });
+    } catch (err) {
+        res.status(500).json({
+            message: 'Lỗi khi thêm vào giỏ hàng',
+            error: err.message
+        });
     }
 });
 
-// cập nhập só lượng trong giỏ hàng http://localhost:3000/api/cart/:idCart
-router.put('/cart/:idCart', async (req, res) => {
-    const { quantity } = req.body;
-    try {
-        const item = await cartModel.findById(req.params.idCart);
-        if (!item) return res.status(404).json({ error: 'Không tìm thấy sản phẩm trong giỏ' });
+// cập nhập só lượng trong giỏ hàng http://localhost:3000/api/up_cart/:idCart
+router.put('/up_cart/:idCart', async (req, res) => {
 
-        item.quantity = quantity;
-        item.total = quantity * item.price;
-        await item.save();
-        res.json(item);
+    try {
+        await mongoose.connect(uri);
+        const cartId = req.params.idCart; 
+        const data = req.body; 
+
+        const upCart = await cartModel.findByIdAndUpdate(
+            cartId,
+                {
+                    $set: {
+                        id_user: data.id_user,
+                        id_product: data.id_product,
+                        quantity: data.quantity,
+                        price: data.price,
+                        total: data.total,
+                        status: data.status,
+                    }
+                },
+                { new: true }
+            );
+
+            if (upCart) {
+                res.json({
+                    "status": 200,
+                    "message": "Cập nhật thành công",
+                    "data": upCart
+                });
+            } else {
+                res.json({
+                    "status": 400,
+                    "message": "Không tìm thấy giỏ hàng để cập nhật",
+                    "data": []
+                });
+            }
     } catch (error) {
         console.error('Lỗi cập nhật giỏ hàng:', error);
         res.status(500).json({ error: 'Lỗi cập nhật giỏ hàng' });
     }
 });
 
-// xoá giỏ hàng http://localhost:3000/api/cart/user/:userId
-router.delete('/cart/:idCart', async (req, res) => {
-    try {
-        const result = await cartModel.deleteOne({ _id: req.params.idCart });
-        if (result.deletedCount === 0) return res.status(404).json({ error: 'Không tìm thấy sản phẩm để xóa' });
-
-        res.json({ message: 'Xóa sản phẩm thành công' });
-    } catch (error) {
-        console.error('Lỗi xóa sản phẩm:', error);
-        res.status(500).json({ error: 'Lỗi xóa sản phẩm' });
-    }
-});
 
 // xoá toàn bộ giỏ hàng http://localhost:3000/api/cart/user/:userId
-router.delete('/cart/user/:userId', async (req, res) => {
+router.delete('/del_cart/:idCart', async (req, res) => {
     try {
-        await cartModel.deleteMany({ id_user: req.params.userId });
-        res.json({ message: 'Đã xóa toàn bộ giỏ hàng của người dùng' });
+        const cartId = req.params.idCart;
+
+        const deletedCart = await cartModel.findByIdAndDelete(cartId);
+
+        if (deletedCart) {
+            res.json({
+                status: 200,
+                message: "Xóa thành công",
+                data: deletedCart
+            });
+            
+        } else {
+            res.json({
+                status: 400,
+                message: "Không tìm thấy giỏ hàng để xóa",
+                data: []
+            });
+        }
     } catch (error) {
-        console.error('Lỗi xóa toàn bộ giỏ hàng:', error);
-        res.status(500).json({ error: 'Lỗi xóa toàn bộ giỏ hàng' });
+        console.error('Lỗi khi xóa giỏ hàng:', error);
+        res.status(500).json({ error: 'Lỗi khi xóa giỏ hàng' });
     }
 });
+
 // category
 // lấy ds product theo thể loại
 router.get('/products_by_category/:categoryId', async (req, res) => {
@@ -557,4 +609,67 @@ router.put('/up_comment/:id', async (req, res)=>{
     }
 })
 
-app.use(express.json()); // bắt buộc để đọc req.body
+
+
+router.get('/messages', async (req, res) => {
+    try {
+        const { from, to } = req.query; 
+
+        if (!from || !to) {
+            return res.status(400).json({ message: 'Thiếu from hoặc to trong query' });
+        }
+
+        const messages = await messageModel.find({
+            $or: [
+                { from, to },
+                { from: to, to: from }
+            ]
+        }).sort({ timestamp: 1 });
+
+        res.json(messages);
+    } catch (err) {
+        console.error('Lỗi lấy tin nhắn:', err);
+        res.status(500).json({ message: 'Lỗi server khi lấy tin nhắn' });
+    }
+});
+
+
+router.post('/messages', async (req, res) => {
+    const { from, to, content } = req.body;
+
+    if (!from || !to || !content) {
+        return res.status(400).json({ message: 'Thiếu from, to hoặc content trong body' });
+    }
+
+    try {
+      
+        const newMessage = new messageModel({ from, to, content, timestamp: new Date() });
+        await newMessage.save();
+
+  
+        const hasAdminReplied = await messageModel.exists({
+            from: to,  
+            to: from   
+        });
+
+        if (!hasAdminReplied) {
+            const autoReply = new messageModel({
+                from: to,
+                to: from,
+                content: "Chào bạn! Bạn cần giúp đỡ gì không? ",
+                timestamp: new Date()
+            });
+            await autoReply.save();
+        }
+
+        res.status(201).json({ message: 'Gửi tin nhắn thành công', data: newMessage });
+    } catch (err) {
+        console.error('Lỗi khi gửi tin nhắn:', err);
+        res.status(500).json({ message: 'Lỗi server khi gửi tin nhắn' });
+    }
+});
+
+
+
+
+app.use(express.json());

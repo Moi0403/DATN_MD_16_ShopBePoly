@@ -7,3 +7,18 @@ function toggleSidebar() {
   overlay.classList.toggle("active");
   body.classList.toggle("sidebar-open"); // thêm class để điều chỉnh layout
 }
+const role = localStorage.getItem('userRole');
+  if (role !== '2') {
+    const menuQLTK = document.getElementById('menu-ql-tk');
+      if (menuQLTK) {
+        menuQLTK.style.display = 'none';
+      }
+}
+
+document.getElementById('dangxuat').addEventListener('click', () => {
+  const confirmLogout = confirm('Bạn có chắc chắn muốn đăng xuất không?');
+    if (confirmLogout) {
+        window.location.href = '../Web_TrangChu/TrangChu.html';
+    } else {
+    }
+})

@@ -2,16 +2,22 @@ package com.example.shopbepoly.Adapter;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.shopbepoly.API.ApiClient;
+import com.example.shopbepoly.API.ApiService;
+import com.example.shopbepoly.DTO.Cart;
 import com.example.shopbepoly.DTO.Product;
 import com.example.shopbepoly.R;
 import com.example.shopbepoly.Screen.ChiTietSanPham;
@@ -20,9 +26,14 @@ import com.squareup.picasso.Picasso;
 
 import java.util.List;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductViewHolder> {
     private Context context;
     private List<Product> productList;
+
 
 
     public ProductAdapter(Context context, List<Product> productList) {
@@ -48,7 +59,14 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
 
         holder.tvProductSold.setText("Đã bán: " + product.getSold() + " sp");
 
-        Picasso.get().load(ApiClient.IMAGE_URL + product.getAvt_imgproduct()).into(holder.ivProductImage);
+        Glide.with(context)
+                .load(ApiClient.IMAGE_URL + product.getAvt_imgproduct())
+                .placeholder(R.drawable.ic_launcher_background) // thêm ảnh chờ
+                .error(R.drawable.ic_launcher_foreground) // thêm ảnh lỗi
+                .override(300, 300) // giảm độ phân giải để nhẹ
+                .centerCrop()
+                .into(holder.ivProductImage);
+
         updateFavoriteIcon(holder.imgFavorite,product);
         holder.ivProductImage.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -71,6 +89,29 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
             }
         });
 
+        holder.ivCart.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // Lấy userId từ SharedPreferences
+                SharedPreferences sharedPreferences = context.getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
+                String userId = sharedPreferences.getString("userId", null);
+
+                if (userId == null) {
+                    Toast.makeText(context, "Không tìm thấy thông tin người dùng", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                Cart cart = new Cart();
+                cart.setIdProduct(product);
+                cart.setIdUser(userId); // Gán userId lấy từ SharedPreferences
+                cart.setPrice(product.getPrice());
+                cart.setQuantity(1);
+                cart.setTotal(product.getPrice() * 1);
+                cart.setStatus(0);
+                Add_Cart(cart);
+            }
+        });
+
     }
     {   // khối init
         setHasStableIds(true);
@@ -80,6 +121,7 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
     public long getItemId(int position) {
         return productList.get(position).get_id().hashCode();
     }
+
     private void updateFavoriteIcon(ImageView imgView, Product product) {
         if (FavoriteFragment.isFavorite(product)) {
             imgView.setImageResource(R.drawable.ic_heart_filled);
@@ -90,7 +132,7 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
     public void setData(List<Product> newList) {
         this.productList.clear();
         this.productList.addAll(newList);
-        notifyDataSetChanged();
+        notifyItemRangeChanged(0, newList.size());
     }
 
     @Override
@@ -99,7 +141,7 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
     }
 
     public static class ProductViewHolder extends RecyclerView.ViewHolder {
-        ImageView ivProductImage,imgFavorite;
+        ImageView ivProductImage,imgFavorite, ivCart;
         TextView tvProductName;
         TextView tvProductPrice;
         TextView tvProductSold;
@@ -111,7 +153,29 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
             tvProductPrice = itemView.findViewById(R.id.tvProductPrice);
             tvProductSold = itemView.findViewById(R.id.tvProductSold);
             imgFavorite = itemView.findViewById(R.id.imgFavorite);
-
+            ivCart = itemView.findViewById(R.id.ivCart);
         }
+    }
+
+    private void Add_Cart(Cart cart){
+        ApiService apiService = ApiClient.getApiService();
+        Call<Cart> call = apiService.addCart(cart);
+        call.enqueue(new Callback<Cart>() {
+            @Override
+            public void onResponse(Call<Cart> call, Response<Cart> response) {
+                if (response.isSuccessful()) {
+                    Toast.makeText(context, "Thêm giỏ hàng thành công", Toast.LENGTH_SHORT).show();
+                } else {
+                    Log.e("AddCartError", "Response code: " + response.code() + ", Message: " + response.message());
+                    Toast.makeText(context, "Thêm giỏ hàng không thành công", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Cart> call, Throwable t) {
+                Log.e("AddCartError", t.getMessage(), t);
+                Toast.makeText(context, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 }

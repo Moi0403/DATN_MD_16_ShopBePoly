@@ -1,11 +1,15 @@
 package com.example.shopbepoly.DTO;
 
+import com.google.gson.annotations.SerializedName;
+
 import java.io.Serializable;
 import java.util.List;
 
 public class Product implements Serializable {
+    @SerializedName("_id")
     private String _id;
     private String nameproduct;
+    @SerializedName("id_category")
     private Category id_category;  // đổi từ String thành Category
     private int price;
     private int quantity;
@@ -22,7 +26,21 @@ public class Product implements Serializable {
         return variations;
     }
 
-    public Product(String _id, String nameproduct, Category id_category, int price, int quantity, String description, String avt_imgproduct, List<String> list_imgproduct, int size, String color, int stock, int sold) {
+//    public Product(String _id, String nameproduct, String id_category, int price, int quantity, String description, String avt_imgproduct, List<String> list_imgproduct, String color, int sold, List<Variation> variations) {
+//        this._id = _id;
+//        this.nameproduct = nameproduct;
+//        this.id_category = id_category;
+//        this.price = price;
+//        this.quantity = quantity;
+//        this.description = description;
+//        this.avt_imgproduct = avt_imgproduct;
+//        this.list_imgproduct = list_imgproduct;
+//        this.color = color;
+//        this.sold = sold;
+//        this.variations = variations;
+//    }
+
+        public Product(String _id, String nameproduct, Category id_category, int price, int quantity, String description, String avt_imgproduct, List<String> list_imgproduct, int size, String color, int stock, int sold) {
         this._id = _id;
         this.nameproduct = nameproduct;
         this.id_category = id_category;
@@ -62,6 +80,15 @@ public class Product implements Serializable {
     public void setId_category(Category id_category) {
         this.id_category = id_category;
     }
+
+
+//    public String getId_category() {
+//        return id_category;
+//    }
+//
+//    public void setId_category(String id_category) {
+//        this.id_category = id_category;
+//    }
 
     public int getPrice() {
         return price;

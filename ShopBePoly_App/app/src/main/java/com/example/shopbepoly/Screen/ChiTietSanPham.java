@@ -1,6 +1,9 @@
 package com.example.shopbepoly.Screen;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -10,15 +13,21 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.AppCompatButton;
 
 import com.example.shopbepoly.API.ApiClient;
+import com.example.shopbepoly.API.ApiService;
+import com.example.shopbepoly.DTO.Cart;
 import com.example.shopbepoly.DTO.Product;
 import com.example.shopbepoly.DTO.Variation;
 import com.example.shopbepoly.R;
 import com.example.shopbepoly.fragment.FavoriteFragment;
 import com.squareup.picasso.Picasso;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 public class ChiTietSanPham extends AppCompatActivity {
 
-    private ImageView btnBack, btnFavorite, btnDecrease, btnIncrease,imgProduct;
+    private ImageView btnBack, btnFavorite, btnDecrease, btnIncrease,imgProduct, btnCart;
     private TextView tvQuantity, tvProductName, tvPrice, tvDescription;
     private AppCompatButton btnAddToCart;
     private View colorWhite, colorRed, colorGray, colorOrange, colorLightGray;
@@ -34,6 +43,7 @@ public class ChiTietSanPham extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chi_tiet_san_pham);
+        btnCart = findViewById(R.id.btnCart);
 
         initViews();
         setupClickListeners();
@@ -51,6 +61,28 @@ public class ChiTietSanPham extends AppCompatActivity {
             showAvailableSizes();
         }
         updateUI();
+
+        btnCart.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                SharedPreferences sharedPreferences = ChiTietSanPham.this.getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
+                String userId = sharedPreferences.getString("userId", null);
+
+                if (userId == null) {
+                    Toast.makeText(ChiTietSanPham.this, "Không tìm thấy thông tin người dùng", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                Cart cart = new Cart();
+                cart.setIdUser(userId);
+                cart.setIdProduct(product);
+                cart.setQuantity(quantity);
+                cart.setPrice(product.getPrice());
+                cart.setTotal(product.getPrice() * quantity);
+                cart.setSize(Integer.parseInt(String.valueOf(selectedSize)));
+                cart.setStatus(0);
+                Add_Cart(cart);
+            }
+        });
     }
 
     private void initViews() {
@@ -222,6 +254,28 @@ public class ChiTietSanPham extends AppCompatActivity {
 
 //        // Set default selections
 //        colorWhite.setSelected(true);
+    }
+
+    private void Add_Cart(Cart cart){
+        ApiService apiService = ApiClient.getApiService();
+        Call<Cart> call = apiService.addCart(cart);
+        call.enqueue(new Callback<Cart>() {
+            @Override
+            public void onResponse(Call<Cart> call, Response<Cart> response) {
+                if (response.isSuccessful()) {
+                    Toast.makeText(ChiTietSanPham.this, "Thêm giỏ hàng thành công", Toast.LENGTH_SHORT).show();
+                } else {
+                    Log.e("AddCartError", "Response code: " + response.code() + ", Message: " + response.message());
+                    Toast.makeText(ChiTietSanPham.this, "Thêm giỏ hàng không thành công", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Cart> call, Throwable t) {
+                Log.e("AddCartError", t.getMessage(), t);
+                Toast.makeText(ChiTietSanPham.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
 }
