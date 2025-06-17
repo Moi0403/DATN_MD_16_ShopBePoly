@@ -19,6 +19,8 @@ const cartModel = require('./Database/cartModel');
 const commentModel = require('./Database/commentModel');
 const categoryModel = require('./Database/categoryModel');
 const orderModel = require('./Database/order');
+const messageModel = require('./Database/messageModel');
+
 
 const uri = COMOMJS.uri;
 
@@ -557,4 +559,67 @@ router.put('/up_comment/:id', async (req, res)=>{
     }
 })
 
-app.use(express.json()); // bắt buộc để đọc req.body
+
+
+router.get('/messages', async (req, res) => {
+    try {
+        const { from, to } = req.query; 
+
+        if (!from || !to) {
+            return res.status(400).json({ message: 'Thiếu from hoặc to trong query' });
+        }
+
+        const messages = await messageModel.find({
+            $or: [
+                { from, to },
+                { from: to, to: from }
+            ]
+        }).sort({ timestamp: 1 });
+
+        res.json(messages);
+    } catch (err) {
+        console.error('Lỗi lấy tin nhắn:', err);
+        res.status(500).json({ message: 'Lỗi server khi lấy tin nhắn' });
+    }
+});
+
+
+router.post('/messages', async (req, res) => {
+    const { from, to, content } = req.body;
+
+    if (!from || !to || !content) {
+        return res.status(400).json({ message: 'Thiếu from, to hoặc content trong body' });
+    }
+
+    try {
+      
+        const newMessage = new messageModel({ from, to, content, timestamp: new Date() });
+        await newMessage.save();
+
+  
+        const hasAdminReplied = await messageModel.exists({
+            from: to,  
+            to: from   
+        });
+
+        if (!hasAdminReplied) {
+            const autoReply = new messageModel({
+                from: to,
+                to: from,
+                content: "Chào bạn! Bạn cần giúp đỡ gì không? ",
+                timestamp: new Date()
+            });
+            await autoReply.save();
+        }
+
+        res.status(201).json({ message: 'Gửi tin nhắn thành công', data: newMessage });
+    } catch (err) {
+        console.error('Lỗi khi gửi tin nhắn:', err);
+        res.status(500).json({ message: 'Lỗi server khi gửi tin nhắn' });
+    }
+});
+
+
+
+
+app.use(express.json());

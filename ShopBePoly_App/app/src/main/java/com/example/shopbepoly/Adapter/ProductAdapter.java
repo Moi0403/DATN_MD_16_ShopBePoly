@@ -11,6 +11,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.shopbepoly.API.ApiClient;
 import com.example.shopbepoly.DTO.Product;
 import com.example.shopbepoly.R;
@@ -48,7 +49,14 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
 
         holder.tvProductSold.setText("Đã bán: " + product.getSold() + " sp");
 
-        Picasso.get().load(ApiClient.IMAGE_URL + product.getAvt_imgproduct()).into(holder.ivProductImage);
+        Glide.with(context)
+                .load(ApiClient.IMAGE_URL + product.getAvt_imgproduct())
+                .placeholder(R.drawable.ic_launcher_background) // thêm ảnh chờ
+                .error(R.drawable.ic_launcher_foreground) // thêm ảnh lỗi
+                .override(300, 300) // giảm độ phân giải để nhẹ
+                .centerCrop()
+                .into(holder.ivProductImage);
+
         updateFavoriteIcon(holder.imgFavorite,product);
         holder.ivProductImage.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -90,7 +98,7 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
     public void setData(List<Product> newList) {
         this.productList.clear();
         this.productList.addAll(newList);
-        notifyDataSetChanged();
+        notifyItemRangeChanged(0, newList.size());
     }
 
     @Override
