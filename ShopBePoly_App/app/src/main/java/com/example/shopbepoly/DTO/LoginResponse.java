@@ -1,33 +1,41 @@
 package com.example.shopbepoly.DTO;
 
+import com.google.gson.annotations.SerializedName;
+
 public class LoginResponse {
     private String message;
-    private String token;
     private User user;
-
-    public LoginResponse() {}
 
     public String getMessage() {
         return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
-    public String getToken() {
-        return token;
-    }
-
-    public void setToken(String token) {
-        this.token = token;
     }
 
     public User getUser() {
         return user;
     }
 
-    public void setUser(User user) {
-        this.user = user;
+    public static class User {
+        @SerializedName("id")
+        private String id;
+
+        private String username;
+        private String name;
+        private int role;
+
+        public String getId() {
+            return id;
+        }
+
+        public String getUsername() {
+            return username;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public int getRole() {
+            return role;
+        }
     }
 }

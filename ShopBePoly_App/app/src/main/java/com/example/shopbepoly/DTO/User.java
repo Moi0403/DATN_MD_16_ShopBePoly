@@ -1,17 +1,40 @@
 package com.example.shopbepoly.DTO;
 
+import com.google.gson.annotations.SerializedName;
+
 public class User {
+
+    @SerializedName("_id")
+    private String id;
+
     private String username;
     private String email;
     private String phone_number;
     private String password;
+    private String name;
+    private int role;
 
-    public User(String username, String email, String phone_number, String password) {
+    public User() {
+    }
+
+    public User(String id, String username, String email, String phone_number, String password, String name, int role) {
+        this.id = id;
         this.username = username;
         this.email = email;
         this.phone_number = phone_number;
         this.password = password;
+        this.name = name;
+        this.role = role;
     }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
 
     public String getUsername() {
         return username;
@@ -43,5 +66,21 @@ public class User {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getRole() {
+        return role;
+    }
+
+    public void setRole(int role) {
+        this.role = role;
     }
 }

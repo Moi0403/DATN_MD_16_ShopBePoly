@@ -1,70 +1,250 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/main"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ChinhSachvaQuyenRiengTu"
-    android:orientation="vertical"
-    android:layout_margin="20dp">
+    android:background="#FFFFFF"
+
+    android:padding="16dp">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
 
-        <ImageView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@drawable/back"
-            />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageButton
+                android:id="@+id/btnBack"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Back"
+                android:padding="4dp"
+                android:src="@drawable/ic_back" />
+
+            <TextView
+                android:id="@+id/txtTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center_horizontal"
+                android:text="Chính sách và quyền riêng tư"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <View
+                android:layout_width="24dp"
+                android:layout_height="24dp" />
+        </LinearLayout>
+
         <TextView
+            android:id="@+id/subtitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Chính sách và quyền riêng tư"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:gravity="center"
-            />
-    </LinearLayout>
+            android:layout_marginBottom="8dp"
+            android:fontFamily="sans-serif"
+            android:text="CHÍNH SÁCH VÀ QUYỀN RIÊNG TƯ – ỨNG DỤNG SHOPBEPOLY"
+            android:textColor="#000000"
+            android:textSize="14sp"
+            android:textStyle="bold" />
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:textSize="12sp"
-        android:layout_margin="15dp"
-        android:text="CHÍNH SÁCH VÀ QUYỀN RIÊNG TƯ – ỨNG DỤNG SHOPBEPOLY
-\nShopbePoly cam kết bảo vệ quyền riêng tư của người dùng và đảm bảo mọi thông tin cá nhân được xử lý một cách cẩn trọng và minh bạch.
-\n1. Thông tin thu thập
-Chúng tôi có thể thu thập các thông tin sau từ bạn khi sử dụng ứng dụng:
-Thông tin cá nhân: Họ tên, số điện thoại, email, địa chỉ nhận hàng.
-Thông tin tài khoản: Tên đăng nhập, mật khẩu.
-Thông tin thanh toán: (sẽ được bảo mật và mã hóa).
-Lịch sử giao dịch: Các đơn hàng bạn đã mua, đổi trả.
-Dữ liệu hành vi: Sản phẩm bạn xem, tìm kiếm, yêu thích.
-\n2. Mục đích sử dụng thông tin
-Thông tin của bạn được sử dụng nhằm mục đích:
-Xử lý đơn hàng, thanh toán và giao hàng.
-Cung cấp hỗ trợ khách hàng và cải thiện dịch vụ.
-Gửi thông báo khuyến mãi, chương trình ưu đãi (nếu bạn đồng ý).
-Phân tích hành vi người dùng nhằm nâng cao trải nghiệm mua sắm.
-3. Bảo mật thông tin
-Dữ liệu được lưu trữ trên hệ thống bảo mật và mã hóa.
-Chúng tôi không chia sẻ, bán hoặc cho thuê thông tin cá nhân của bạn với bên thứ ba ngoại trừ trường hợp cần thiết cho việc vận chuyển hoặc theo yêu cầu của pháp luật.
-Bạn có quyền yêu cầu chỉnh sửa hoặc xóa thông tin của mình bất kỳ lúc nào.
-\n4. Cookie và công nghệ theo dõi
-Ứng dụng ShopbePoly có thể sử dụng cookie hoặc công nghệ tương tự để lưu trữ tùy chọn của bạn và tối ưu hóa trải nghiệm. Bạn có thể từ chối cookie trong cài đặt thiết bị.
-\n5. Quyền của người dùng
-Bạn có các quyền sau liên quan đến dữ liệu cá nhân:
-Quyền được biết thông tin nào đang được thu thập và sử dụng.
-Quyền chỉnh sửa, cập nhật hoặc xóa thông tin cá nhân.
-Quyền từ chối tiếp nhận thông tin quảng cáo.
-Quyền yêu cầu ngừng sử dụng thông tin.
-\6. Thay đổi chính sách
-ShopbePoly có thể cập nhật Chính sách này theo thời gian. Mọi thay đổi sẽ được thông báo trên ứng dụng hoặc gửi đến email của bạn (nếu có).
-\n7. Liên hệ
-Nếu bạn có câu hỏi liên quan đến chính sách quyền riêng tư, vui lòng liên hệ:
-\n📧 Email: privacy@shopbepoly.com
-\n📞 Hotline: 1900 1234"
-        />
-</LinearLayout>
+        <TextView
+            android:id="@+id/paragraph1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="12dp"
+            android:text="ShopBePoly cam kết bảo vệ quyền riêng tư của người dùng và đảm bảo mọi thông tin cá nhân được xử lý một cách cẩn trọng và minh bạch."
+            android:textColor="#000000"
+            android:textSize="14sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif"
+                android:text="1. Thông tin thu thập"
+                android:textColor="#000000"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:fontFamily="sans-serif"
+                android:text="Chúng tôi có thể thu thập các thông tin sau từ bạn khi sử dụng ứng dụng:
+\nThông tin cá nhân: Họ tên, số điện thoại, email, địa chỉ nhận hàng.
+\nThông tin tài khoản: Tên đăng nhập, mật khẩu.
+\nThông tin thanh toán: (sẽ được bảo mật và mã hóa).
+\nLịch sử giao dịch: Các đơn hàng bạn đã mua, đổi trả.
+\nDữ liệu hành vi: Sản phẩm bạn xem, tìm kiếm, yêu thích."
+                android:textColor="#000000"
+                android:textSize="12sp" />
+
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif"
+                android:text="2. Mục đích sử dụng thông tin"
+                android:textColor="#000000"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:fontFamily="sans-serif"
+                android:text="Thông tin của bạn được sử dụng nhằm mục đích:
+\nXử lý đơn hàng, thanh toán và giao hàng.
+\nCung cấp hỗ trợ khách hàng và cải thiện dịch vụ.
+\nGửi thông báo khuyến mãi, chương trình ưu đãi (nếu bạn đồng ý).
+\nPhân tích hành vi người dùng nhằm nâng cao trải nghiệm mua sắm."
+                android:textColor="#000000"
+                android:textSize="12sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif"
+                android:text="3. Bảo mật thông tin"
+                android:textColor="#000000"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:fontFamily="sans-serif"
+                android:text="Dữ liệu được lưu trữ trên hệ thống bảo mật và mã hóa.
+\nChúng tôi không chia sẻ, bán hoặc cho thuê thông tin cá nhân của bạn với bên thứ ba ngoại trừ trường hợp cần thiết cho việc vận chuyển hoặc theo yêu cầu của pháp luật.
+\nBạn có quyền yêu cầu chỉnh sửa hoặc xóa thông tin của mình bất kỳ lúc nào."
+                android:textColor="#000000"
+                android:textSize="12sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif"
+                android:text="4. Cookie và công nghệ theo dõi"
+                android:textColor="#000000"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:fontFamily="sans-serif"
+                android:text="Ứng dụng ShopbePoly có thể sử dụng cookie hoặc công nghệ tương tự để lưu trữ tùy chọn của bạn và tối ưu hóa trải nghiệm. Bạn có thể từ chối cookie trong cài đặt thiết bị."
+                android:textColor="#000000"
+                android:textSize="12sp" />
+
+
+
+
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif"
+                android:text="5. Quyền của người dùng"
+                android:textColor="#000000"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:fontFamily="sans-serif"
+                android:text="Bạn có các quyền sau liên quan đến dữ liệu cá nhân:
+\nQuyền được biết thông tin nào đang được thu thập và sử dụng.
+\nQuyền chỉnh sửa, cập nhật hoặc xóa thông tin cá nhân.
+\nQuyền từ chối tiếp nhận thông tin quảng cáo.
+\nQuyền yêu cầu ngừng sử dụng thông tin."
+                android:textColor="#000000"
+                android:textSize="12sp" />
+
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif"
+                android:text="6. Thay đổi chính sách"
+                android:textColor="#000000"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:fontFamily="sans-serif"
+                android:text="ShopbePoly có thể cập nhật Chính sách này theo thời gian. Mọi thay đổi sẽ được thông báo trên ứng dụng hoặc gửi đến email của bạn (nếu có)."
+                android:textColor="#000000"
+                android:textSize="12sp" />
+
+
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif"
+                android:text="7. Liên hệ"
+                android:textColor="#000000"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="3dp"
+                android:fontFamily="sans-serif"
+                android:text="Nếu bạn có câu hỏi liên quan đến chính sách quyền riêng tư, vui lòng liên hệ:"
+                android:textColor="#000000"
+                android:textSize="12sp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif"
+                    android:text="📧 Email: privacy@shopbepoly.com"
+                    android:textColor="#000000"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif"
+                    android:text="📞 Hotline: 1900 1234"
+                    android:textColor="#000000"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+    =
+</ScrollView>
