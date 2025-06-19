@@ -9,14 +9,12 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.fragment.app.Fragment;
 
-import androidx.recyclerview.widget.RecyclerView;
-
-
+import com.bumptech.glide.Glide;
 import com.example.shopbepoly.ChinhSachvaQuyenRiengTu;
 import com.example.shopbepoly.DieuKhoanvaDieuKien;
 import com.example.shopbepoly.DoiMatKhau;
@@ -24,16 +22,22 @@ import com.example.shopbepoly.Gioithieu;
 import com.example.shopbepoly.Lichsugiaodich;
 import com.example.shopbepoly.LienHe;
 import com.example.shopbepoly.MainActivity;
-import com.example.shopbepoly.Profile;
 import com.example.shopbepoly.R;
 import com.example.shopbepoly.Screen.LoginScreen;
 import com.example.shopbepoly.ThongTinCaNhan;
-
+import com.example.shopbepoly.API.ApiClient;
+import com.example.shopbepoly.API.ApiService;
+import com.example.shopbepoly.DTO.User;
+import java.util.List;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class ProfileFragment extends Fragment {
 
     private TextView txtThongtincanhan, txtLichsugiaodich, txtGioiThieu, txtDoimatkhau, txtLienhe, txtDieuKhoan, txtChinhsach, txtLogout;
-
+    private ImageView imgAvatar;
+    private TextView txtName, txtEmail;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -47,6 +51,35 @@ public class ProfileFragment extends Fragment {
         txtDieuKhoan = view.findViewById(R.id.txtDieukhoan);
         txtChinhsach = view.findViewById(R.id.txtChinhsach);
         txtLogout = view.findViewById(R.id.txtLogout);
+        imgAvatar = view.findViewById(R.id.imgAvatar);
+        txtName = view.findViewById(R.id.txtName);
+        txtEmail = view.findViewById(R.id.txtEmail);
+
+        // Lấy thông tin user từ SharedPreferences
+        SharedPreferences sharedPreferences = requireActivity().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
+        String userId = sharedPreferences.getString("userId", "");
+
+        ApiService apiService = ApiClient.getApiService();
+        apiService.getUsers().enqueue(new Callback<List<User>>() {
+            @Override
+            public void onResponse(Call<List<User>> call, Response<List<User>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    for (User user : response.body()) {
+                        if (user.getId().equals(userId)) {
+                            txtName.setText(user.getName() != null ? user.getName() : "");
+                            txtEmail.setText(user.getEmail() != null ? user.getEmail() : "");
+                            // Nếu có avatarUrl thì load, không thì để mặc định
+//                             Glide.with(ProfileFragment.this).load(user.getAvatarUrl()).placeholder(R.drawable.avatar_default).error(R.drawable.avatar_default).into(imgAvatar);
+                            break;
+                        }
+                    }
+                }
+            }
+            @Override
+            public void onFailure(Call<List<User>> call, Throwable t) {
+                // Xử lý lỗi nếu cần
+            }
+        });
 
         txtThongtincanhan.setOnClickListener(new View.OnClickListener() {
             @Override

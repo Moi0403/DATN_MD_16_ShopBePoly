@@ -161,18 +161,25 @@ public class TimKiem extends AppCompatActivity {
     private void showSearchResults(String query) {
         // Save to search history
         saveToSearchHistory(query);
-        
+
         // Show search results container
         searchHistoryContainer.setVisibility(View.GONE);
         searchResultsContainer.setVisibility(View.VISIBLE);
-        
-        // Search products
-        apiService.searchProduct(query).enqueue(new Callback<List<Product>>() {
+
+        // Tìm kiếm local: lấy toàn bộ sản phẩm rồi lọc theo tên
+        apiService.getProducts().enqueue(new Callback<List<Product>>() {
             @Override
             public void onResponse(Call<List<Product>> call, Response<List<Product>> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    List<Product> products = response.body();
-                    productAdapter.setData(products);
+                    List<Product> allProducts = response.body();
+                    List<Product> filtered = new ArrayList<>();
+                    String lowerQuery = query.toLowerCase();
+                    for (Product p : allProducts) {
+                        if (p.getNameproduct() != null && p.getNameproduct().toLowerCase().contains(lowerQuery)) {
+                            filtered.add(p);
+                        }
+                    }
+                    productAdapter.setData(filtered);
                 } else {
                     productAdapter.setData(new ArrayList<>());
                 }

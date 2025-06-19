@@ -35,12 +35,6 @@ public class Lichsugiaodich extends AppCompatActivity {
                 startActivity(intent);
             }
         });
-        btnBack.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(Lichsugiaodich.this, Profile.class);
-                startActivity(intent);
-            }
-        });
+        btnBack.setOnClickListener(v -> finish());
     }
 }

@@ -13,6 +13,9 @@ public class User {
     private String password;
     private String name;
     private int role;
+    private String avatar;
+    private String gender;
+    private String birthday;
 
     public User() {
     }
@@ -82,5 +85,29 @@ public class User {
 
     public void setRole(int role) {
         this.role = role;
+    }
+
+    public String getAvatar() {
+        return avatar;
+    }
+
+    public void setAvatar(String avatar) {
+        this.avatar = avatar;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    public String getBirthday() {
+        return birthday;
+    }
+
+    public void setBirthday(String birthday) {
+        this.birthday = birthday;
     }
 }
