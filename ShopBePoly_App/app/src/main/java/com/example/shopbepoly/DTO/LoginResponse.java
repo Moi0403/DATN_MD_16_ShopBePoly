@@ -21,6 +21,7 @@ public class LoginResponse {
         private String username;
         private String name;
         private int role;
+        private String email;
 
         public String getId() {
             return id;
@@ -36,6 +37,10 @@ public class LoginResponse {
 
         public int getRole() {
             return role;
+        }
+
+        public String getEmail() {
+            return email;
         }
     }
 }

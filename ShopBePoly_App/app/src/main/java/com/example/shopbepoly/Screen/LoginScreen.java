@@ -94,6 +94,7 @@ public class LoginScreen extends AppCompatActivity {
                     editor.putString("userId", loginResponse.getUser().getId());
                     editor.putString("username", loginResponse.getUser().getUsername());
                     editor.putString("name", loginResponse.getUser().getName());
+                    editor.putString("email", loginResponse.getUser().getEmail());
                     editor.putInt("role", loginResponse.getUser().getRole());
                     Log.d("LoginDebug", "Saved userId = " + loginResponse.getUser().getId());
                     Log.d("LoginDebug", "User = " + new Gson().toJson(loginResponse.getUser()));

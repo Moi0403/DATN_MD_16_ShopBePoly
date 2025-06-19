@@ -11,13 +11,17 @@ import com.example.shopbepoly.DTO.User;
 
 import java.util.List;
 
+import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.DELETE;
 import retrofit2.http.GET;
+import retrofit2.http.Multipart;
 import retrofit2.http.POST;
 import retrofit2.http.PUT;
+import retrofit2.http.Part;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
 
@@ -72,6 +76,20 @@ public interface ApiService {
     // User
     @GET("list_user")
     Call<List<User>> getUsers();
+    @Multipart
+    @PUT("up_user/{userId}")
+    Call<User> updateUserWithImage(
+        @Path("userId") String userId,
+        @Part MultipartBody.Part avatar,
+        @Part("name") RequestBody name,
+        @Part("email") RequestBody email,
+        @Part("phone_number") RequestBody phone,
+        @Part("birthday") RequestBody birthday,
+        @Part("gender") RequestBody gender
+    );
+
+    @PUT("up_user/{userId}")
+    Call<List<User>> updateUser(@Path("userId") String userId, @Body User user);
 
     // cart
     @POST("add_cart")
@@ -82,5 +100,8 @@ public interface ApiService {
     Call<List<Cart>> upCart(@Path("cartId") String cartId, @Body Cart cart);
     @DELETE("del_cart/{cartId}")
     Call<List<Cart>> delCart(@Path("cartId") String cartId);
+
+    @PUT("up_password/{userId}")
+    Call<ResponseBody> changePassword(@Path("userId") String userId, @Body RequestBody body);
 
 }

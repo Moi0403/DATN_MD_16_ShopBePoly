@@ -132,7 +132,7 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
     public void setData(List<Product> newList) {
         this.productList.clear();
         this.productList.addAll(newList);
-        notifyItemRangeChanged(0, newList.size());
+        notifyDataSetChanged();
     }
 
     @Override

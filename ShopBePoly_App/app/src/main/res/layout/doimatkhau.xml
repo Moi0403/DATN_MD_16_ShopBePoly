@@ -5,85 +5,116 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".DoiMatKhau"
     android:orientation="vertical"
-    android:layout_margin="20dp">
+    android:background="@android:color/white"
+    android:padding="24dp"
+    tools:context=".DoiMatKhau">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:gravity="center_vertical">
 
         <ImageView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:id="@+id/btnBack"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
             android:src="@drawable/back"
-            />
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Quay lại"
+            android:padding="8dp" />
+
         <TextView
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_weight="1"
             android:text="Đổi mật khẩu"
-            android:textSize="20sp"
+            android:textSize="16dp"
             android:textStyle="bold"
             android:gravity="center"
-            />
+            android:textColor="#222" />
     </LinearLayout>
 
-    <TextView
-        android:layout_marginTop="50dp"
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="24dp" />
+
+    <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Nhập mật khẩu:"
-        android:textSize="15sp"
-        />
-    <EditText
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="8dp"
+        android:hint="Mật khẩu cũ"
+        app:endIconMode="password_toggle">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/edtOldPassword"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
+            android:inputType="textPassword"
+            android:drawableEnd="@drawable/hide" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:inputType="textPassword"
-        android:drawableEnd="@drawable/hide"
-        android:paddingEnd="10dp"
-        android:background="@drawable/custtom_editext"
-        />
-    <TextView
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        android:hint="Mật khẩu mới"
+        app:endIconMode="password_toggle">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/edtNewPassword"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
+            android:inputType="textPassword"
+            android:drawableEnd="@drawable/hide" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Nhập mật khẩu mới:"
-        android:textSize="15sp"
-        />
-    <EditText
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:inputType="textPassword"
-        android:drawableEnd="@drawable/hide"
-        android:paddingEnd="10dp"
-        android:background="@drawable/custtom_editext"
-        />
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Nhập lại mật khẩu mới:"
-        android:textSize="15sp"
-        />
-    <EditText
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:inputType="textPassword"
-        android:drawableEnd="@drawable/hide"
-        android:paddingEnd="10dp"
-        android:background="@drawable/custtom_editext"
-        />
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="16dp"
+        android:hint="Nhập lại mật khẩu mới"
+        app:endIconMode="password_toggle">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/edtConfirmPassword"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
+            android:inputType="textPassword"
+            android:drawableEnd="@drawable/hide" />
+    </com.google.android.material.textfield.TextInputLayout>
+
     <View
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"/>
-    <Button
-        android:layout_marginBottom="20dp"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Cập nhật"
-        android:textSize="20sp"
-        android:textColor="#FFFFFF"
+        android:layout_weight="1" />
 
+    <Button
+        android:id="@+id/btnUpdate"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp"
+        android:backgroundTint="#FF0000"
+        android:text="Cập nhật"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold"
+        android:textSize="18sp"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
         android:background="@drawable/custtom_button"
-        app:backgroundTint="@null"
-        />
+        app:backgroundTint="@null" />
+
 </LinearLayout>

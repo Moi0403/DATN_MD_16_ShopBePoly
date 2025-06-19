@@ -70,9 +70,6 @@
             android:name=".Chitietdonhang"
             android:exported="false" />
         <activity
-            android:name=".Profile"
-            android:exported="false" />
-        <activity
             android:name=".Lichsugiaodich"
             android:exported="false" />
         <activity
@@ -98,9 +95,6 @@
             android:exported="false" />
         <activity
             android:name=".DieuKhoanvaDieuKien"
-            android:exported="false" />
-        <activity
-            android:name=".HoSo"
             android:exported="false" />
         <activity
             android:name=".Donhang"

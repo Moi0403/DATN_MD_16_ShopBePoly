@@ -167,9 +167,13 @@ router.get('/search_product', async (req, res) => {
 //User
 // lấy ds user 'http://localhost:3000/api/list_user'
 router.get('/list_user', async (req, res)=>{
-    await mongoose.connect(uri);
-    let user = await userModel.find();
-    res.send(user);
+    try {
+        const users = await userModel.find().select('-password'); // Trả về tất cả trường trừ password
+        res.json(users);
+    } catch (error) {
+        console.error('Lỗi khi lấy danh sách user:', error);
+        res.status(500).json({ error: 'Lỗi server' });
+    }
 });
 
 // thêm user 'http://localhost:3000/api/add_user'
@@ -187,7 +191,9 @@ router.post('/add_user', upload.fields([
             name: body.name_user,
             email: body.email_user,
             phone_number: body.phone_user,
-            avt_user: files.avt_user?.[0]?.filename || '',
+            birthday: body.birthday_user,
+            gender: body.gender_user,
+            avt_user: (files && files.avt_user && files.avt_user[0]) ? files.avt_user[0].filename : '',
             role: body.role_user
         });
         await newUser.save();
@@ -202,13 +208,24 @@ router.post('/add_user', upload.fields([
 })
 
 // sửa user 'http://localhost:3000/api/up_user/ id'
-router.put('/up_user/:id', async (req, res)=>{
+router.put('/up_user/:id', upload.single('avt'), async (req, res)=>{
     try{
         const id = req.params.id;
         const data = req.body;
-        
-        const kq = await userModel.findByIdAndUpdate(id, data, { new: true });
+        console.log('Dữ liệu nhận được từ app:', data); // Thêm dòng này
 
+        if (data.birthday_user) {
+            data.birthday = data.birthday_user;
+            delete data.birthday_user;
+        }
+        if (data.gender_user) {
+            data.gender = data.gender_user;
+            delete data.gender_user;
+        }
+        if (req.file) {
+            data.avt = req.file.path; // Lưu đường dẫn file vào trường avatar
+        }
+        const kq = await userModel.findByIdAndUpdate(id, data, { new: true });
         if(kq){
             console.log('Sửa thành công');
             let usr = await userModel.find();
@@ -220,6 +237,24 @@ router.put('/up_user/:id', async (req, res)=>{
         res.send('Lỗi khi sửa')
     }
 })
+
+router.put('/up_user/:id', upload.single('avatar'), async (req, res) => {
+    try {
+        const id = req.params.id;
+        const data = req.body;
+        if (req.file) {
+            data.avatar = req.file.path; // Lưu đường dẫn file vào trường avatar
+        }
+        const kq = await userModel.findByIdAndUpdate(id, data, { new: true });
+        if (kq) {
+            res.json(kq);
+        } else {
+            res.status(404).send('Không tìm thấy người dùng để sửa');
+        }
+    } catch (error) {
+        res.status(500).send('Lỗi khi sửa');
+    }
+});
 
 // xóa user 'http://localhost:3000/api/del_user/ id'
 router.delete('/del_user/:id', async (req, res)=>{
@@ -240,7 +275,7 @@ router.delete('/del_user/:id', async (req, res)=>{
 })
 // Đăng ký
 router.post('/register', async (req, res) => {
-    let { username, password, name, email, phone_number } = req.body;
+    let { username, password, name, email, phone_number, birthday, gender } = req.body;
 
     // Chuyển phone_number sang Number (nếu client gửi chuỗi)
     phone_number = Number(phone_number);
@@ -259,6 +294,8 @@ router.post('/register', async (req, res) => {
             name,
             email,
             phone_number,
+            birthday: birthday || null,
+            gender: gender || '',
             avt_user: "",
             role: 0
         });
@@ -669,7 +706,32 @@ router.post('/messages', async (req, res) => {
     }
 });
 
+// Đổi mật khẩu user
+router.put('/up_password/:id', async (req, res) => {
+    try {
+        const id = req.params.id;
+        const { oldPassword, newPassword } = req.body;
 
+        // Tìm user theo id
+        const user = await userModel.findById(id);
+        if (!user) {
+            return res.status(404).json({ message: 'Không tìm thấy người dùng' });
+        }
 
+        // Kiểm tra mật khẩu cũ
+        if (user.password !== oldPassword) {
+            return res.status(400).json({ message: 'Mật khẩu cũ không đúng' });
+        }
+
+        // Cập nhật mật khẩu mới
+        user.password = newPassword;
+        await user.save();
+
+        res.json({ message: 'Đổi mật khẩu thành công' });
+    } catch (error) {
+        console.error('Lỗi đổi mật khẩu:', error);
+        res.status(500).json({ message: 'Lỗi server khi đổi mật khẩu' });
+    }
+});
 
 app.use(express.json());
