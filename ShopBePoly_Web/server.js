@@ -19,6 +19,8 @@ const cartModel = require('./Database/cartModel');
 const commentModel = require('./Database/commentModel');
 const categoryModel = require('./Database/categoryModel');
 const orderModel = require('./Database/order');
+const favoriteModel = require('./Database/favoriteModel');
+const Favorite = favoriteModel;
 const messageModel = require('./Database/messageModel');
 
 
@@ -347,6 +349,8 @@ router.post('/login', async (req, res) => {
         res.status(500).json({ message: 'Lỗi server khi đăng nhập' });
     }
 });
+
+
 // Lấy giỏ hàng http://localhost:3000/api/:useId
 router.get('/list_cart/:userId', async (req, res) => {
     try {
@@ -731,6 +735,60 @@ router.put('/up_password/:id', async (req, res) => {
     } catch (error) {
         console.error('Lỗi đổi mật khẩu:', error);
         res.status(500).json({ message: 'Lỗi server khi đổi mật khẩu' });
+    }
+});
+router.post("/add_favorite", async (req, res) => {
+    try {
+        const { id_user, id_product } = req.body;
+
+        const exists = await favoriteModel.findOne({ id_user, id_product });
+        if (exists) {
+            return res.status(400).json({ message: "Đã tồn tại trong yêu thích" });
+        }
+
+        const product = await productModel.findById(id_product);
+        const user = await userModel.findById(id_user);
+        if (!product || !user) {
+            return res.status(404).json({ message: "Không tìm thấy user hoặc product" });
+        }
+
+        const favorite = new favoriteModel({ id_user, id_product });
+        await favorite.save();
+        res.status(200).json(favorite);
+    } catch (err) {
+        console.error("Add favorite error:", err);
+        res.status(500).json({ message: "Thêm yêu thích thất bại", error: err });
+    }
+});
+
+
+
+router.delete('/remove_favorite', async (req, res) => {
+    const { id_user, id_product } = req.query;
+    try {
+        const result = await Favorite.deleteOne({ id_user, id_product });
+        if (result.deletedCount === 0) {
+            return res.status(404).json({ message: 'Không tìm thấy yêu thích để xoá' });
+        }
+        res.json({ message: 'Đã xoá yêu thích thành công' });
+    } catch (err) {
+        res.status(500).json({ message: 'Lỗi server khi xoá yêu thích' });
+    }
+});
+
+
+
+router.get('/favorites/:userId', async (req, res) => {
+    try {
+        const favorites = await Favorite.find({ id_user: req.params.userId })
+            .populate('id_product');
+        res.status(200).json(favorites);
+    } catch (error) {
+        console.error('Lỗi khi lấy danh sách yêu thích:', error);
+        res.status(500).json({
+            message: 'Lỗi khi lấy danh sách yêu thích',
+            error: error.message || error
+        });
     }
 });
 

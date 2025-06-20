@@ -48,4 +48,9 @@ public class HomeNavScreen extends AppCompatActivity {
         fragmentTransaction.replace(R.id.frame_layout, fragment);
         fragmentTransaction.commit();
     }
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+    }
 }
