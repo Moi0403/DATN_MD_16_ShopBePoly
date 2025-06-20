@@ -13,6 +13,7 @@ import com.example.shopbepoly.API.ApiService;
 import com.example.shopbepoly.DTO.LoginRequest;
 import com.example.shopbepoly.DTO.LoginResponse;
 import com.example.shopbepoly.R;
+import com.example.shopbepoly.fragment.FavoriteFragment;
 import com.example.shopbepoly.nav.HomeNavScreen;
 import com.google.gson.Gson;
 

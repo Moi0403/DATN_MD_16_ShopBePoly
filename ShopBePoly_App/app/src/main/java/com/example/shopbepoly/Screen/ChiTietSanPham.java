@@ -15,12 +15,17 @@ import androidx.appcompat.widget.AppCompatButton;
 import com.example.shopbepoly.API.ApiClient;
 import com.example.shopbepoly.API.ApiService;
 import com.example.shopbepoly.DTO.Cart;
+import com.example.shopbepoly.DTO.Favorite;
 import com.example.shopbepoly.DTO.Product;
 import com.example.shopbepoly.DTO.Variation;
 import com.example.shopbepoly.R;
 import com.example.shopbepoly.fragment.FavoriteFragment;
 import com.squareup.picasso.Picasso;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -117,15 +122,47 @@ public class ChiTietSanPham extends AppCompatActivity {
 
         btnFavorite.setOnClickListener(v -> {
             if (product == null) return;
-
-            if (isFavorite) {
-                FavoriteFragment.remove(product);
-            } else {
-                FavoriteFragment.add(product);
+            SharedPreferences prefs = getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
+            String userId = prefs.getString("userId", null);
+            if (userId == null) {
+                Toast.makeText(this, "Bạn cần đăng nhập để yêu thích", Toast.LENGTH_SHORT).show();
+                return;
             }
 
-            isFavorite = !isFavorite;
-            updateFavoriteButton();
+            ApiService api = ApiClient.getApiService();
+            Favorite fav = new Favorite(userId, product.get_id());
+            btnFavorite.setEnabled(false);
+            if (isFavorite) {
+                api.removeFavorite(userId,product.get_id()).enqueue(new Callback<ResponseBody>() {
+                    @Override public void onResponse(Call<ResponseBody> c, Response<ResponseBody> r) {
+                        if (r.isSuccessful()) {
+                            isFavorite = false;
+                            FavoriteFragment.remove(getApplicationContext(),product);
+                            updateFavoriteButton();
+                            Toast.makeText(ChiTietSanPham.this, "Xóa sản phẩm yêu thích thành công!", Toast.LENGTH_SHORT).show();
+                        }
+                        btnFavorite.setEnabled(true);
+                    }
+                    @Override public void onFailure(Call<ResponseBody> c, Throwable t) {
+                        btnFavorite.setEnabled(true);
+                    }
+                });
+            } else {
+                api.addFavorite(fav).enqueue(new Callback<Favorite>() {
+                    @Override public void onResponse(Call<Favorite> c, Response<Favorite> r) {
+                        if (r.isSuccessful()) {
+                            isFavorite = true;
+                            FavoriteFragment.add(getApplicationContext(),product);
+                            updateFavoriteButton();
+                            Toast.makeText(ChiTietSanPham.this, "Đã thêm sản phẩm vào yêu thích!", Toast.LENGTH_SHORT).show();
+                        }
+                        btnFavorite.setEnabled(true);
+                    }
+                    @Override public void onFailure(Call<Favorite> c, Throwable t) {
+                        btnFavorite.setEnabled(true);
+                    }
+                });
+            }
         });
 
         btnDecrease.setOnClickListener(v -> {

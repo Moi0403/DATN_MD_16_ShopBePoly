@@ -2,6 +2,7 @@ package com.example.shopbepoly.API;
 
 import com.example.shopbepoly.DTO.Cart;
 import com.example.shopbepoly.DTO.Category;
+import com.example.shopbepoly.DTO.Favorite;
 import com.example.shopbepoly.DTO.LoginRequest;
 import com.example.shopbepoly.DTO.LoginResponse;
 import com.example.shopbepoly.DTO.Message;
@@ -10,6 +11,7 @@ import com.example.shopbepoly.DTO.Product;
 import com.example.shopbepoly.DTO.User;
 
 import java.util.List;
+import java.util.Map;
 
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
@@ -104,4 +106,15 @@ public interface ApiService {
     @PUT("up_password/{userId}")
     Call<ResponseBody> changePassword(@Path("userId") String userId, @Body RequestBody body);
 
+    @GET("products/{id}")
+    Call<Product> getProductById(@Path("id") String productId);
+
+    @POST("add_favorite")
+    Call<Favorite> addFavorite(@Body Favorite favorite);
+
+    @DELETE("remove_favorite")
+    Call<ResponseBody> removeFavorite(@Query("id_user") String userId, @Query("id_product") String productId);
+
+    @GET("favorites/{userId}")
+    Call<List<Favorite>> getFavorites(@Path("userId") String userId);
 }

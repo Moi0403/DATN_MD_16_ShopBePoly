@@ -154,11 +154,12 @@ public class Product implements Serializable {
         if (this == o) return true;
         if (!(o instanceof Product)) return false;
         Product p = (Product) o;
-        return _id != null && _id.equals(p._id);   // so sánh theo id
+        return _id != null && _id.equals(p.get_id());
     }
 
     @Override
     public int hashCode() {
         return _id != null ? _id.hashCode() : 0;
     }
+
 }
