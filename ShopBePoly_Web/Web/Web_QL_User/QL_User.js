@@ -30,7 +30,12 @@ const hienThiUser = async () => {
 
             const tdIMG = document.createElement('td');
             const img = document.createElement('img');
-            img.src = `http://localhost:3000/uploads/${item.avt_user}`;
+                       if (item.avt_user?.startsWith('http')) {
+                img.src = item.avt_user; // Đã có URL đầy đủ
+            } else {
+                img.src = `http://${config.host}:${config.port}/uploads/${item.avt_user}`; // Chỉ là tên file
+            }
+
             img.width = 100;
             img.height = 100;
             img.style.objectFit = 'contain';
