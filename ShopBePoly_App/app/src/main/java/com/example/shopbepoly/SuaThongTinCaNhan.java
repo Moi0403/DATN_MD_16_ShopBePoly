@@ -11,12 +11,21 @@ import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.content.SharedPreferences;
 import android.widget.Toast;
+
+import com.bumptech.glide.Glide;
 import com.example.shopbepoly.API.ApiClient;
 import com.example.shopbepoly.API.ApiService;
+import com.example.shopbepoly.DTO.FileUtil;
 import com.example.shopbepoly.DTO.User;
+
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+
+import java.io.File;
 import java.util.List;
 
 import androidx.activity.EdgeToEdge;
@@ -110,17 +119,27 @@ public class SuaThongTinCaNhan extends AppCompatActivity {
                     for (User user : response.body()) {
                         if (user.getId().equals(userId)) {
                             currentUser = user;
+
+                            // ✅ Hiển thị avatar nếu có
+                            if (currentUser.getAvatar() != null && !currentUser.getAvatar().isEmpty()) {
+                                Glide.with(SuaThongTinCaNhan.this)
+                                        .load(currentUser.getAvatar())
+                                        .into(imageUpdateAvatar);
+                            }
+
                             break;
                         }
                     }
                 }
             }
+
             @Override
             public void onFailure(Call<List<User>> call, Throwable t) {
                 Toast.makeText(SuaThongTinCaNhan.this, "Không thể tải thông tin người dùng", Toast.LENGTH_SHORT).show();
             }
         });
     }
+
 
     private boolean validateInput() {
         String name = editName.getText().toString().trim();
@@ -158,7 +177,7 @@ public class SuaThongTinCaNhan extends AppCompatActivity {
     private void updateUserInfo() {
         SharedPreferences sharedPreferences = getSharedPreferences("LoginPrefs", MODE_PRIVATE);
         String userId = sharedPreferences.getString("userId", "");
-        
+
         if (userId.isEmpty()) {
             Toast.makeText(this, "Không tìm thấy thông tin người dùng", Toast.LENGTH_SHORT).show();
             return;
@@ -170,100 +189,97 @@ public class SuaThongTinCaNhan extends AppCompatActivity {
         String email = editEmail.getText().toString().trim();
         String gender = radioMale.isChecked() ? "Nam" : "Nữ";
 
-        // Tạo user mới để cập nhật
         User updatedUser = new User();
-        updatedUser.setId(userId);  // Set ID trước, không phụ thuộc vào currentUser
-
-        // Cập nhật thông tin mới
+        updatedUser.setId(userId);
         updatedUser.setName(name);
         updatedUser.setEmail(email);
         updatedUser.setPhone_number(phone);
         updatedUser.setGender(gender);
         updatedUser.setBirthday(birthday);
-        
-        // Giữ lại các thông tin không thay đổi từ currentUser nếu có
+
         if (currentUser != null) {
             updatedUser.setUsername(currentUser.getUsername());
             updatedUser.setPassword(currentUser.getPassword());
             updatedUser.setRole(currentUser.getRole());
             updatedUser.setAvatar(currentUser.getAvatar());
         } else {
-            // Nếu không có currentUser, set các giá trị mặc định
-            updatedUser.setUsername("");  // hoặc giá trị mặc định khác
-            updatedUser.setPassword("");  // hoặc giữ nguyên password cũ từ SharedPreferences
-            updatedUser.setRole(0);       // hoặc role mặc định
-            updatedUser.setAvatar("");    // hoặc đường dẫn avatar mặc định
+            updatedUser.setUsername("");
+            updatedUser.setPassword("");
+            updatedUser.setRole(0);
+            updatedUser.setAvatar("");
         }
 
+        // 🔽 Thêm đoạn này
+        if (selectedImageUri != null) {
+            uploadAvatarAndUpdateInfo(userId, updatedUser);
+        } else {
+            updateUserWithoutAvatar(userId, updatedUser);
+        }
+    }
+    private void uploadAvatarAndUpdateInfo(String userId, User updatedUser) {
+        try {
+            File file = FileUtil.from(this, selectedImageUri);
+            RequestBody requestFile = RequestBody.create(MediaType.parse("image/*"), file);
+            MultipartBody.Part body = MultipartBody.Part.createFormData("avatar", file.getName(), requestFile);
+
+            ApiService apiService = ApiClient.getApiService();
+            apiService.uploadAvatar(userId, body).enqueue(new Callback<User>() {
+                @Override
+                public void onResponse(Call<User> call, Response<User> response) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        String newAvatarUrl = response.body().getAvatar();
+                        updatedUser.setAvatar(newAvatarUrl);
+
+// Cập nhật lại hình ảnh trên giao diện bằng Glide
+                        Glide.with(SuaThongTinCaNhan.this)
+                                .load(newAvatarUrl)
+                                .into(imageUpdateAvatar);
+
+                        updateUserWithoutAvatar(userId, updatedUser);
+                    } else {
+                        try {
+                            String errorBody = response.errorBody() != null ? response.errorBody().string() : "Không có nội dung lỗi";
+                            Toast.makeText(SuaThongTinCaNhan.this, "Lỗi upload ảnh: " + errorBody, Toast.LENGTH_LONG).show();
+                            System.err.println("Upload ảnh lỗi - Code: " + response.code() + ", body: " + errorBody);
+                        } catch (Exception e) {
+                            Toast.makeText(SuaThongTinCaNhan.this, "Lỗi upload ảnh", Toast.LENGTH_SHORT).show();
+                            e.printStackTrace();
+                        }
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<User> call, Throwable t) {
+                    Toast.makeText(SuaThongTinCaNhan.this, "Lỗi kết nối khi upload ảnh", Toast.LENGTH_SHORT).show();
+                }
+            });
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "Lỗi xử lý ảnh", Toast.LENGTH_SHORT).show();
+        }
+    }
+    private void updateUserWithoutAvatar(String userId, User updatedUser) {
         ApiService apiService = ApiClient.getApiService();
-        android.util.Log.d("UserUpdate", "Đang gửi yêu cầu cập nhật cho userId: " + userId);
-        android.util.Log.d("UserUpdate", "Dữ liệu gửi đi - Name: " + updatedUser.getName() + 
-            ", Email: " + updatedUser.getEmail() + 
-            ", Phone: " + updatedUser.getPhone_number() + 
-            ", Birthday: " + updatedUser.getBirthday() +
-            ", Gender: " + updatedUser.getGender());
-            
         apiService.updateUser(userId, updatedUser).enqueue(new Callback<List<User>>() {
             @Override
             public void onResponse(Call<List<User>> call, Response<List<User>> response) {
-                android.util.Log.d("UserUpdate", "Mã phản hồi: " + response.code());
-                if (!response.isSuccessful() && response.errorBody() != null) {
-                    try {
-                        android.util.Log.e("UserUpdate", "Lỗi: " + response.errorBody().string());
-                    } catch (Exception e) {
-                        android.util.Log.e("UserUpdate", "Không thể đọc error body");
-                    }
-                }
-                
                 if (response.isSuccessful() && response.body() != null) {
-                    List<User> updatedUsers = response.body();
-                    User updatedUser = null;
-                    // Tìm user được cập nhật trong danh sách
-                    for (User user : updatedUsers) {
-                        if (user.getId().equals(userId)) {
-                            updatedUser = user;
-                            break;
-                        }
-                    }
-                    
-                    if (updatedUser != null) {
-                        // Cập nhật SharedPreferences với thông tin mới
-                        SharedPreferences.Editor editor = sharedPreferences.edit();
-                        editor.putString("name", updatedUser.getName());
-                        editor.putString("email", updatedUser.getEmail());
-                        editor.putString("phone", updatedUser.getPhone_number());
-                        editor.putString("birthday", updatedUser.getBirthday());
-                        editor.putString("gender", updatedUser.getGender());
-                        editor.apply();
-
-                        android.util.Log.d("UserUpdate", "Đã lưu thông tin mới vào SharedPreferences");
-                        Toast.makeText(SuaThongTinCaNhan.this, "Cập nhật thành công", Toast.LENGTH_SHORT).show();
-                        setResult(RESULT_OK);
-                        finish();
-                    } else {
-                        Toast.makeText(SuaThongTinCaNhan.this, "Không tìm thấy thông tin người dùng sau khi cập nhật", Toast.LENGTH_LONG).show();
-                    }
+                    Toast.makeText(SuaThongTinCaNhan.this, "Cập nhật thành công", Toast.LENGTH_SHORT).show();
+                    setResult(RESULT_OK);
+                    finish();
                 } else {
-                    String errorMessage;
-                    try {
-                        if (response.errorBody() != null) {
-                            errorMessage = response.errorBody().string();
-                        } else {
-                            errorMessage = "Lỗi không xác định: " + response.code();
-                        }
-                    } catch (Exception e) {
-                        errorMessage = "Lỗi không xác định: " + response.code();
-                    }
-                    Toast.makeText(SuaThongTinCaNhan.this, "Cập nhật thất bại: " + errorMessage, Toast.LENGTH_LONG).show();
+                    Toast.makeText(SuaThongTinCaNhan.this, "Cập nhật thất bại", Toast.LENGTH_SHORT).show();
                 }
             }
+
             @Override
             public void onFailure(Call<List<User>> call, Throwable t) {
-                android.util.Log.e("UserUpdate", "Lỗi kết nối: " + t.getMessage(), t);
-                Toast.makeText(SuaThongTinCaNhan.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_LONG).show();
+                Toast.makeText(SuaThongTinCaNhan.this, "Lỗi kết nối", Toast.LENGTH_SHORT).show();
             }
         });
     }
+
 
     // Thêm hàm showDatePickerDialog vào cuối file
     private void showDatePickerDialog() {

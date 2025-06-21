@@ -109,6 +109,7 @@ public class ThongTinCaNhan extends AppCompatActivity {
                                 txtNgaysinh.setText("");
                             }
                             if (user.getAvatar() != null && !user.getAvatar().isEmpty()) {
+                                android.util.Log.d("AvatarURL", "Avatar URL: " + user.getAvatar());
                                 Glide.with(ThongTinCaNhan.this).load(user.getAvatar()).placeholder(R.drawable.avatar_default).error(R.drawable.avatar_default).into(imgAvatar);
                             } else {
                                 imgAvatar.setImageResource(R.drawable.avatar_default);

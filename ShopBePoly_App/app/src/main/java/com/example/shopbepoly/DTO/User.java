@@ -13,7 +13,9 @@ public class User {
     private String password;
     private String name;
     private int role;
+    @SerializedName("avt_user")
     private String avatar;
+
     private String gender;
     private String birthday;
 
