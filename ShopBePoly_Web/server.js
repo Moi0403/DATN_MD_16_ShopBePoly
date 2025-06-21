@@ -10,6 +10,7 @@ app.use(bodyParser.json());
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static('uploads'));
 
 
 const productModel = require('./Database/productModel');
@@ -792,9 +793,11 @@ router.get('/favorites/:userId', async (req, res) => {
     }
 });
 
-app.post('/api/upload-avatar/:id', upload.single('avatar'), async (req, res) => {
+router.post('/upload-avatar/:id', upload.single('avt_user'), async (req, res) => {
     const userId = req.params.id;
-    const avatarUrl = req.file ? `http://192.168.55.108:3000/uploads/${req.file.filename}` : '';
+    const avatarUrl = req.file 
+        ? `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}` 
+        : '';
 
     try {
         const updatedUser = await userModel.findByIdAndUpdate(
@@ -805,12 +808,12 @@ app.post('/api/upload-avatar/:id', upload.single('avatar'), async (req, res) => 
         if (!updatedUser) {
             return res.status(404).json({ message: 'Không tìm thấy người dùng' });
         }
+        console.log('Sửa thành công');
         res.json({ message: 'Upload avatar thành công', user: updatedUser });
     } catch (error) {
         console.error('Lỗi upload:', error);
         res.status(500).json({ message: 'Upload thất bại', error: error.message });
     }
 });
-
 
 app.use(express.json());

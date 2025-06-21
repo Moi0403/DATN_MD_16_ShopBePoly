@@ -16,6 +16,8 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.bumptech.glide.load.resource.bitmap.CircleCrop;
+import com.bumptech.glide.request.RequestOptions;
 import com.example.shopbepoly.API.ApiClient;
 import com.example.shopbepoly.API.ApiService;
 import com.example.shopbepoly.DTO.User;
@@ -110,9 +112,14 @@ public class ThongTinCaNhan extends AppCompatActivity {
                             }
                             if (user.getAvatar() != null && !user.getAvatar().isEmpty()) {
                                 android.util.Log.d("AvatarURL", "Avatar URL: " + user.getAvatar());
-                                Glide.with(ThongTinCaNhan.this).load(user.getAvatar()).placeholder(R.drawable.avatar_default).error(R.drawable.avatar_default).into(imgAvatar);
+                                Glide.with(ThongTinCaNhan.this)
+                                        .load(currentUser.getAvatar())
+                                        .apply(RequestOptions.bitmapTransform(new CircleCrop()))
+                                        .placeholder(R.drawable.ic_avatar)
+                                        .error(R.drawable.ic_avatar)
+                                        .into(imgAvatar);
                             } else {
-                                imgAvatar.setImageResource(R.drawable.avatar_default);
+                                imgAvatar.setImageResource(R.drawable.ic_avatar);
                             }
                             break;
                         }
@@ -151,6 +158,12 @@ public class ThongTinCaNhan extends AppCompatActivity {
             sb.append(u.getId()).append(", ");
         }
         return sb.toString();
+    }
+
+    @Override
+    public void finish() {
+        setResult(Activity.RESULT_OK);
+        super.finish();
     }
 
     @Override

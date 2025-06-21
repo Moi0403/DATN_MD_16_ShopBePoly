@@ -1,5 +1,6 @@
 package com.example.shopbepoly.fragment;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
@@ -15,6 +16,10 @@ import android.widget.TextView;
 import androidx.fragment.app.Fragment;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.load.resource.bitmap.CircleCrop;
+import com.bumptech.glide.request.RequestOptions;
+import com.bumptech.glide.signature.ObjectKey;
 import com.example.shopbepoly.ChinhSachvaQuyenRiengTu;
 import com.example.shopbepoly.DieuKhoanvaDieuKien;
 import com.example.shopbepoly.DoiMatKhau;
@@ -28,7 +33,9 @@ import com.example.shopbepoly.ThongTinCaNhan;
 import com.example.shopbepoly.API.ApiClient;
 import com.example.shopbepoly.API.ApiService;
 import com.example.shopbepoly.DTO.User;
+
 import java.util.List;
+
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -55,38 +62,16 @@ public class ProfileFragment extends Fragment {
         txtName = view.findViewById(R.id.txtName);
         txtEmail = view.findViewById(R.id.txtEmail);
 
-        // Lấy thông tin user từ SharedPreferences
-        SharedPreferences sharedPreferences = requireActivity().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
-        String userId = sharedPreferences.getString("userId", "");
-
-        ApiService apiService = ApiClient.getApiService();
-        apiService.getUsers().enqueue(new Callback<List<User>>() {
-            @Override
-            public void onResponse(Call<List<User>> call, Response<List<User>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    for (User user : response.body()) {
-                        if (user.getId().equals(userId)) {
-                            txtName.setText(user.getName() != null ? user.getName() : "");
-                            txtEmail.setText(user.getEmail() != null ? user.getEmail() : "");
-
-                             Glide.with(ProfileFragment.this).load(user.getAvatar()).placeholder(R.drawable.avatar_default).error(R.drawable.avatar_default).into(imgAvatar);
-                            break;
-                        }
-                    }
-                }
-            }
-            @Override
-            public void onFailure(Call<List<User>> call, Throwable t) {
-                // Xử lý lỗi nếu cần
-            }
-        });
+        loadUserProfile();
 
         txtThongtincanhan.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startActivity(new Intent(getActivity(), ThongTinCaNhan.class));
+                Intent intent = new Intent(getActivity(), ThongTinCaNhan.class);
+                startActivityForResult(intent, 1001);
             }
         });
+
         txtLichsugiaodich.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -109,7 +94,7 @@ public class ProfileFragment extends Fragment {
         txtLienhe.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-               startActivity(new Intent(getActivity(),LienHe.class));
+                startActivity(new Intent(getActivity(), LienHe.class));
             }
         });
 
@@ -132,6 +117,47 @@ public class ProfileFragment extends Fragment {
             }
         });
         return view;
+    }
+
+    // Trong onCreateView -> thay bằng gọi hàm loadUserProfile()
+    private void loadUserProfile() {
+        SharedPreferences sharedPreferences = requireActivity().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
+        String userId = sharedPreferences.getString("userId", "");
+
+        ApiService apiService = ApiClient.getApiService();
+        apiService.getUsers().enqueue(new Callback<List<User>>() {
+            @Override
+            public void onResponse(Call<List<User>> call, Response<List<User>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    for (User user : response.body()) {
+                        if (user.getId().equals(userId)) {
+                            txtName.setText(user.getName() != null ? user.getName() : "");
+                            txtEmail.setText(user.getEmail() != null ? user.getEmail() : "");
+                            Glide.with(ProfileFragment.this)
+                                    .load(user.getAvatar())
+                                    .apply(new RequestOptions()
+                                            .transform(new CircleCrop())
+                                            .placeholder(R.drawable.ic_avatar)
+                                            .error(R.drawable.ic_avatar))
+                                    .into(imgAvatar);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<User>> call, Throwable t) {
+                // Xử lý lỗi nếu cần
+            }
+        });
+    }
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 1001 && resultCode == Activity.RESULT_OK) {
+            loadUserProfile(); // ✅ Reload lại avatar, tên, email
+        }
     }
 
     private void showLogoutDialog() {

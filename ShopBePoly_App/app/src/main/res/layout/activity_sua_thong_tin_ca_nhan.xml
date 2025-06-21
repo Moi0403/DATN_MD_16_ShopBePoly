@@ -46,7 +46,6 @@
             android:layout_height="96dp"
             android:layout_gravity="center_horizontal"
             android:layout_marginBottom="32dp"
-            android:background="#D1D5DB"
             android:clipToOutline="true"
             android:outlineProvider="background">
 
@@ -55,7 +54,7 @@
                 android:layout_width="96dp"
                 android:layout_height="96dp"
                 android:scaleType="centerCrop"
-                android:src="@drawable/avatar_default" />
+                android:src="@drawable/ic_avatar" />
         </LinearLayout>
 
         <LinearLayout
