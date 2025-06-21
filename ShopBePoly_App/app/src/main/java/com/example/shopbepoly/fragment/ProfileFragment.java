@@ -68,8 +68,8 @@ public class ProfileFragment extends Fragment {
                         if (user.getId().equals(userId)) {
                             txtName.setText(user.getName() != null ? user.getName() : "");
                             txtEmail.setText(user.getEmail() != null ? user.getEmail() : "");
-                            // Nếu có avatarUrl thì load, không thì để mặc định
-//                             Glide.with(ProfileFragment.this).load(user.getAvatarUrl()).placeholder(R.drawable.avatar_default).error(R.drawable.avatar_default).into(imgAvatar);
+
+                             Glide.with(ProfileFragment.this).load(user.getAvatar()).placeholder(R.drawable.avatar_default).error(R.drawable.avatar_default).into(imgAvatar);
                             break;
                         }
                     }

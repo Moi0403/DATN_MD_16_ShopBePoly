@@ -792,4 +792,25 @@ router.get('/favorites/:userId', async (req, res) => {
     }
 });
 
+app.post('/api/upload-avatar/:id', upload.single('avatar'), async (req, res) => {
+    const userId = req.params.id;
+    const avatarUrl = req.file ? `http://192.168.55.108:3000/uploads/${req.file.filename}` : '';
+
+    try {
+        const updatedUser = await userModel.findByIdAndUpdate(
+            userId,
+            { avt_user: avatarUrl },
+            { new: true }
+        );
+        if (!updatedUser) {
+            return res.status(404).json({ message: 'Không tìm thấy người dùng' });
+        }
+        res.json({ message: 'Upload avatar thành công', user: updatedUser });
+    } catch (error) {
+        console.error('Lỗi upload:', error);
+        res.status(500).json({ message: 'Upload thất bại', error: error.message });
+    }
+});
+
+
 app.use(express.json());
