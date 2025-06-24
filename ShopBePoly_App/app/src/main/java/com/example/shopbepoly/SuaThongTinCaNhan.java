@@ -1,5 +1,7 @@
 package com.example.shopbepoly;
 
+import static com.example.shopbepoly.API.ApiClient.IMAGE_URL;
+
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
@@ -127,15 +129,16 @@ public class SuaThongTinCaNhan extends AppCompatActivity {
 
                             // ✅ Hiển thị avatar nếu có
                             if (currentUser.getAvatar() != null && !currentUser.getAvatar().isEmpty()) {
+                                String avatarUrl = IMAGE_URL + user.getAvatar();
+
                                 Glide.with(SuaThongTinCaNhan.this)
-                                        .load(user.getAvatar() + "?t=" + System.currentTimeMillis())
+                                        .load(avatarUrl + "?t=" + System.currentTimeMillis())
                                         .diskCacheStrategy(DiskCacheStrategy.NONE)
                                         .skipMemoryCache(true)
                                         .apply(RequestOptions.bitmapTransform(new CircleCrop()))
                                         .placeholder(R.drawable.ic_avatar)
                                         .error(R.drawable.ic_avatar)
                                         .into(imageUpdateAvatar);
-
                             }
                             currentUser.setAvatar(user.getAvatar());
                             break;
@@ -239,13 +242,14 @@ public class SuaThongTinCaNhan extends AppCompatActivity {
                 @Override
                 public void onResponse(Call<User> call, Response<User> response) {
                     if (response.isSuccessful() && response.body() != null) {
-                        String newAvatarUrl = response.body().getAvatar();
-                        updatedUser.setAvatar(newAvatarUrl);
-                        currentUser.setAvatar(newAvatarUrl);
+                        String avatarFileName = response.body().getAvatar(); // Tên file từ server trả về
+                        String newAvatarUrl = ApiClient.IMAGE_URL + avatarFileName; // Ghép URL đầy đủ
+
+                        updatedUser.setAvatar(avatarFileName);
 
                         updateUserWithoutAvatar(userId, updatedUser);
                         loadCurrentUser(userId);
-                        // ✅ Sau khi cập nhật lên server xong thì load lại avatar mới
+
                         Glide.with(SuaThongTinCaNhan.this)
                                 .load(newAvatarUrl + "?t=" + System.currentTimeMillis())
                                 .diskCacheStrategy(DiskCacheStrategy.NONE)
@@ -254,6 +258,7 @@ public class SuaThongTinCaNhan extends AppCompatActivity {
                                 .placeholder(R.drawable.ic_avatar)
                                 .error(R.drawable.ic_avatar)
                                 .into(imageUpdateAvatar);
+
                     } else {
                         try {
                             String errorBody = response.errorBody() != null ? response.errorBody().string() : "Không có nội dung lỗi";
@@ -354,19 +359,27 @@ public class SuaThongTinCaNhan extends AppCompatActivity {
         if (requestCode == REQUEST_CODE_PICK_IMAGE && resultCode == RESULT_OK && data != null) {
             selectedImageUri = data.getData();
 
-            // Giữ quyền truy cập dài hạn với ảnh SAF
+// Lưu quyền truy cập lâu dài với SAF
             final int takeFlags = data.getFlags()
                     & (Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
             getContentResolver().takePersistableUriPermission(selectedImageUri, takeFlags);
 
-            // ✅ Dùng Glide để hiển thị ảnh bo tròn
-            Glide.with(this)
-                    .load(selectedImageUri)
-                    .apply(RequestOptions.bitmapTransform(new CircleCrop()))
-                    .placeholder(R.drawable.ic_avatar)
-                    .error(R.drawable.ic_avatar)
-                    .into(imageUpdateAvatar);
+            try {
+                // ✅ Tạo file tạm và dùng Uri.fromFile để load vào Glide
+                File file = FileUtil.from(this, selectedImageUri);
+
+                Glide.with(this)
+                        .load(file) // truyền File chứ không Uri
+                        .apply(RequestOptions.bitmapTransform(new CircleCrop()))
+                        .placeholder(R.drawable.ic_avatar)
+                        .error(R.drawable.ic_avatar)
+                        .into(imageUpdateAvatar);
+
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                Toast.makeText(this, "Không thể đọc ảnh", Toast.LENGTH_SHORT).show();
+            }
         }
     }
-
 }

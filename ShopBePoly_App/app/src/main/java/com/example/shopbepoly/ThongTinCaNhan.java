@@ -113,14 +113,17 @@ public class ThongTinCaNhan extends AppCompatActivity {
                             }
                             if (user.getAvatar() != null && !user.getAvatar().isEmpty()) {
                                 android.util.Log.d("AvatarURL", "Avatar URL: " + user.getAvatar());
+                                String fullAvatarUrl = ApiClient.IMAGE_URL + currentUser.getAvatar(); // IMAGE_URL = http://192.168.1.8:3000/uploads/
+
                                 Glide.with(ThongTinCaNhan.this)
-                                        .load(currentUser.getAvatar() + "?t=" + System.currentTimeMillis())
+                                        .load(fullAvatarUrl + "?t=" + System.currentTimeMillis())
                                         .diskCacheStrategy(DiskCacheStrategy.NONE)
                                         .skipMemoryCache(true)
                                         .apply(RequestOptions.bitmapTransform(new CircleCrop()))
                                         .placeholder(R.drawable.ic_avatar)
                                         .error(R.drawable.ic_avatar)
                                         .into(imgAvatar);
+
                             } else {
                                 imgAvatar.setImageResource(R.drawable.ic_avatar);
                             }

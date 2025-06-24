@@ -29,21 +29,28 @@ const hienThiUser = async () => {
             tdSTT.style.alignContent = 'center';
 
             const tdIMG = document.createElement('td');
-            const img = document.createElement('img'); // ✅ BẠN PHẢI TẠO BIẾN NÀY TRƯỚC
-
+            const img = document.createElement('img'); 
             const timestamp = Date.now();
-            if (item.avt_user?.startsWith('http')) {
-                img.src = item.avt_user + `?t=${timestamp}`;
-            } else {
+
+            // ✅ Kiểm tra có avatar không
+            if (item.avt_user && item.avt_user.trim() !== "") {
                 img.src = `http://${config.host}:${config.port}/uploads/${item.avt_user}?t=${timestamp}`;
+            } else {
+                img.src = "../../Images/default-avatar.png";
             }
-            setInterval(hienThiUser, 5000); // 5 giây load lại 1 lần
+
+            // ✅ Fallback nếu ảnh không tồn tại hoặc lỗi
+            img.onerror = () => {
+                img.onerror = null; // tránh lặp vô hạn
+                img.src = "../../Images/default-avatar.png";
+            };
 
             img.width = 100;
             img.height = 100;
             img.style.objectFit = 'contain';
             tdIMG.appendChild(img);
             tdIMG.style.textAlign = 'center';
+
 
             const tdName = document.createElement('td');
             tdName.textContent = item.name;

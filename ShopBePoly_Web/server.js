@@ -10,7 +10,10 @@ app.use(bodyParser.json());
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static('uploads', {
+  setHeaders: res => res.set('Cache-Control', 'no-store')
+}));
+
 
 
 const productModel = require('./Database/productModel');
@@ -55,36 +58,38 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
+// API cập nhật avatar
 router.post('/upload-avatar/:id', upload.single('avt_user'), async (req, res) => {
-   const userId = req.params.id;
+  const userId = req.params.id;
 
-    if (!req.file) {
-        return res.status(400).json({ success: false, message: 'Không có file được tải lên.' });
+  if (!req.file) {
+    return res.status(400).json({ success: false, message: 'Không có file được tải lên.' });
+  }
+
+  try {
+    // ❗ Chỉ lưu tên file, không lưu full URL
+    const avatarFileName = req.file.filename;
+
+    const updatedUser = await userModel.findByIdAndUpdate(
+      userId,
+      { avt_user: avatarFileName },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ success: false, message: 'Người dùng không tồn tại.' });
     }
 
-    const avatarUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
-
-    try {
-        const updatedUser = await userModel.findByIdAndUpdate(
-            userId,
-            { avt_user: avatarUrl },
-            { new: true }
-        );
-
-        if (!updatedUser) {
-            return res.status(404).json({ success: false, message: 'Người dùng không tồn tại.' });
-        }
-
-        res.status(200).json({
-            success: true,
-            message: 'Cập nhật ảnh đại diện thành công.',
-            avatarUrl: updatedUser.avt_user
-        });
-    } catch (err) {
-        console.error('Lỗi khi cập nhật avatar:', err);
-        res.status(500).json({ success: false, message: 'Lỗi server.', error: err.message });
-    }
+    res.status(200).json({
+      success: true,
+      message: 'Cập nhật ảnh đại diện thành công.',
+      avt_user: updatedUser.avt_user
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Lỗi server', error: err.message });
+  }
 });
+
 
 
 
