@@ -1,18 +1,18 @@
 const host = window.config;
 
 document.addEventListener("DOMContentLoaded", () => {
-      const observer = new MutationObserver(() => {
+    const observer = new MutationObserver(() => {
         document.querySelectorAll("img").forEach(img => {
-          img.onerror = () => img.src = "../../Images/default-avatar.png";
+            img.onerror = () => img.src = "../../Images/default-avatar.png";
         });
-      });
-      observer.observe(document.getElementById("tbody"), { childList: true, subtree: true });
+    });
+    observer.observe(document.getElementById("tbody"), { childList: true, subtree: true });
 });
 
 const hienThiUser = async () => {
     const tbody = document.querySelector('#tbody');
 
-    try{
+    try {
         const api = await fetch(`http://${config.host}:${config.port}/api/list_user`);
         if (!api.ok) {
             throw new Error(`HTTP error! Status: ${api.status}`);
@@ -20,21 +20,24 @@ const hienThiUser = async () => {
         const data = await api.json();
         tbody.innerHTML = '';
 
-        data.forEach((item, index)=>{
+        data.forEach((item, index) => {
             const tr = document.createElement('tr');
 
             const tdSTT = document.createElement('td');
             tdSTT.textContent = index + 1;
             tdSTT.style.textAlign = 'center';
-            tdSTT.style.alignContent ='center';
+            tdSTT.style.alignContent = 'center';
 
             const tdIMG = document.createElement('td');
-            const img = document.createElement('img');
-                       if (item.avt_user?.startsWith('http')) {
-                img.src = item.avt_user; // Đã có URL đầy đủ
+            const img = document.createElement('img'); // ✅ BẠN PHẢI TẠO BIẾN NÀY TRƯỚC
+
+            const timestamp = Date.now();
+            if (item.avt_user?.startsWith('http')) {
+                img.src = item.avt_user + `?t=${timestamp}`;
             } else {
-                img.src = `http://${config.host}:${config.port}/uploads/${item.avt_user}`; // Chỉ là tên file
+                img.src = `http://${config.host}:${config.port}/uploads/${item.avt_user}?t=${timestamp}`;
             }
+            setInterval(hienThiUser, 5000); // 5 giây load lại 1 lần
 
             img.width = 100;
             img.height = 100;
@@ -45,61 +48,61 @@ const hienThiUser = async () => {
             const tdName = document.createElement('td');
             tdName.textContent = item.name;
             tdName.style.textAlign = 'center';
-            tdName.style.alignContent ='center';
+            tdName.style.alignContent = 'center';
 
             const tdSDT = document.createElement('td');
             tdSDT.textContent = item.phone_number;
             tdSDT.style.textAlign = 'center';
-            tdSDT.style.alignContent ='center';
+            tdSDT.style.alignContent = 'center';
 
             const tdEmail = document.createElement('td');
             tdEmail.textContent = item.email;
             tdEmail.style.textAlign = 'center';
-            tdEmail.style.alignContent ='center';
+            tdEmail.style.alignContent = 'center';
 
             const tdTDN = document.createElement('td');
             tdTDN.textContent = item.username;
             tdTDN.style.textAlign = 'center';
-            tdTDN.style.alignContent ='center';
+            tdTDN.style.alignContent = 'center';
 
             const tdMK = document.createElement('td');
             tdMK.textContent = item.password;
             tdMK.style.textAlign = 'center';
-            tdMK.style.alignContent ='center';
+            tdMK.style.alignContent = 'center';
 
             const tdPL = document.createElement('td');
             if (item.role === 2) {
                 tdPL.textContent = 'Admin';
-            } else if(item.role === 1){
+            } else if (item.role === 1) {
                 tdPL.textContent = 'Nhân viên';
-            } else if(item.role === 0){
+            } else if (item.role === 0) {
                 tdPL.textContent = 'Người dùng';
             }
             tdPL.style.textAlign = 'center';
-            tdPL.style.alignContent ='center';
+            tdPL.style.alignContent = 'center';
             tdPL.style.color = 'red';
 
             const tdXL = document.createElement('td');
             tdXL.classList.add('tdXL');
-            tdXL.style.alignContent ='center';
+            tdXL.style.alignContent = 'center';
 
             const btnDel = document.createElement('button');
             btnDel.textContent = 'Xóa';
             btnDel.classList.add('btn', 'btn-outline-primary');
-            btnDel.addEventListener('click', async ()=>{
-                try{
+            btnDel.addEventListener('click', async () => {
+                try {
                     const conf = confirm(`Bạn muốn xóa thể loại ${item.name} này ?`);
                     if (conf) {
-                        const response = await fetch(`http://${config.host}:${config.port}/api/del_user/${item._id}`,{
-                        method: 'DELETE'
+                        const response = await fetch(`http://${config.host}:${config.port}/api/del_user/${item._id}`, {
+                            method: 'DELETE'
                         });
-                    
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! Status: ${response.status}`);
-                    }
-                    tr.remove();
-                    alert('Xóa thành công');
-                    hienThiUser();
+
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+                        tr.remove();
+                        alert('Xóa thành công');
+                        hienThiUser();
                     }
                 } catch (error) {
                     console.error('Lỗi khi xóa thể loại:', error);
@@ -127,7 +130,7 @@ const hienThiUser = async () => {
 }
 hienThiUser();
 
-const ThemUser = () =>{
+const ThemUser = () => {
     document.getElementById('themUser').addEventListener('submit', async (event) => {
         event.preventDefault();
 

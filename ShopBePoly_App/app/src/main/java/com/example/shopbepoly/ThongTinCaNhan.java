@@ -16,6 +16,7 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.load.resource.bitmap.CircleCrop;
 import com.bumptech.glide.request.RequestOptions;
 import com.example.shopbepoly.API.ApiClient;
@@ -113,7 +114,9 @@ public class ThongTinCaNhan extends AppCompatActivity {
                             if (user.getAvatar() != null && !user.getAvatar().isEmpty()) {
                                 android.util.Log.d("AvatarURL", "Avatar URL: " + user.getAvatar());
                                 Glide.with(ThongTinCaNhan.this)
-                                        .load(currentUser.getAvatar())
+                                        .load(currentUser.getAvatar() + "?t=" + System.currentTimeMillis())
+                                        .diskCacheStrategy(DiskCacheStrategy.NONE)
+                                        .skipMemoryCache(true)
                                         .apply(RequestOptions.bitmapTransform(new CircleCrop()))
                                         .placeholder(R.drawable.ic_avatar)
                                         .error(R.drawable.ic_avatar)

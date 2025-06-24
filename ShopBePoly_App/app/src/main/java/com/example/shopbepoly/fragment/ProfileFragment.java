@@ -134,7 +134,9 @@ public class ProfileFragment extends Fragment {
                             txtName.setText(user.getName() != null ? user.getName() : "");
                             txtEmail.setText(user.getEmail() != null ? user.getEmail() : "");
                             Glide.with(ProfileFragment.this)
-                                    .load(user.getAvatar())
+                                    .load(user.getAvatar() + "?t=" + System.currentTimeMillis()) // ✨
+                                    .diskCacheStrategy(DiskCacheStrategy.NONE)
+                                    .skipMemoryCache(true)
                                     .apply(new RequestOptions()
                                             .transform(new CircleCrop())
                                             .placeholder(R.drawable.ic_avatar)

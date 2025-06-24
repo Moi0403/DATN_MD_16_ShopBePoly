@@ -13,6 +13,7 @@ import android.content.SharedPreferences;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.load.resource.bitmap.CircleCrop;
 import com.bumptech.glide.request.RequestOptions;
 import com.example.shopbepoly.API.ApiClient;
@@ -127,13 +128,16 @@ public class SuaThongTinCaNhan extends AppCompatActivity {
                             // ✅ Hiển thị avatar nếu có
                             if (currentUser.getAvatar() != null && !currentUser.getAvatar().isEmpty()) {
                                 Glide.with(SuaThongTinCaNhan.this)
-                                        .load(user.getAvatar())
+                                        .load(user.getAvatar() + "?t=" + System.currentTimeMillis())
+                                        .diskCacheStrategy(DiskCacheStrategy.NONE)
+                                        .skipMemoryCache(true)
                                         .apply(RequestOptions.bitmapTransform(new CircleCrop()))
                                         .placeholder(R.drawable.ic_avatar)
                                         .error(R.drawable.ic_avatar)
                                         .into(imageUpdateAvatar);
-                            }
 
+                            }
+                            currentUser.setAvatar(user.getAvatar());
                             break;
                         }
                     }
@@ -229,6 +233,7 @@ public class SuaThongTinCaNhan extends AppCompatActivity {
             RequestBody requestFile = RequestBody.create(MediaType.parse("image/*"), file);
             MultipartBody.Part body = MultipartBody.Part.createFormData("avt_user", file.getName(), requestFile);
 
+
             ApiService apiService = ApiClient.getApiService();
             apiService.uploadAvatar(userId, body).enqueue(new Callback<User>() {
                 @Override
@@ -236,17 +241,19 @@ public class SuaThongTinCaNhan extends AppCompatActivity {
                     if (response.isSuccessful() && response.body() != null) {
                         String newAvatarUrl = response.body().getAvatar();
                         updatedUser.setAvatar(newAvatarUrl);
+                        currentUser.setAvatar(newAvatarUrl);
 
-// Cập nhật lại hình ảnh trên giao diện bằng Glide
+                        updateUserWithoutAvatar(userId, updatedUser);
+                        loadCurrentUser(userId);
+                        // ✅ Sau khi cập nhật lên server xong thì load lại avatar mới
                         Glide.with(SuaThongTinCaNhan.this)
-                                .load(currentUser.getAvatar()) // ✅ đúng là avatar từ server
+                                .load(newAvatarUrl + "?t=" + System.currentTimeMillis())
+                                .diskCacheStrategy(DiskCacheStrategy.NONE)
+                                .skipMemoryCache(true)
                                 .apply(RequestOptions.bitmapTransform(new CircleCrop()))
                                 .placeholder(R.drawable.ic_avatar)
                                 .error(R.drawable.ic_avatar)
                                 .into(imageUpdateAvatar);
-
-
-                        updateUserWithoutAvatar(userId, updatedUser);
                     } else {
                         try {
                             String errorBody = response.errorBody() != null ? response.errorBody().string() : "Không có nội dung lỗi";
