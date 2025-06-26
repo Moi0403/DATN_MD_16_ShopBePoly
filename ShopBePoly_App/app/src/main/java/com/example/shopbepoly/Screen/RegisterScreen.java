@@ -89,7 +89,7 @@ public class RegisterScreen extends AppCompatActivity {
                 return;
             }
 
-            User user = new User("", name, email, phone, password, "", 0);
+            User user = new User();
             ApiService apiService = ApiClient.getApiService();
             Call<Void> call = apiService.register(user);
 
