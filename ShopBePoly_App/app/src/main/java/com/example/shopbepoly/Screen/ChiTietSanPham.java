@@ -1,6 +1,7 @@
 package com.example.shopbepoly.Screen;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
@@ -19,7 +20,9 @@ import com.example.shopbepoly.DTO.Favorite;
 import com.example.shopbepoly.DTO.Product;
 import com.example.shopbepoly.DTO.Variation;
 import com.example.shopbepoly.R;
+import com.example.shopbepoly.ThanhToan;
 import com.example.shopbepoly.fragment.FavoriteFragment;
+import com.google.gson.Gson;
 import com.squareup.picasso.Picasso;
 
 import java.util.HashMap;
@@ -177,10 +180,16 @@ public class ChiTietSanPham extends AppCompatActivity {
             updateQuantity();
         });
 
-        btnAddToCart.setOnClickListener(v -> {
-            Toast.makeText(this, "Đã thêm " + quantity + " sản phẩm vào giỏ hàng!",
-                    Toast.LENGTH_SHORT).show();
+        btnAddToCart.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (!validateProductSelection()){
+                    return;
+                }
+                navigateToPayment();
+            }
         });
+
 
 //        // Color selection
 //        colorWhite.setOnClickListener(v -> selectColor("white", colorWhite));
@@ -195,6 +204,54 @@ public class ChiTietSanPham extends AppCompatActivity {
         size39.setOnClickListener(v -> selectSize("39", size39));
         size40.setOnClickListener(v -> selectSize("40", size40));
         size41.setOnClickListener(v -> selectSize("41", size41));
+    }
+
+    private boolean validateProductSelection(){
+        if (product == null) {
+            Toast.makeText(this, "ko co thong tin san pham", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        if (selectedSize == null || selectedSize.isEmpty()){
+            Toast.makeText(this, "vui long chon size", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        if (quantity<=0){
+            Toast.makeText(this, "so luong ko hop le", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+
+        return true;
+    }
+
+    private void navigateToPayment(){
+        try {
+            Intent intent = new Intent(ChiTietSanPham.this, ThanhToan.class);
+
+            Gson gson = new Gson();
+            String productJson = gson.toJson(product);
+
+            intent.putExtra("product", productJson);
+            intent.putExtra("quantity", quantity);
+            intent.putExtra("size", selectedSize);
+
+            logPaymentData();
+
+            startActivity(intent);
+        } catch (Exception e){
+            Log.e("ChiTietSanPham", "Loi chitietsanpham: " + e.getMessage(), e);
+            Toast.makeText(this, "loi khi chuyen sang thanh toan", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void logPaymentData(){
+        Log.d("ChiTietSanPham", "=== Payment Data ===");
+        Log.d("ChiTietSanPham", "Product ID: " + product.get_id());
+        Log.d("ChiTietSanPham", "Product name: " + product.getNameproduct());
+        Log.d("ChiTietSanPham", "Price: " + product.getPrice());
+        Log.d("ChiTietSanPham", "Quantity: " + quantity);
+        Log.d("ChiTietSanPham", "Size: " + selectedSize);
+        Log.d("ChiTietSanPham", "Color: " + selectedColor);
+        Log.d("ChiTietSanPham", "==================");
     }
 
 //    private void selectColor(String color, View colorView) {
