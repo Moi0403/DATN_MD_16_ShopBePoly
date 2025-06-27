@@ -10,7 +10,11 @@ app.use(bodyParser.json());
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static('uploads', {
+    setHeaders: res => res.set('Cache-Control', 'no-store')
+}));
+const fs = require('fs');
+
 
 
 const productModel = require('./Database/productModel');
@@ -33,8 +37,8 @@ mongoose.connect(uri, {
     useUnifiedTopology: true,
     serverSelectionTimeoutMS: 5000 // để không bị treo nếu không kết nối được
 })
-.then(() => console.log('Connected to MongoDB'))
-.catch((err) => console.error('MongoDB connection error:', err));
+    .then(() => console.log('Connected to MongoDB'))
+    .catch((err) => console.error('MongoDB connection error:', err));
 
 // Khởi động server
 app.listen(port, () => {
@@ -45,16 +49,71 @@ const multer = require('multer');
 const path = require('path');
 
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'uploads/'); // đảm bảo thư mục này tồn tại
-    },
-    filename: (req, file, cb) => {
-        cb(null, Date.now() + '-' + file.originalname);
+    destination: (req, file, cb) => cb(null, 'uploads/'),
+    filename: async (req, file, cb) => {
+        const ext = path.extname(file.originalname);
+        const userId = req.params.id;
+        const fileName = `${userId}${ext}`;
+
+        // Xóa ảnh cũ nếu tồn tại
+        const user = await userModel.findById(userId);
+        if (user?.avt_user && user.avt_user !== fileName) {
+            const oldPath = path.join(__dirname, 'uploads', user.avt_user);
+            if (fs.existsSync(oldPath)) {
+                fs.unlinkSync(oldPath);
+            }
+        }
+
+        cb(null, fileName);
     }
 });
 
+
+const storageProduct = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, 'uploads/'),
+    filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname);
+        const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+        cb(null, uniqueName);
+    }
+});
+const uploadProduct = multer({ storage: storageProduct });
+
 const upload = multer({ storage });
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// API cập nhật avatar
+router.post('/upload-avatar/:id', upload.single('avt_user'), async (req, res) => {
+    const userId = req.params.id;
+
+    if (!req.file) {
+        return res.status(400).json({ success: false, message: 'Không có file được tải lên.' });
+    }
+
+    try {
+      
+        const avatarFileName = req.file.filename;
+
+        const updatedUser = await userModel.findByIdAndUpdate(
+            userId,
+            { avt_user: avatarFileName },
+            { new: true }
+        );
+
+        if (!updatedUser) {
+            return res.status(404).json({ success: false, message: 'Người dùng không tồn tại.' });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Cập nhật ảnh đại diện thành công.',
+            avt_user: updatedUser.avt_user
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Lỗi server', error: err.message });
+    }
+});
+
+
 
 
 app.get('/ds_product', async (req, res) => {
@@ -67,7 +126,7 @@ app.get('/ds_product', async (req, res) => {
         res.status(500).json({ error: 'Lỗi khi lấy danh sách sản phẩm' });
     }
 });
-
+app.use('/api/users', router);
 app.use('/api', router);
 
 // lấy ds product 'http://localhost:3000/api/list_product'
@@ -82,73 +141,108 @@ router.get('/list_product', async (req, res) => {
 });
 
 // thêm product 'http://localhost:3000/api/add_product'
-router.post('/add_product', upload.fields([
-    { name: 'avt_imgpro', maxCount: 1 },
-    { name: 'list_imgpro', maxCount: 10 }
-]), async (req, res) => {
+router.post('/add_product', uploadProduct.any(), async (req, res) => {
     try {
-        const files = req.files;
+        const files = req.files || [];
         const body = req.body;
 
-        // Parse variations từ chuỗi JSON gửi từ form
         let variations = [];
         if (body.variations) {
-            variations = JSON.parse(body.variations);
+            try {
+                variations = JSON.parse(body.variations);
+            } catch (err) {
+                return res.status(400).json({ message: 'Lỗi định dạng variations' });
+            }
         }
 
-        const newPro = await productModel.create({
+  
+        variations.forEach((variation, index) => {
+            const fieldName = `variationImages-${index}`;
+            const matchedFiles = files.filter(f => f.fieldname === fieldName);
+
+            variation.list_imgproduct = matchedFiles.map(f => f.filename);
+            variation.image = matchedFiles[0]?.filename || '';
+        });
+
+
+        const mergedImages = [];
+        variations.forEach(variation => {
+            if (Array.isArray(variation.list_imgproduct)) {
+                variation.list_imgproduct.forEach(img => {
+                    if (img && !mergedImages.includes(img)) {
+                        mergedImages.push(img);
+                    }
+                });
+            } else if (variation.image && !mergedImages.includes(variation.image)) {
+                mergedImages.push(variation.image);
+            }
+        });
+
+     
+        const avt_imgpro = files.find(f => f.fieldname === 'avt_imgpro');
+
+        const additionalImgs = files.filter(f => f.fieldname === 'list_imgproduct');
+        additionalImgs.forEach(f => {
+            if (!mergedImages.includes(f.filename)) {
+                mergedImages.push(f.filename);
+            }
+        });
+
+        const newProduct = new productModel({
             nameproduct: body.name_pro,
             id_category: body.category_pro,
             price: body.price_pro,
-            description: body.mota_pro, // có thể thêm sau
-            avt_imgproduct: files.avt_imgpro?.[0]?.filename || '',
-            list_imgproduct: files.list_imgpro?.map(f => f.filename) || [],
-            variations // <-- sử dụng mảng variations
+            description: body.mota_pro,
+            avt_imgproduct: avt_imgpro?.filename || '',
+            list_imgproduct: mergedImages, 
+            variations: variations
         });
-        await newPro.save();
-        console.log('Thêm sản phẩm thành công');
-        const allProducts = await productModel.find();
-        res.json(allProducts);
+
+        await newProduct.save();
+        console.log('✅ Thêm sản phẩm thành công');
+        const allProducts = await productModel.find().populate('id_category');
+        res.status(200).json(allProducts);
     } catch (error) {
-        console.error('Thêm sản phẩm thất bại:', error);
-        res.status(500).send('Lỗi server');
+        console.error('❌ Thêm sản phẩm thất bại:', error);
+        res.status(500).json({ message: 'Lỗi server', error: error.message });
     }
 });
 
 
+
 // sửa product 'http://localhost:3000/api/up_product/ id'
-router.put('/up_product/:id', async (req, res)=>{
-    try{
+router.put('/up_product/:id', async (req, res) => {
+    try {
         const id = req.params.id;
         const data = req.body;
-        
+
         const kq = await productModel.findByIdAndUpdate(id, data, { new: true });
 
-        if(kq){
+        if (kq) {
             console.log('Sửa thành công');
             let pro = await productModel.find();
             res.send(pro);
-        } else{
+        } else {
             res.send('Không tìm thấy sản phẩm để sửa');
         }
-    } catch (error){
+    } catch (error) {
         res.send('Lỗi khi sửa')
     }
 })
 
 // xóa sản phẩm 'http://localhost:3000/api/del_product/ id'
-router.delete('/del_product/:id', async (req, res)=>{
-    try{
+router.delete('/del_product/:id', async (req, res) => {
+    try {
         let id = req.params.id;
-        const kq = await productModel.deleteOne({_id: id});
-        if(kq){
+        const kq = await productModel.deleteOne({ _id: id });
+        if (kq) {
             console.log('Xóa sản phẩm thành công');
             let pro = await productModel.find();
             res.send(pro);
-        } else{
+        } else {
             res.send('Xóa sản phẩm không thành công');
         }
-    } catch(error){
+    } catch (error) {
         console.error('Lỗi khi xóa:', error);
         res.status(500).json({ error: 'Lỗi server khi xóa sản phẩm' });
     }
@@ -158,8 +252,8 @@ router.delete('/del_product/:id', async (req, res)=>{
 router.get('/search_product', async (req, res) => {
     try {
         const keyword = req.query.q;
-        const results = await productModel.find({ 
-            nameproduct: { $regex: keyword, $options: 'i' } 
+        const results = await productModel.find({
+            nameproduct: { $regex: keyword, $options: 'i' }
         }).populate('id_category');
         res.json(results);
     } catch (err) {
@@ -169,7 +263,7 @@ router.get('/search_product', async (req, res) => {
 
 //User
 // lấy ds user 'http://localhost:3000/api/list_user'
-router.get('/list_user', async (req, res)=>{
+router.get('/list_user', async (req, res) => {
     try {
         const users = await userModel.find().select('-password'); // Trả về tất cả trường trừ password
         res.json(users);
@@ -181,13 +275,13 @@ router.get('/list_user', async (req, res)=>{
 
 // thêm user 'http://localhost:3000/api/add_user'
 router.post('/add_user', upload.fields([
-    {name: 'avt_user', maxCount: 1},
-]), async (req, res)=>{
-    
-    try{
+    { name: 'avt_user', maxCount: 1 },
+]), async (req, res) => {
+
+    try {
         const files = req.files;
         const body = req.body;
-        
+
         const newUser = await userModel.create({
             username: body.username_user,
             password: body.password_user,
@@ -211,8 +305,8 @@ router.post('/add_user', upload.fields([
 })
 
 // sửa user 'http://localhost:3000/api/up_user/ id'
-router.put('/up_user/:id', upload.single('avt'), async (req, res)=>{
-    try{
+router.put('/up_user/:id', upload.single('avt'), async (req, res) => {
+    try {
         const id = req.params.id;
         const data = req.body;
         console.log('Dữ liệu nhận được từ app:', data); // Thêm dòng này
@@ -229,14 +323,14 @@ router.put('/up_user/:id', upload.single('avt'), async (req, res)=>{
             data.avt = req.file.path; // Lưu đường dẫn file vào trường avatar
         }
         const kq = await userModel.findByIdAndUpdate(id, data, { new: true });
-        if(kq){
+        if (kq) {
             console.log('Sửa thành công');
             let usr = await userModel.find();
             res.send(usr);
-        } else{
+        } else {
             res.send('Không tìm thấy người dùng để sửa');
         }
-    } catch (error){
+    } catch (error) {
         res.send('Lỗi khi sửa')
     }
 })
@@ -260,18 +354,18 @@ router.put('/up_user/:id', upload.single('avatar'), async (req, res) => {
 });
 
 // xóa user 'http://localhost:3000/api/del_user/ id'
-router.delete('/del_user/:id', async (req, res)=>{
-    try{
+router.delete('/del_user/:id', async (req, res) => {
+    try {
         let id = req.params.id;
-        const kq = await userModel.deleteOne({_id: id});
-        if(kq){
+        const kq = await userModel.deleteOne({ _id: id });
+        if (kq) {
             console.log('Xóa thành công');
             let usr = await userModel.find();
             res.send(usr);
-        } else{
+        } else {
             res.send('Xóa không thành công');
         }
-    } catch(error){
+    } catch (error) {
         console.error('Lỗi khi xóa:', error);
         res.status(500).json({ error: 'Lỗi server' });
     }
@@ -412,37 +506,37 @@ router.put('/up_cart/:idCart', async (req, res) => {
 
     try {
         await mongoose.connect(uri);
-        const cartId = req.params.idCart; 
-        const data = req.body; 
+        const cartId = req.params.idCart;
+        const data = req.body;
 
         const upCart = await cartModel.findByIdAndUpdate(
             cartId,
-                {
-                    $set: {
-                        id_user: data.id_user,
-                        id_product: data.id_product,
-                        quantity: data.quantity,
-                        price: data.price,
-                        total: data.total,
-                        status: data.status,
-                    }
-                },
-                { new: true }
-            );
+            {
+                $set: {
+                    id_user: data.id_user,
+                    id_product: data.id_product,
+                    quantity: data.quantity,
+                    price: data.price,
+                    total: data.total,
+                    status: data.status,
+                }
+            },
+            { new: true }
+        );
 
-            if (upCart) {
-                res.json({
-                    "status": 200,
-                    "message": "Cập nhật thành công",
-                    "data": upCart
-                });
-            } else {
-                res.json({
-                    "status": 400,
-                    "message": "Không tìm thấy giỏ hàng để cập nhật",
-                    "data": []
-                });
-            }
+        if (upCart) {
+            res.json({
+                "status": 200,
+                "message": "Cập nhật thành công",
+                "data": upCart
+            });
+        } else {
+            res.json({
+                "status": 400,
+                "message": "Không tìm thấy giỏ hàng để cập nhật",
+                "data": []
+            });
+        }
     } catch (error) {
         console.error('Lỗi cập nhật giỏ hàng:', error);
         res.status(500).json({ error: 'Lỗi cập nhật giỏ hàng' });
@@ -463,7 +557,7 @@ router.delete('/del_cart/:idCart', async (req, res) => {
                 message: "Xóa thành công",
                 data: deletedCart
             });
-            
+
         } else {
             res.json({
                 status: 400,
@@ -494,17 +588,17 @@ router.get('/products_by_category/:categoryId', async (req, res) => {
 });
 
 //lấy ds category 
-router.get('/list_category',async(req,res)=>{
+router.get('/list_category', async (req, res) => {
     await mongoose.connect(uri);
     let category = await categoryModel.find();
     res.send(category);
 });
 
 
-router.post('/add_category', upload.single('imgTL'),async(req,res)=>{
+router.post('/add_category', upload.single('imgTL'), async (req, res) => {
 
 
-    try{
+    try {
         const titleTL = req.body.titleTL;
         const imgTL = req.file ? req.file.filename : null;
         console.log("🟢 File:", req.file);
@@ -523,20 +617,20 @@ router.post('/add_category', upload.single('imgTL'),async(req,res)=>{
     }
 })
 // sua category
-router.put('/edit_cate/:id',async (req,res)=>{
-    try{
+router.put('/edit_cate/:id', async (req, res) => {
+    try {
         const id = req.params.id;
         const data = req.body;
 
-        const kq = await categoryModel.findByIdAndUpdate(id,data, {new: true});
+        const kq = await categoryModel.findByIdAndUpdate(id, data, { new: true });
 
-        if(kq){
+        if (kq) {
             console.log('Sửa thành công!');
             let cate = await categoryModel.find();
             res.send('Không tìm thấy thể loại để sửa!');
-            
+
         }
-    }catch(err){
+    } catch (err) {
         res.send('Lỗi khi sửa')
     }
 })
@@ -563,41 +657,41 @@ router.delete('/del_category/:id', async (req, res) => {
 
 
 // lấy ds don hang 'http://localhost:3000/api/list_order'
-router.get('/list_order', async (req, res)=>{
+router.get('/list_order', async (req, res) => {
     await mongoose.connect(uri);
     let order = await orderModel.find();
     res.send(order);
 });
 
 // thêm order 'http://localhost:3000/api/order'
-router.post('/add_order', async (req, res)=>{
-    
+router.post('/add_order', async (req, res) => {
+
     let data = req.body;
     let kq = await orderModel.create(data);
 
-    if(kq){
+    if (kq) {
         console.log('Thêm don hang thành công');
         let ord = await orderModel.find();
         res.send(ord);
-    } else{
+    } else {
         console.log('Thêm don hang không thành công');
     }
 
 })
 
 // huy don hang 'http://localhost:3000/api/order/ id'
-router.delete('/del_order/:id', async (req, res)=>{
-    try{
+router.delete('/del_order/:id', async (req, res) => {
+    try {
         let id = req.params.id;
-        const kq = await orderModel.deleteOne({_id: id});
-        if(kq){
+        const kq = await orderModel.deleteOne({ _id: id });
+        if (kq) {
             console.log('Huy don hang thành công');
             let ord = await orderModel.find();
             res.send(ord);
-        } else{
+        } else {
             res.send('Huy don hang không thành công');
         }
-    } catch(error){
+    } catch (error) {
         console.error('Lỗi khi xóa:', error);
         res.status(500).json({ error: 'Lỗi server khi xóa sản phẩm' });
     }
@@ -616,37 +710,37 @@ router.get('/api/list_comment/:userId', async (req, res) => {
 });
 
 // thêm comment 'http://localhost:3000/api/add_comment'
-router.post('/add_comment', async (req, res)=>{
-    
+router.post('/add_comment', async (req, res) => {
+
     let data = req.body;
     let kq = await commentModel.create(data);
 
-    if(kq){
+    if (kq) {
         console.log('Thêm comment thành công');
         let comment = await commentModel.find();
         res.send(comment);
-    } else{
+    } else {
         console.log('Thêm comment không thành công');
     }
 
 })
 
 // sửa comment 'http://localhost:3000/api/up_comment/ id'
-router.put('/up_comment/:id', async (req, res)=>{
-    try{
+router.put('/up_comment/:id', async (req, res) => {
+    try {
         const id = req.params.id;
         const data = req.body;
-        
+
         const kq = await commentModel.findByIdAndUpdate(id, data, { new: true });
 
-        if(kq){
+        if (kq) {
             console.log('Sửa thành công');
             let usr = await commentModel.find();
             res.send(usr);
-        } else{
+        } else {
             res.send('Không tìm thấy comment để sửa');
         }
-    } catch (error){
+    } catch (error) {
         res.send('Lỗi khi sửa')
     }
 })
@@ -655,7 +749,7 @@ router.put('/up_comment/:id', async (req, res)=>{
 
 router.get('/messages', async (req, res) => {
     try {
-        const { from, to } = req.query; 
+        const { from, to } = req.query;
 
         if (!from || !to) {
             return res.status(400).json({ message: 'Thiếu from hoặc to trong query' });
@@ -684,14 +778,14 @@ router.post('/messages', async (req, res) => {
     }
 
     try {
-      
+
         const newMessage = new messageModel({ from, to, content, timestamp: new Date() });
         await newMessage.save();
 
-  
+
         const hasAdminReplied = await messageModel.exists({
-            from: to,  
-            to: from   
+            from: to,
+            to: from
         });
 
         if (!hasAdminReplied) {
@@ -793,27 +887,5 @@ router.get('/favorites/:userId', async (req, res) => {
     }
 });
 
-router.post('/upload-avatar/:id', upload.single('avt_user'), async (req, res) => {
-    const userId = req.params.id;
-    const avatarUrl = req.file 
-        ? `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}` 
-        : '';
-
-    try {
-        const updatedUser = await userModel.findByIdAndUpdate(
-            userId,
-            { avt_user: avatarUrl },
-            { new: true }
-        );
-        if (!updatedUser) {
-            return res.status(404).json({ message: 'Không tìm thấy người dùng' });
-        }
-        console.log('Sửa thành công');
-        res.json({ message: 'Upload avatar thành công', user: updatedUser });
-    } catch (error) {
-        console.error('Lỗi upload:', error);
-        res.status(500).json({ message: 'Upload thất bại', error: error.message });
-    }
-});
 
 app.use(express.json());

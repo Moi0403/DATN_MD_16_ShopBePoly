@@ -61,13 +61,10 @@
             app:cardCornerRadius="12dp"
             app:cardElevation="4dp">
 
-            <ImageView
-                android:id="@+id/imgProduct"
+            <androidx.viewpager2.widget.ViewPager2
+                android:id="@+id/viewPagerProductImages"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="@android:color/white"
-                android:scaleType="centerInside"
-                android:src="@drawable/niker" />
+                android:layout_height="match_parent" />
 
         </androidx.cardview.widget.CardView>
 
@@ -157,8 +154,8 @@
                 android:textSize="18sp"
                 android:textStyle="bold" />
 
-            <!-- Color Selection -->
-            <!--<TextView
+
+            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"
@@ -168,58 +165,16 @@
                 android:textStyle="bold" />
 
             <LinearLayout
+                android:id="@+id/layoutColorContainer"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:orientation="horizontal"
                 android:layout_marginBottom="24dp"
-                android:orientation="horizontal">
+                android:layoutDirection="ltr"
+                android:gravity="start" />
 
-                <View
-                    android:id="@+id/colorWhite"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_marginEnd="12dp"
-                    android:background="@drawable/color_selector_white"
-                    android:clickable="true"
-                    android:focusable="true" />
 
-                <View
-                    android:id="@+id/colorRed"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_marginEnd="12dp"
-                    android:background="@drawable/color_selector_red"
-                    android:clickable="true"
-                    android:focusable="true" />
 
-                <View
-                    android:id="@+id/colorGray"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_marginEnd="12dp"
-                    android:background="@drawable/color_selector_gray"
-                    android:clickable="true"
-                    android:focusable="true" />
-
-                <View
-                    android:id="@+id/colorOrange"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_marginEnd="12dp"
-                    android:background="@drawable/color_selector_orange"
-                    android:clickable="true"
-                    android:focusable="true" />
-
-                <View
-                    android:id="@+id/colorLightGray"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:background="@drawable/color_selector_light_gray"
-                    android:clickable="true"
-                    android:focusable="true" />
-
-            </LinearLayout>-->
-
-            <!-- Size Selection -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -283,8 +238,10 @@
                     android:focusable="true"
                     android:gravity="center"
                     android:text="40"
+                    android:layout_marginEnd="12dp"
                     android:textColor="#666666"
                     android:textSize="16sp" />
+
                 <TextView
                     android:id="@+id/size41"
                     android:layout_width="48dp"

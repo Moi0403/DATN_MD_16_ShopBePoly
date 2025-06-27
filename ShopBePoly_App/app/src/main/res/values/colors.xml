@@ -29,4 +29,6 @@
     <!-- Star Color -->
     <color name="star_gold">#FFD700</color>
     <color name="white">#FFFFFF</color>
+
+    <dimen name="color_circle_size">40dp</dimen>
 </resources>

@@ -2,8 +2,9 @@ package com.example.shopbepoly.DTO;
 
 import com.google.gson.annotations.SerializedName;
 
-public class User {
+import java.io.Serializable;
 
+public class User implements Serializable {
     @SerializedName("_id")
     private String id;
 
@@ -14,7 +15,9 @@ public class User {
     private String name;
     private String address;
     private int role;
+    @SerializedName("avt_user")
     private String avatar;
+
     private String gender;
     private String birthday;
 
