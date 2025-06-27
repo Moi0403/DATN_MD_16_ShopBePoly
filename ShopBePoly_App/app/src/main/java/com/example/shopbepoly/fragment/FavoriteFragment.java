@@ -29,10 +29,13 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+
+
 public class FavoriteFragment extends Fragment {
 
     private RecyclerView rvFavorites;
     private ProductAdapter adapter;
+    private static FavoriteFragment instance;
 
     public static List<Product> favoriteProducts = new ArrayList<>();
 
@@ -47,8 +50,14 @@ public class FavoriteFragment extends Fragment {
         if (favoriteProducts.contains(product)) {
             favoriteProducts.remove(product);
             saveFavorites(context);
+
+            // Gọi updateAdapter nếu Fragment đang được tạo và adapter tồn tại
+            if (instance != null && instance.adapter != null) {
+                instance.updateAdapter(); // ✅ Cập nhật lại giao diện
+            }
         }
     }
+
 
     public static boolean isFavorite(Product product) {
         return favoriteProducts.contains(product);
@@ -76,10 +85,43 @@ public class FavoriteFragment extends Fragment {
                     @Override
                     public void onResponse(Call<List<Favorite>> call, Response<List<Favorite>> response) {
                         if (response.isSuccessful() && response.body() != null) {
+                            List<Favorite> serverFavorites = response.body();
                             favoriteProducts.clear();
-                            for (Favorite favorite : response.body()) {
+
+                            if (serverFavorites.isEmpty()) {
+                                updateAdapter(); // Không có gì thì reset
+                                return;
+                            }
+
+                            // Biến đếm để biết khi nào fetch xong tất cả sản phẩm
+                            final int[] pendingFetches = {serverFavorites.size()};
+
+                            for (Favorite favorite : serverFavorites) {
                                 String productId = favorite.getId_product();
-                                fetchProductById(productId);
+
+                                ApiClient.getApiService().getProductById(productId).enqueue(new Callback<Product>() {
+                                    @Override
+                                    public void onResponse(Call<Product> call, Response<Product> response) {
+                                        if (response.isSuccessful() && response.body() != null) {
+                                            favoriteProducts.add(response.body());
+                                        }
+                                        checkDone();
+                                    }
+
+                                    @Override
+                                    public void onFailure(Call<Product> call, Throwable t) {
+                                        t.printStackTrace();
+                                        checkDone();
+                                    }
+
+                                    private void checkDone() {
+                                        pendingFetches[0]--;
+                                        if (pendingFetches[0] == 0) {
+                                            saveFavorites(requireContext());
+                                            updateAdapter();
+                                        }
+                                    }
+                                });
                             }
                         }
                     }
@@ -91,6 +133,7 @@ public class FavoriteFragment extends Fragment {
                 });
     }
 
+
     private void fetchProductById(String productId) {
         ApiClient.getApiService()
                 .getProductById(productId)
@@ -98,14 +141,18 @@ public class FavoriteFragment extends Fragment {
                     @Override
                     public void onResponse(Call<Product> call, Response<Product> response) {
                         if (response.isSuccessful() && response.body() != null) {
-                            if (!favoriteProducts.contains(response.body())) {
-                                favoriteProducts.add(response.body());
+                            Product product = response.body();
+                            if (!favoriteProducts.contains(product)) {
+                                favoriteProducts.add(product);
                                 saveFavorites(requireContext());
                                 if (adapter != null) {
                                     adapter.setData(getFavorites());
                                     adapter.notifyDataSetChanged();
                                 }
                             }
+                        } else {
+                            // Nếu sản phẩm bị xóa hoặc không tồn tại -> xóa khỏi danh sách yêu thích
+                            removeInvalidFavorite(productId);
                         }
                     }
 
@@ -115,6 +162,21 @@ public class FavoriteFragment extends Fragment {
                     }
                 });
     }
+    private void removeInvalidFavorite(String productId) {
+        // Xóa sản phẩm theo ID khỏi danh sách
+        for (int i = 0; i < favoriteProducts.size(); i++) {
+            if (favoriteProducts.get(i).get_id().equals(productId)) {
+                favoriteProducts.remove(i);
+                break;
+            }
+        }
+        saveFavorites(requireContext());
+        if (adapter != null) {
+            adapter.setData(getFavorites());
+            adapter.notifyDataSetChanged();
+        }
+    }
+
     private static void saveFavorites(Context context) {
         SharedPreferences prefs = context.getSharedPreferences("FavoritesPrefs", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
@@ -150,6 +212,7 @@ public class FavoriteFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        instance = this;
         rvFavorites = view.findViewById(R.id.rvFavorites);
         rvFavorites.setLayoutManager(new GridLayoutManager(getContext(), 2));
         loadFavoritesFromPrefs(getContext());
@@ -162,4 +225,11 @@ public class FavoriteFragment extends Fragment {
         super.onResume();
         loadFavorites();
     }
+    private void updateAdapter() {
+        if (adapter != null) {
+            adapter.setData(getFavorites());
+            adapter.notifyDataSetChanged();
+        }
+    }
+
 }

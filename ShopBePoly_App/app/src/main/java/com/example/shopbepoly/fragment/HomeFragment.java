@@ -117,7 +117,16 @@ public class HomeFragment extends Fragment {
     public void onResume() {
         super.onResume();
         handler.postDelayed(runnable, DELAY_MS);
+
+        // Load lại danh sách yêu thích từ SharedPreferences
+        FavoriteFragment.loadFavoritesFromPrefs(requireContext());
+
+        // Cập nhật lại adapter để icon yêu thích đổi màu
+        if (productAdapter != null) {
+            productAdapter.notifyDataSetChanged();
+        }
     }
+
 
     @Override
     public void onPause() {
