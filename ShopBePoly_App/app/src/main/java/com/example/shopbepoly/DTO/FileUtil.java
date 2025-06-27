@@ -16,24 +16,20 @@ public class FileUtil {
     public static File from(Context context, Uri uri) throws IOException {
         InputStream inputStream = context.getContentResolver().openInputStream(uri);
         String fileName = getFileName(context, uri);
-        fileName = fileName.replaceAll("[^a-zA-Z0-9\\.\\-_]", "_");
-
-        File tempFile = File.createTempFile("temp_", "_" + fileName, context.getCacheDir());
-
-        try (OutputStream outputStream = new FileOutputStream(tempFile)) {
-            if (inputStream != null) {
-                byte[] buf = new byte[4096];
-                int len;
-                while ((len = inputStream.read(buf)) > 0) {
-                    outputStream.write(buf, 0, len);
-                }
-                inputStream.close();
+        File tempFile = File.createTempFile("temp_", fileName, context.getCacheDir());
+        tempFile.deleteOnExit();
+        OutputStream outputStream = new FileOutputStream(tempFile);
+        if (inputStream != null) {
+            byte[] buf = new byte[1024];
+            int len;
+            while ((len = inputStream.read(buf)) > 0) {
+                outputStream.write(buf, 0, len);
             }
+            inputStream.close();
         }
-
+        outputStream.close();
         return tempFile;
     }
-
 
     private static String getFileName(Context context, Uri uri) {
         String result = null;

@@ -12,24 +12,27 @@ public class User {
     private String phone_number;
     private String password;
     private String name;
+    private String address;
     private int role;
-    @SerializedName("avt_user")
     private String avatar;
-
     private String gender;
     private String birthday;
 
     public User() {
     }
 
-    public User(String id, String username, String email, String phone_number, String password, String name, int role) {
+    public User(String id, String username, String email, String phone_number, String password, String name, String address, int role, String avatar, String gender, String birthday) {
         this.id = id;
         this.username = username;
         this.email = email;
         this.phone_number = phone_number;
         this.password = password;
         this.name = name;
+        this.address = address;
         this.role = role;
+        this.avatar = avatar;
+        this.gender = gender;
+        this.birthday = birthday;
     }
 
     public String getId() {
@@ -39,7 +42,6 @@ public class User {
     public void setId(String id) {
         this.id = id;
     }
-
 
     public String getUsername() {
         return username;
@@ -79,6 +81,14 @@ public class User {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
     }
 
     public int getRole() {

@@ -91,7 +91,6 @@ public class LoginScreen extends AppCompatActivity {
 
                     SharedPreferences.Editor editor = sharedPreferences.edit();
 
-
                     editor.putString("userId", loginResponse.getUser().getId());
                     editor.putString("username", loginResponse.getUser().getUsername());
                     editor.putString("name", loginResponse.getUser().getName());
@@ -100,6 +99,9 @@ public class LoginScreen extends AppCompatActivity {
                     Log.d("LoginDebug", "Saved userId = " + loginResponse.getUser().getId());
                     Log.d("LoginDebug", "User = " + new Gson().toJson(loginResponse.getUser()));
 
+                    String userJson = new Gson().toJson(loginResponse.getUser());
+                    editor.putString("currentUser", userJson);
+                    Log.d("LoginScreen", "User saved to SharedPreferences as JSON: " + userJson);
 
                     if (remember) {
                         editor.putString("password", password);

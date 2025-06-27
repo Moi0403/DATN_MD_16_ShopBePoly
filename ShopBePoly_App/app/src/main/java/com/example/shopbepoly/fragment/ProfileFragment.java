@@ -13,8 +13,6 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import static com.example.shopbepoly.API.ApiClient.IMAGE_URL;
-
 import androidx.fragment.app.Fragment;
 
 import com.bumptech.glide.Glide;
@@ -135,19 +133,13 @@ public class ProfileFragment extends Fragment {
                         if (user.getId().equals(userId)) {
                             txtName.setText(user.getName() != null ? user.getName() : "");
                             txtEmail.setText(user.getEmail() != null ? user.getEmail() : "");
-                            String avatarPath = user.getAvatar();
-                            String fullAvatarUrl = IMAGE_URL + avatarPath;
-
-                            Glide.with(requireContext())
-                                    .load(fullAvatarUrl + "?t=" + System.currentTimeMillis())
-                                    .diskCacheStrategy(DiskCacheStrategy.NONE)
-                                    .skipMemoryCache(true)
+                            Glide.with(ProfileFragment.this)
+                                    .load(user.getAvatar())
                                     .apply(new RequestOptions()
                                             .transform(new CircleCrop())
                                             .placeholder(R.drawable.ic_avatar)
                                             .error(R.drawable.ic_avatar))
                                     .into(imgAvatar);
-
                             break;
                         }
                     }
@@ -160,7 +152,6 @@ public class ProfileFragment extends Fragment {
             }
         });
     }
-
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);

@@ -16,7 +16,6 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.load.resource.bitmap.CircleCrop;
 import com.bumptech.glide.request.RequestOptions;
 import com.example.shopbepoly.API.ApiClient;
@@ -113,17 +112,12 @@ public class ThongTinCaNhan extends AppCompatActivity {
                             }
                             if (user.getAvatar() != null && !user.getAvatar().isEmpty()) {
                                 android.util.Log.d("AvatarURL", "Avatar URL: " + user.getAvatar());
-                                String fullAvatarUrl = ApiClient.IMAGE_URL + currentUser.getAvatar(); // IMAGE_URL = http://192.168.1.8:3000/uploads/
-
                                 Glide.with(ThongTinCaNhan.this)
-                                        .load(fullAvatarUrl + "?t=" + System.currentTimeMillis())
-                                        .diskCacheStrategy(DiskCacheStrategy.NONE)
-                                        .skipMemoryCache(true)
+                                        .load(currentUser.getAvatar())
                                         .apply(RequestOptions.bitmapTransform(new CircleCrop()))
                                         .placeholder(R.drawable.ic_avatar)
                                         .error(R.drawable.ic_avatar)
                                         .into(imgAvatar);
-
                             } else {
                                 imgAvatar.setImageResource(R.drawable.ic_avatar);
                             }
