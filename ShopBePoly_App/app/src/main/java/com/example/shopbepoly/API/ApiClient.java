@@ -11,7 +11,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ApiClient {
     private static final String TAG = "ApiClient";
-    public static final String IPV4 = "192.168.1.8";
+    public static final String IPV4 = "192.168.55.111";
 
     public static final String BASE_URL = "http://" +IPV4+":3000/";
 //    private static final String BASE_URL = "http://192.168.55.26:3000/";

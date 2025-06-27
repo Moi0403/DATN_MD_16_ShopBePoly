@@ -48,7 +48,8 @@ public class ChiTietSanPham extends AppCompatActivity {
     private AppCompatButton btnAddToCart;
     private TextView size37, size38, size39, size40, size41;
     private int quantity = 1;
-    private boolean isFavorite = true;
+    private boolean isFavorite = false;
+
     private String selectedColor = "white";
     private String selectedSize = "40";
     private Product product;
@@ -69,6 +70,11 @@ public class ChiTietSanPham extends AppCompatActivity {
         setupClickListeners();
 
         product = (Product) getIntent().getSerializableExtra("product");
+
+        if (product != null) {
+            isFavorite = FavoriteFragment.isFavorite(product);
+            updateFavoriteButton();
+        }
         showDefaultProductImages();
         showAvailableColors();
         showAvailableSizes();
@@ -239,19 +245,6 @@ public class ChiTietSanPham extends AppCompatActivity {
         Log.d("ChiTietSanPham", "==================");
     }
 
-//    private void selectColor(String color, View colorView) {
-//        selectedColor = color;
-//
-//        // Reset all color selections
-//        colorWhite.setSelected(false);
-//        colorRed.setSelected(false);
-//        colorGray.setSelected(false);
-//        colorOrange.setSelected(false);
-//        colorLightGray.setSelected(false);
-//
-//        // Set selected color
-//        colorView.setSelected(true);
-//    }
 
     private void selectSize(String size, TextView sizeView) {
         selectedSize = size;
