@@ -124,15 +124,19 @@ public class SuaThongTinCaNhan extends AppCompatActivity {
                         if (user.getId().equals(userId)) {
                             currentUser = user;
 
-                            // ✅ Hiển thị avatar nếu có
-                            if (currentUser.getAvatar() != null && !currentUser.getAvatar().isEmpty()) {
+                            String avatarPath = currentUser.getAvatar();
+                            if (avatarPath != null && !avatarPath.isEmpty()) {
+                                String fullImageUrl = ApiClient.IMAGE_URL + avatarPath + "?t=" + System.currentTimeMillis();
                                 Glide.with(SuaThongTinCaNhan.this)
-                                        .load(user.getAvatar())
+                                        .load(fullImageUrl)
                                         .apply(RequestOptions.bitmapTransform(new CircleCrop()))
                                         .placeholder(R.drawable.ic_avatar)
                                         .error(R.drawable.ic_avatar)
                                         .into(imageUpdateAvatar);
+                            } else {
+                                imageUpdateAvatar.setImageResource(R.drawable.ic_avatar);
                             }
+
 
                             break;
                         }
@@ -237,9 +241,10 @@ public class SuaThongTinCaNhan extends AppCompatActivity {
                         String newAvatarUrl = response.body().getAvatar();
                         updatedUser.setAvatar(newAvatarUrl);
 
-// Cập nhật lại hình ảnh trên giao diện bằng Glide
+                        String fullAvatarUrl = ApiClient.IMAGE_URL + newAvatarUrl + "?t=" + System.currentTimeMillis();
+
                         Glide.with(SuaThongTinCaNhan.this)
-                                .load(currentUser.getAvatar()) // ✅ đúng là avatar từ server
+                                .load(fullAvatarUrl)
                                 .apply(RequestOptions.bitmapTransform(new CircleCrop()))
                                 .placeholder(R.drawable.ic_avatar)
                                 .error(R.drawable.ic_avatar)
@@ -298,7 +303,7 @@ public class SuaThongTinCaNhan extends AppCompatActivity {
     private void showDatePickerDialog() {
         final Calendar calendar = Calendar.getInstance();
         String birthdayText = editBirthday.getText().toString();
-        
+
         // Thử parse ngày sinh hiện tại nếu có
         if (!birthdayText.isEmpty()) {
             try {
@@ -326,7 +331,7 @@ public class SuaThongTinCaNhan extends AppCompatActivity {
         DatePickerDialog datePickerDialog = new DatePickerDialog(this, (view, year1, month1, dayOfMonth) -> {
             Calendar selectedDate = Calendar.getInstance();
             selectedDate.set(year1, month1, dayOfMonth);
-            
+
             // Format theo định dạng yyyy-MM-dd cho backend
             SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
             String formattedDate = sdf.format(selectedDate.getTime());
@@ -337,7 +342,7 @@ public class SuaThongTinCaNhan extends AppCompatActivity {
         Calendar maxDate = Calendar.getInstance();
         maxDate.add(Calendar.YEAR, -10); // Ít nhất 10 tuổi
         datePickerDialog.getDatePicker().setMaxDate(maxDate.getTimeInMillis());
-        
+
         datePickerDialog.show();
     }
 

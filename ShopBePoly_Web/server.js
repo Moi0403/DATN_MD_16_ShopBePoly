@@ -11,8 +11,9 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static('uploads', {
-  setHeaders: res => res.set('Cache-Control', 'no-store')
+    setHeaders: res => res.set('Cache-Control', 'no-store')
 }));
+const fs = require('fs');
 
 
 
@@ -48,46 +49,68 @@ const multer = require('multer');
 const path = require('path');
 
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'uploads/'); // đảm bảo thư mục này tồn tại
-    },
-    filename: (req, file, cb) => {
-        cb(null, Date.now() + '-' + file.originalname);
+    destination: (req, file, cb) => cb(null, 'uploads/'),
+    filename: async (req, file, cb) => {
+        const ext = path.extname(file.originalname);
+        const userId = req.params.id;
+        const fileName = `${userId}${ext}`;
+
+        // Xóa ảnh cũ nếu tồn tại
+        const user = await userModel.findById(userId);
+        if (user?.avt_user && user.avt_user !== fileName) {
+            const oldPath = path.join(__dirname, 'uploads', user.avt_user);
+            if (fs.existsSync(oldPath)) {
+                fs.unlinkSync(oldPath);
+            }
+        }
+
+        cb(null, fileName);
     }
 });
+
+
+const storageProduct = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, 'uploads/'),
+    filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname);
+        const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+        cb(null, uniqueName);
+    }
+});
+const uploadProduct = multer({ storage: storageProduct });
 
 const upload = multer({ storage });
 
 // API cập nhật avatar
 router.post('/upload-avatar/:id', upload.single('avt_user'), async (req, res) => {
-  const userId = req.params.id;
+    const userId = req.params.id;
 
-  if (!req.file) {
-    return res.status(400).json({ success: false, message: 'Không có file được tải lên.' });
-  }
-
-  try {
-    // ❗ Chỉ lưu tên file, không lưu full URL
-    const avatarFileName = req.file.filename;
-
-    const updatedUser = await userModel.findByIdAndUpdate(
-      userId,
-      { avt_user: avatarFileName },
-      { new: true }
-    );
-
-    if (!updatedUser) {
-      return res.status(404).json({ success: false, message: 'Người dùng không tồn tại.' });
+    if (!req.file) {
+        return res.status(400).json({ success: false, message: 'Không có file được tải lên.' });
     }
 
-    res.status(200).json({
-      success: true,
-      message: 'Cập nhật ảnh đại diện thành công.',
-      avt_user: updatedUser.avt_user
-    });
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Lỗi server', error: err.message });
-  }
+    try {
+      
+        const avatarFileName = req.file.filename;
+
+        const updatedUser = await userModel.findByIdAndUpdate(
+            userId,
+            { avt_user: avatarFileName },
+            { new: true }
+        );
+
+        if (!updatedUser) {
+            return res.status(404).json({ success: false, message: 'Người dùng không tồn tại.' });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Cập nhật ảnh đại diện thành công.',
+            avt_user: updatedUser.avt_user
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Lỗi server', error: err.message });
+    }
 });
 
 
@@ -118,38 +141,73 @@ router.get('/list_product', async (req, res) => {
 });
 
 // thêm product 'http://localhost:3000/api/add_product'
-router.post('/add_product', upload.fields([
-    { name: 'avt_imgpro', maxCount: 1 },
-    { name: 'list_imgpro', maxCount: 10 }
-]), async (req, res) => {
+router.post('/add_product', uploadProduct.any(), async (req, res) => {
     try {
-        const files = req.files;
+        const files = req.files || [];
         const body = req.body;
 
-        // Parse variations từ chuỗi JSON gửi từ form
         let variations = [];
         if (body.variations) {
-            variations = JSON.parse(body.variations);
+            try {
+                variations = JSON.parse(body.variations);
+            } catch (err) {
+                return res.status(400).json({ message: 'Lỗi định dạng variations' });
+            }
         }
 
-        const newPro = await productModel.create({
+  
+        variations.forEach((variation, index) => {
+            const fieldName = `variationImages-${index}`;
+            const matchedFiles = files.filter(f => f.fieldname === fieldName);
+
+            variation.list_imgproduct = matchedFiles.map(f => f.filename);
+            variation.image = matchedFiles[0]?.filename || '';
+        });
+
+
+        const mergedImages = [];
+        variations.forEach(variation => {
+            if (Array.isArray(variation.list_imgproduct)) {
+                variation.list_imgproduct.forEach(img => {
+                    if (img && !mergedImages.includes(img)) {
+                        mergedImages.push(img);
+                    }
+                });
+            } else if (variation.image && !mergedImages.includes(variation.image)) {
+                mergedImages.push(variation.image);
+            }
+        });
+
+     
+        const avt_imgpro = files.find(f => f.fieldname === 'avt_imgpro');
+
+        const additionalImgs = files.filter(f => f.fieldname === 'list_imgproduct');
+        additionalImgs.forEach(f => {
+            if (!mergedImages.includes(f.filename)) {
+                mergedImages.push(f.filename);
+            }
+        });
+
+        const newProduct = new productModel({
             nameproduct: body.name_pro,
             id_category: body.category_pro,
             price: body.price_pro,
-            description: body.mota_pro, // có thể thêm sau
-            avt_imgproduct: files.avt_imgpro?.[0]?.filename || '',
-            list_imgproduct: files.list_imgpro?.map(f => f.filename) || [],
-            variations // <-- sử dụng mảng variations
+            description: body.mota_pro,
+            avt_imgproduct: avt_imgpro?.filename || '',
+            list_imgproduct: mergedImages, 
+            variations: variations
         });
-        await newPro.save();
-        console.log('Thêm sản phẩm thành công');
-        const allProducts = await productModel.find();
-        res.json(allProducts);
+
+        await newProduct.save();
+        console.log('✅ Thêm sản phẩm thành công');
+        const allProducts = await productModel.find().populate('id_category');
+        res.status(200).json(allProducts);
     } catch (error) {
-        console.error('Thêm sản phẩm thất bại:', error);
-        res.status(500).send('Lỗi server');
+        console.error('❌ Thêm sản phẩm thất bại:', error);
+        res.status(500).json({ message: 'Lỗi server', error: error.message });
     }
 });
+
 
 
 // sửa product 'http://localhost:3000/api/up_product/ id'

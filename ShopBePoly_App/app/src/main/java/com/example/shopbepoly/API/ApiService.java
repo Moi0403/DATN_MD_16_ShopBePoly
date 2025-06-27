@@ -81,14 +81,18 @@ public interface ApiService {
     @Multipart
     @PUT("up_user/{userId}")
     Call<User> updateUserWithImage(
-        @Path("userId") String userId,
-        @Part MultipartBody.Part avatar,
-        @Part("name") RequestBody name,
-        @Part("email") RequestBody email,
-        @Part("phone_number") RequestBody phone,
-        @Part("birthday") RequestBody birthday,
-        @Part("gender") RequestBody gender
+            @Path("userId") String userId,
+            @Part MultipartBody.Part avatar,
+            @Part("name") RequestBody name,
+            @Part("email") RequestBody email,
+            @Part("phone_number") RequestBody phone,
+            @Part("birthday") RequestBody birthday,
+            @Part("gender") RequestBody gender
     );
+    @Multipart
+    @POST("upload-avatar/{id}")
+    Call<User> uploadAvatar(@Path("id") String userId, @Part MultipartBody.Part avatar);
+
 
     @PUT("up_user/{userId}")
     Call<List<User>> updateUser(@Path("userId") String userId, @Body User user);

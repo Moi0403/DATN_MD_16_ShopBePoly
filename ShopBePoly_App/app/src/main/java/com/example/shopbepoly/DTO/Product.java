@@ -10,37 +10,21 @@ public class Product implements Serializable {
     private String _id;
     private String nameproduct;
     @SerializedName("id_category")
-    private Category id_category;  // đổi từ String thành Category
+    private Category id_category;
     private int price;
     private int quantity;
     private String description;
     private String avt_imgproduct;
     private List<String> list_imgproduct;
-    private String color;
     private int sold;
     private List<Variation> variations;
 
+
     public Product() {
     }
-    public List<Variation> getVariations() {
-        return variations;
-    }
 
-//    public Product(String _id, String nameproduct, String id_category, int price, int quantity, String description, String avt_imgproduct, List<String> list_imgproduct, String color, int sold, List<Variation> variations) {
-//        this._id = _id;
-//        this.nameproduct = nameproduct;
-//        this.id_category = id_category;
-//        this.price = price;
-//        this.quantity = quantity;
-//        this.description = description;
-//        this.avt_imgproduct = avt_imgproduct;
-//        this.list_imgproduct = list_imgproduct;
-//        this.color = color;
-//        this.sold = sold;
-//        this.variations = variations;
-//    }
-
-        public Product(String _id, String nameproduct, Category id_category, int price, int quantity, String description, String avt_imgproduct, List<String> list_imgproduct, int size, String color, int stock, int sold) {
+    public Product(String _id, String nameproduct, Category id_category, int price, int quantity,
+                   String description, String avt_imgproduct, List<String> list_imgproduct, int sold, List<Variation> variations) {
         this._id = _id;
         this.nameproduct = nameproduct;
         this.id_category = id_category;
@@ -49,11 +33,7 @@ public class Product implements Serializable {
         this.description = description;
         this.avt_imgproduct = avt_imgproduct;
         this.list_imgproduct = list_imgproduct;
-        this.color = color;
         this.sold = sold;
-
-    }
-    public void setVariations(List<Variation> variations) {
         this.variations = variations;
     }
 
@@ -80,15 +60,6 @@ public class Product implements Serializable {
     public void setId_category(Category id_category) {
         this.id_category = id_category;
     }
-
-
-//    public String getId_category() {
-//        return id_category;
-//    }
-//
-//    public void setId_category(String id_category) {
-//        this.id_category = id_category;
-//    }
 
     public int getPrice() {
         return price;
@@ -130,15 +101,6 @@ public class Product implements Serializable {
         this.list_imgproduct = list_imgproduct;
     }
 
-
-    public String getColor() {
-        return color;
-    }
-
-    public void setColor(String color) {
-        this.color = color;
-    }
-
     public int getSold() {
         return sold;
     }
@@ -146,9 +108,19 @@ public class Product implements Serializable {
     public void setSold(int sold) {
         this.sold = sold;
     }
+
+    public List<Variation> getVariations() {
+        return variations;
+    }
+
+    public void setVariations(List<Variation> variations) {
+        this.variations = variations;
+    }
+
     public String getFormattedPrice() {
         return String.format("%,d₫", price);
     }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -161,5 +133,4 @@ public class Product implements Serializable {
     public int hashCode() {
         return _id != null ? _id.hashCode() : 0;
     }
-
 }

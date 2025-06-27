@@ -133,13 +133,20 @@ public class ProfileFragment extends Fragment {
                         if (user.getId().equals(userId)) {
                             txtName.setText(user.getName() != null ? user.getName() : "");
                             txtEmail.setText(user.getEmail() != null ? user.getEmail() : "");
-                            Glide.with(ProfileFragment.this)
-                                    .load(user.getAvatar())
-                                    .apply(new RequestOptions()
-                                            .transform(new CircleCrop())
-                                            .placeholder(R.drawable.ic_avatar)
-                                            .error(R.drawable.ic_avatar))
-                                    .into(imgAvatar);
+                            String avatarFileName = user.getAvatar(); // hoặc getAvtUser() tùy bạn đặt tên
+                            if (avatarFileName != null && !avatarFileName.isEmpty()) {
+                                String fullUrl = ApiClient.IMAGE_URL + avatarFileName + "?t=" + System.currentTimeMillis();
+                                Glide.with(ProfileFragment.this)
+                                        .load(fullUrl)
+                                        .apply(new RequestOptions()
+                                                .transform(new CircleCrop())
+                                                .placeholder(R.drawable.ic_avatar)
+                                                .error(R.drawable.ic_avatar))
+                                        .into(imgAvatar);
+                            } else {
+                                imgAvatar.setImageResource(R.drawable.ic_avatar);
+                            }
+
                             break;
                         }
                     }
@@ -152,6 +159,7 @@ public class ProfileFragment extends Fragment {
             }
         });
     }
+
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);

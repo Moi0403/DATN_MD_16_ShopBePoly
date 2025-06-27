@@ -88,11 +88,11 @@ public class ThongTinCaNhan extends AppCompatActivity {
                         if (user.getId().equals(userId)) {
                             currentUser = user;
                             found = true;
-                            android.util.Log.d("UserInfo", "User found. Name: " + user.getName() + 
-                                ", Email: " + user.getEmail() + 
-                                ", Phone: " + user.getPhone_number() + 
-                                ", Birthday: " + user.getBirthday() + 
-                                ", Gender: " + user.getGender());
+                            android.util.Log.d("UserInfo", "User found. Name: " + user.getName() +
+                                    ", Email: " + user.getEmail() +
+                                    ", Phone: " + user.getPhone_number() +
+                                    ", Birthday: " + user.getBirthday() +
+                                    ", Gender: " + user.getGender());
                             txtUser.setText(user.getName() != null ? user.getName() : "");
                             txtEmailTTCN.setText(user.getEmail() != null ? user.getEmail() : "");
                             txtSodienthoai.setText(user.getPhone_number() != null ? user.getPhone_number() : "");
@@ -111,9 +111,9 @@ public class ThongTinCaNhan extends AppCompatActivity {
                                 txtNgaysinh.setText("");
                             }
                             if (user.getAvatar() != null && !user.getAvatar().isEmpty()) {
-                                android.util.Log.d("AvatarURL", "Avatar URL: " + user.getAvatar());
+                                String fullAvatarUrl = ApiClient.IMAGE_URL + user.getAvatar() + "?t=" + System.currentTimeMillis();
                                 Glide.with(ThongTinCaNhan.this)
-                                        .load(currentUser.getAvatar())
+                                        .load(fullAvatarUrl)
                                         .apply(RequestOptions.bitmapTransform(new CircleCrop()))
                                         .placeholder(R.drawable.ic_avatar)
                                         .error(R.drawable.ic_avatar)
@@ -143,9 +143,9 @@ public class ThongTinCaNhan extends AppCompatActivity {
             public void onFailure(Call<List<User>> call, Throwable t) {
                 android.util.Log.e("UserInfo", "Lỗi kết nối: " + t.getMessage(), t);
                 runOnUiThread(() -> {
-                    android.widget.Toast.makeText(ThongTinCaNhan.this, 
-                        "Không thể tải thông tin: " + t.getMessage(), 
-                        android.widget.Toast.LENGTH_SHORT).show();
+                    android.widget.Toast.makeText(ThongTinCaNhan.this,
+                            "Không thể tải thông tin: " + t.getMessage(),
+                            android.widget.Toast.LENGTH_SHORT).show();
                 });
             }
         });

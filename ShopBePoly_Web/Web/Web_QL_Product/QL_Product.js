@@ -25,22 +25,36 @@ window.addEventListener('DOMContentLoaded', async () => {
         console.error('Lỗi khi lấy danh sách category:', error);
     }
 });
+function convertToColorCode(color) {
+    switch (color.toLowerCase()) {
+        case 'đen': return 'black';
+        case 'trắng': return 'white';
+        case 'đỏ': return 'red';
+        case 'xanh': return 'blue';
+        case 'vàng': return 'yellow';
+        default: return '#ccc';
+    }
+}
+
 document.getElementById('add-variation').addEventListener('click', () => {
     const wrapper = document.getElementById('variation-wrapper');
     const newRow = document.createElement('div');
     newRow.classList.add('variation-row', 'd-flex', 'gap-2', 'mb-3');
     newRow.innerHTML = `
-        <select class="form-select var-size" required>
-            <option value="">-- Chọn size --</option>
-            <option value="37">37</option>
-            <option value="38">38</option>
-            <option value="39">39</option>
-            <option value="40">40</option>
-            <option value="41">41</option>
-        </select>
-        <input type="number" class="form-control var-stock" placeholder="Tồn kho" required>
-        <button type="button" class="btn btn-danger btn-remove-size">X</button>
-    `;
+    <select class="form-select var-size" required>
+        <option value="">-- Chọn size --</option>
+        <option value="37">37</option>
+        <option value="38">38</option>
+        <option value="39">39</option>
+        <option value="40">40</option>
+        <option value="41">41</option>
+    </select>
+    <input type="number" class="form-control var-stock" placeholder="Tồn kho" required>
+    <input type="text" class="form-control var-color" placeholder="Màu sắc" list="colors" required>
+    <input type="file" class="form-control var-image" accept="image/*" required>
+    <button type="button" class="btn btn-danger btn-remove-size">X</button>
+`;
+
     wrapper.appendChild(newRow);
 });
 
@@ -55,26 +69,39 @@ const ThemPro = () => {
         event.preventDefault();
 
         const formData = new FormData(event.target);
+        const avtInput = document.getElementById('avt_imgpro');
+        if (avtInput && avtInput.files.length > 0) {
+            formData.append('avt_imgpro', avtInput.files[0]);
+        }
 
         const variationElements = document.querySelectorAll('.variation-row');
         const variations = [];
 
-        variationElements.forEach(row => {
+        variationElements.forEach((row, index) => {
             const size = row.querySelector('select.var-size').value;
             const stock = row.querySelector('.var-stock').value;
+            const color = row.querySelector('.var-color').value;
+            const imageFiles = row.querySelector('.var-image').files;
 
-            if (size && stock) {
-                // Check if size already exists to merge stock
-                const existing = variations.find(v => v.size == size);
-                if (existing) {
-                    existing.stock += Number(stock);
-                } else {
-                    variations.push({
-                        size: size,
-                        stock: Number(stock),
-                        sold: 0
-                    });
+            if (size && stock && color && imageFiles.length > 0) {
+                const listImg = [];
+
+                for (let i = 0; i < imageFiles.length; i++) {
+                    const file = imageFiles[i];
+                    formData.append(`variationImages-${index}`, file);
+                    listImg.push(file.name);
                 }
+
+                variations.push({
+                    size,
+                    stock: Number(stock),
+                    sold: 0,
+                    color: {
+                        name: color,
+                        code: convertToColorCode(color)
+                    },
+                    list_imgproduct: listImg
+                });
             }
         });
 
@@ -97,6 +124,7 @@ const ThemPro = () => {
         }
     });
 };
+
 ThemPro();
 
 document.getElementById('pl_pro').addEventListener('change', function () {
@@ -135,6 +163,45 @@ const hienThiPro = async () => {
             tdIMG.appendChild(img);
             tdIMG.style.textAlign = 'center';
 
+            const colorDotsDiv = document.createElement('div');
+            colorDotsDiv.classList.add('color-dots');
+
+            const imageMap = {};
+
+            item.variations?.forEach((variation, i) => {
+                if (variation.color?.code) {
+                    const dot = document.createElement('span');
+                    dot.classList.add('color-dot');
+                    dot.style.backgroundColor = variation.color.code;
+
+
+                    const imgForColor = item.list_imgproduct[i] || item.avt_imgproduct;
+
+                    dot.addEventListener('click', () => {
+                        const imgList = variation.list_imgproduct || [];
+                        let index = 0;
+
+                        const updateImage = () => {
+                            img.src = `http://localhost:3000/uploads/${imgList[index]}?t=${Date.now()}`;
+                            index = (index + 1) % imgList.length;
+                        };
+
+                        updateImage();
+                        if (imgList.length > 1) {
+                            setInterval(updateImage, 3000); // slider tự động lướt ảnh mỗi 3s
+                        }
+                    });
+
+
+                    colorDotsDiv.appendChild(dot);
+                }
+            });
+
+
+            // tdIMG.appendChild(document.createElement('br'));
+            // tdIMG.appendChild(colorDotsDiv);
+
+
             const tdName = document.createElement('td');
             tdName.textContent = item.nameproduct;
             tdName.style.textAlign = 'center';
@@ -144,18 +211,21 @@ const hienThiPro = async () => {
             tdCate.style.textAlign = 'center';
 
             const tdSize = document.createElement('td');
+            const tdColor = document.createElement('td');
             const tdStock = document.createElement('td');
             const tdSold = document.createElement('td');
 
             if (item.variations?.length > 0) {
                 tdSize.innerHTML = item.variations.map(v => v.size).join('<br>');
+                tdColor.innerHTML = item.variations.map(v => v.color?.name || 'N/A').join('<br>');
                 tdStock.innerHTML = item.variations.map(v => v.stock).join('<br>');
                 tdSold.innerHTML = item.variations.map(v => v.sold).join('<br>');
+
             } else {
-                tdSize.textContent = tdStock.textContent = tdSold.textContent = 'N/A';
+                tdSize.textContent = tdColor.textContent = tdStock.textContent = tdSold.textContent = 'N/A';
             }
 
-            [tdSize, tdStock, tdSold].forEach(td => td.style.textAlign = 'center');
+            [tdSize, tdColor, tdStock, tdSold].forEach(td => td.style.textAlign = 'center');
 
             const tdPrice = document.createElement('td');
             tdPrice.textContent = item.price + ".000 đ";
@@ -194,6 +264,7 @@ const hienThiPro = async () => {
             tr.appendChild(tdName);
             tr.appendChild(tdCate);
             tr.appendChild(tdSize);
+            tr.appendChild(tdColor);
             tr.appendChild(tdStock);
             tr.appendChild(tdSold);
             tr.appendChild(tdPrice);
