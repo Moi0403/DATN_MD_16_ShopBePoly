@@ -35,6 +35,7 @@ public class AddEditAddressActivity extends AppCompatActivity {
     private String selectedProvinceCode = "";
     private String selectedDistrictCode = "";
     private boolean isLoadingData = false; // Flag để tránh trigger listener khi đang load dữ liệu
+    private String userId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,6 +46,10 @@ public class AddEditAddressActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+
+        // Lấy userId
+        android.content.SharedPreferences loginPrefs = getSharedPreferences("LoginPrefs", MODE_PRIVATE);
+        userId = loginPrefs.getString("userId", "");
 
         initViews();
         setupSpinners();
@@ -260,7 +265,7 @@ public class AddEditAddressActivity extends AppCompatActivity {
         
         // Load địa chỉ mặc định từ SharedPreferences
         android.content.SharedPreferences prefs = getSharedPreferences("AddressPrefs", MODE_PRIVATE);
-        String addressJson = prefs.getString("default_address", "");
+        String addressJson = prefs.getString("default_address_" + userId, "");
         if (!addressJson.isEmpty()) {
             try {
                 Address defaultAddress = gson.fromJson(addressJson, Address.class);

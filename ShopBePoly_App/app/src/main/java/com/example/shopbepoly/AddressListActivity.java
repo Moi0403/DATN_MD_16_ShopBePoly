@@ -32,6 +32,7 @@ public class AddressListActivity extends AppCompatActivity implements AddressAda
     private List<Address> addressList;
     private SharedPreferences prefs;
     private Gson gson = new Gson();
+    private String userId;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -40,6 +41,8 @@ public class AddressListActivity extends AppCompatActivity implements AddressAda
         recyclerView = findViewById(R.id.recyclerAddress);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         prefs = getSharedPreferences("AddressPrefs", Context.MODE_PRIVATE);
+        SharedPreferences loginPrefs = getSharedPreferences("LoginPrefs", MODE_PRIVATE);
+        userId = loginPrefs.getString("userId", "");
         addressList = loadAddresses();
         adapter = new AddressAdapter(this, addressList, this);
         recyclerView.setAdapter(adapter);
@@ -54,14 +57,14 @@ public class AddressListActivity extends AppCompatActivity implements AddressAda
     }
 
     private List<Address> loadAddresses() {
-        String json = prefs.getString("address_list", "");
+        String json = prefs.getString("address_list_" + userId, "");
         if (json.isEmpty()) return new ArrayList<>();
         Type type = new TypeToken<List<Address>>(){}.getType();
         return gson.fromJson(json, type);
     }
 
     private void saveAddresses() {
-        prefs.edit().putString("address_list", gson.toJson(addressList)).apply();
+        prefs.edit().putString("address_list_" + userId, gson.toJson(addressList)).apply();
     }
 
     @Override
@@ -86,7 +89,7 @@ public class AddressListActivity extends AppCompatActivity implements AddressAda
         for (Address a : addressList) a.setDefault(false);
         address.setDefault(true);
         saveAddresses();
-        prefs.edit().putString("default_address", gson.toJson(address)).apply();
+        prefs.edit().putString("default_address_" + userId, gson.toJson(address)).apply();
         SharedPreferences loginPrefs = getSharedPreferences("LoginPrefs", MODE_PRIVATE);
         String userId = loginPrefs.getString("userId", "");
         ApiService apiService = ApiClient.getApiService();
@@ -117,7 +120,7 @@ public class AddressListActivity extends AppCompatActivity implements AddressAda
                 if (address.isDefault()) for (Address a : addressList) a.setDefault(false);
                 addressList.add(address);
                 saveAddresses();
-                prefs.edit().putString("default_address", gson.toJson(address)).apply();
+                prefs.edit().putString("default_address_" + userId, gson.toJson(address)).apply();
                 Intent intent = new Intent();
                 intent.putExtra("address_result", gson.toJson(address));
                 setResult(RESULT_OK, intent);
@@ -131,7 +134,7 @@ public class AddressListActivity extends AppCompatActivity implements AddressAda
                     }
                 }
                 saveAddresses();
-                prefs.edit().putString("default_address", gson.toJson(address)).apply();
+                prefs.edit().putString("default_address_" + userId, gson.toJson(address)).apply();
                 Intent intent = new Intent();
                 intent.putExtra("address_result", gson.toJson(address));
                 setResult(RESULT_OK, intent);
