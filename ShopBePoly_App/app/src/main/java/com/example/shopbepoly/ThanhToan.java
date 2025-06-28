@@ -51,13 +51,16 @@ public class ThanhToan extends AppCompatActivity {
     private ImageView imgProduct,img_next_address;
 
     private static final int REQ_ADDRESS = 3001;
+    private String userId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_thanh_toan);
-
+        // Lấy userId
+        SharedPreferences sharedPreferences = getSharedPreferences("LoginPrefs", MODE_PRIVATE);
+        userId = sharedPreferences.getString("userId", "");
         initViews();
         getDataFromIntent();
         loadUserInfo();
@@ -185,7 +188,7 @@ public class ThanhToan extends AppCompatActivity {
 
     private String loadDefaultAddress() {
         SharedPreferences prefs = getSharedPreferences("AddressPrefs", MODE_PRIVATE);
-        String addressJson = prefs.getString("default_address", "");
+        String addressJson = prefs.getString("default_address_" + userId, "");
         if (!addressJson.isEmpty()) {
             try {
                 com.example.shopbepoly.DTO.Address defaultAddress = new Gson().fromJson(addressJson, com.example.shopbepoly.DTO.Address.class);
@@ -201,7 +204,7 @@ public class ThanhToan extends AppCompatActivity {
 
     private com.example.shopbepoly.DTO.Address loadDefaultAddressObject() {
         SharedPreferences prefs = getSharedPreferences("AddressPrefs", MODE_PRIVATE);
-        String addressJson = prefs.getString("default_address", "");
+        String addressJson = prefs.getString("default_address_" + userId, "");
         if (!addressJson.isEmpty()) {
             try {
                 com.example.shopbepoly.DTO.Address defaultAddress = new Gson().fromJson(addressJson, com.example.shopbepoly.DTO.Address.class);
@@ -272,25 +275,20 @@ public class ThanhToan extends AppCompatActivity {
                         // Lưu địa chỉ mặc định vào SharedPreferences (bền vững)
                         SharedPreferences prefs = getSharedPreferences("AddressPrefs", MODE_PRIVATE);
                         prefs.edit()
-                            .putString("default_address", addressJson)
+                            .putString("default_address_" + userId, addressJson)
                             .putLong("last_updated", System.currentTimeMillis())
                             .apply();
-                        
                         // Cập nhật thông tin người nhận (không bao gồm email)
                         txtCustomerName.setText(selectedAddress.getName());
                         txtCustomerPhone.setText(selectedAddress.getPhone());
                         txtCustomerAddress.setText(selectedAddress.getAddress());
-                        
                         // Cập nhật thông tin user với địa chỉ mới
                         if (currentUser != null) {
                             currentUser.setAddress(selectedAddress.getAddress());
-                            
                             // Cập nhật lên server (nếu cần)
                             updateUserAddressOnServer(selectedAddress.getAddress());
                         }
-                        
                         Toast.makeText(this, "Đã chọn địa chỉ: " + selectedAddress.getAddress(), Toast.LENGTH_SHORT).show();
-                        
                         Log.d(TAG, "Default address saved: " + selectedAddress.getName() + " - " + selectedAddress.getPhone() + " - " + selectedAddress.getAddress());
                     }
                 } catch (Exception e) {
