@@ -51,7 +51,7 @@
                 android:layout_height="wrap_content"
                 android:text="Mặc định"
                 android:textSize="13sp"
-                android:textColor="#FFF"
+                android:textColor="#000"
                 android:background="@drawable/bg_default_address"
                 android:paddingLeft="10dp"
                 android:paddingRight="10dp"
