@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#F5F5F5">
+
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="#FFFFFF"
+        android:elevation="4dp"
+        android:padding="16dp">
+
+        <ImageButton
+            android:id="@+id/btnBack"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_back"
+            android:contentDescription="Back"
+            android:padding="8dp"/>
+
+        <TextView
+            android:id="@+id/tvTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Thêm/Sửa địa chỉ"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="#333333"
+            android:gravity="center"/>
+    </LinearLayout>
+
+    <!-- Scrollable Content -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <!-- Form Card -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="20dp"
+                android:elevation="4dp"
+                android:radius="12dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <!-- Tên người nhận -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Tên người nhận *"
+                        android:textSize="16sp"
+                        android:textColor="#333333"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp"/>
+
+                    <EditText
+                        android:id="@+id/edtName"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Nhập tên người nhận"
+                        android:textSize="16sp"
+                        android:background="@drawable/edittext_modern_bg"
+                        android:padding="16dp"
+                        android:layout_marginBottom="20dp"
+                        android:inputType="textPersonName"/>
+
+                    <!-- Số điện thoại -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Số điện thoại *"
+                        android:textSize="16sp"
+                        android:textColor="#333333"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp"/>
+
+                    <EditText
+                        android:id="@+id/edtPhone"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Nhập số điện thoại"
+                        android:inputType="phone"
+                        android:textSize="16sp"
+                        android:background="@drawable/edittext_modern_bg"
+                        android:padding="16dp"
+                        android:layout_marginBottom="20dp"/>
+
+                    <!-- Địa chỉ chi tiết -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Địa chỉ chi tiết *"
+                        android:textSize="16sp"
+                        android:textColor="#333333"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp"/>
+
+                    <EditText
+                        android:id="@+id/edtAddress"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Số nhà, tên đường, phường/xã"
+                        android:textSize="16sp"
+                        android:background="@drawable/edittext_modern_bg"
+                        android:padding="16dp"
+                        android:layout_marginBottom="20dp"
+                        android:inputType="textMultiLine"
+                        android:minLines="2"/>
+
+                    <!-- Tỉnh/Thành phố -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Tỉnh/Thành phố *"
+                        android:textSize="16sp"
+                        android:textColor="#333333"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp"/>
+
+                    <Spinner
+                        android:id="@+id/spinnerProvince"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/edittext_modern_bg"
+                        android:padding="16dp"
+                        android:layout_marginBottom="20dp"
+                        android:popupBackground="#FFFFFF"/>
+
+                    <!-- Quận/Huyện -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Quận/Huyện *"
+                        android:textSize="16sp"
+                        android:textColor="#333333"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp"/>
+
+                    <Spinner
+                        android:id="@+id/spinnerDistrict"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/edittext_modern_bg"
+                        android:padding="16dp"
+                        android:layout_marginBottom="20dp"
+                        android:popupBackground="#FFFFFF"/>
+
+                    <!-- Xã/Phường -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Xã/Phường *"
+                        android:textSize="16sp"
+                        android:textColor="#333333"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp"/>
+
+                    <Spinner
+                        android:id="@+id/spinnerWard"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/edittext_modern_bg"
+                        android:padding="16dp"
+                        android:layout_marginBottom="20dp"
+                        android:popupBackground="#FFFFFF"/>
+
+                    <!-- Label -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Nhãn địa chỉ"
+                        android:textSize="16sp"
+                        android:textColor="#333333"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp"/>
+
+                    <Spinner
+                        android:id="@+id/spinnerLabel"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/edittext_modern_bg"
+                        android:padding="16dp"
+                        android:layout_marginBottom="20dp"
+                        android:popupBackground="#FFFFFF"/>
+
+                    <!-- Checkbox mặc định -->
+                    <CheckBox
+                        android:id="@+id/checkboxDefault"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Đặt làm địa chỉ mặc định"
+                        android:textSize="16sp"
+                        android:textColor="#333333"
+                        android:layout_marginBottom="20dp"
+                        android:padding="8dp"/>
+
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Save Button -->
+            <Button
+                android:id="@+id/btnSave"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Lưu địa chỉ"
+                android:textAllCaps="false"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:background="@drawable/button_modern_background"
+                android:textColor="#FFFFFF"
+                android:padding="16dp"
+                android:layout_marginBottom="20dp"
+                android:elevation="4dp"/>
+
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout> 

@@ -99,6 +99,12 @@
         <activity
             android:name=".Donhang"
             android:exported="false" />
+        <activity
+            android:name=".AddressListActivity"
+            android:exported="false" />
+        <activity
+            android:name=".AddEditAddressActivity"
+            android:exported="false" />
     </application>
 
 </manifest>
