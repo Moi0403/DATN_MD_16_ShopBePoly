@@ -23,6 +23,7 @@ import com.example.shopbepoly.DTO.User;
 import com.google.gson.Gson;
 import com.squareup.picasso.Picasso;
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -49,6 +50,8 @@ public class ThanhToan extends AppCompatActivity {
     private TextView txtProductName, txtProductQuantity, txtProductSize, txtProductPrice, txtProductTotal,txtShippingFee, txtTotalPayment,txtCustomerName, txtCustomerEmail, txtCustomerAddress, txtCustomerPhone;
     private ImageView imgProduct;
 
+    private static final int REQ_ADDRESS = 3001;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -59,68 +62,8 @@ public class ThanhToan extends AppCompatActivity {
         getDataFromIntent();
         loadUserInfo();
         displayProductInfo();
-        displayUserInfo();
+        loadDefaultAddressOnStartup();
         setupListeners();
-
-//        // Ánh xạ view
-//        ImageButton btnBack = findViewById(R.id.btnBack);
-//        imgProduct = findViewById(R.id.imgProduct);
-//        txtProductName = findViewById(R.id.txtProductName);
-//        txtProductQuantity = findViewById(R.id.txtProductQuantity);
-//        View viewProductColor = findViewById(R.id.viewProductColor);
-//        txtProductSize = findViewById(R.id.txtProductSize);
-//        txtProductPrice = findViewById(R.id.txtProductPrice);
-//        txtProductTotal = findViewById(R.id.txtProductTotal);
-//        TextView txtShippingFee = findViewById(R.id.txtShippingFee);
-//        TextView txtTotalPayment = findViewById(R.id.txtTotalPayment);
-//        // EditText cho thông tin khách hàng
-//        EditText edtCustomerName = findViewById(R.id.edtCustomerName);
-//        EditText edtCustomerEmail = findViewById(R.id.edtCustomerEmail);
-//        EditText edtCustomerAddress = findViewById(R.id.edtCustomerAddress);
-//        EditText edtCustomerPhone = findViewById(R.id.edtCustomerPhone);
-//        // ...
-//        RadioGroup radioGroupPaymentMain = findViewById(R.id.radioGroupPaymentMain);
-//        RadioButton radioCOD = findViewById(R.id.radioCOD);
-//        RadioButton radioAppBank = findViewById(R.id.radioAppBank);
-//        View layoutBankOptions = findViewById(R.id.layoutBankOptions);
-//        RadioGroup radioGroupBank = findViewById(R.id.radioGroupBank);
-//        Button btnDatHang = findViewById(R.id.btnDatHang);
-
-//        getDataFromIntent();
-//
-//        // Ẩn/hiện lựa chọn ngân hàng
-//        radioGroupPaymentMain.setOnCheckedChangeListener((group, checkedId) -> {
-//            if (checkedId == R.id.radioAppBank) {
-//                layoutBankOptions.setVisibility(View.VISIBLE);
-//            } else {
-//                layoutBankOptions.setVisibility(View.GONE);
-//                radioGroupBank.clearCheck();
-//            }
-//        });
-//
-//        // Nút back
-//        btnBack.setOnClickListener(v -> finish());
-//
-//        // Xử lý nút Đặt hàng (ví dụ lấy phương thức thanh toán)
-//        btnDatHang.setOnClickListener(v -> {
-//            String paymentMethod = "";
-//            if (radioCOD.isChecked()) {
-//                paymentMethod = "Thanh toán khi nhận hàng";
-//            } else if (radioAppBank.isChecked()) {
-//                int checkedBankId = radioGroupBank.getCheckedRadioButtonId();
-//                if (checkedBankId == R.id.radioMomo) {
-//                    paymentMethod = "Momo";
-//                } else if (checkedBankId == R.id.radioAgribank) {
-//                    paymentMethod = "Agribank";
-//                } else {
-//                    paymentMethod = "Chưa chọn ngân hàng";
-//                }
-//            }
-//            // Chuyển sang màn hình đặt hàng thành công
-//            startActivity(new android.content.Intent(this, Dathangthanhcong.class));
-//            // Nếu muốn đóng luôn màn thanh toán sau khi chuyển, bỏ comment dòng dưới:
-//            // finish();
-//        });
     }
 
     private void initViews(){
@@ -163,6 +106,10 @@ public class ThanhToan extends AppCompatActivity {
         //nut back
         btnBack.setOnClickListener(v -> finish());
 
+        txtCustomerAddress.setOnClickListener(v -> {
+            Intent intent = new Intent(this, AddressListActivity.class);
+            startActivityForResult(intent, REQ_ADDRESS);
+        });
     }
     private void getDataFromIntent(){
         Intent intent = getIntent();
@@ -214,12 +161,59 @@ public class ThanhToan extends AppCompatActivity {
 
     private void displayUserInfo(){
         if (currentUser != null){
-            txtCustomerName.setText(currentUser.getName());
+            // Chỉ hiển thị thông tin từ user nếu chưa có thông tin từ địa chỉ mặc định
+            if (txtCustomerName.getText().toString().isEmpty()) {
+                txtCustomerName.setText(currentUser.getName());
+            }
+            // Email luôn hiển thị từ user, không bị ghi đè
             txtCustomerEmail.setText(currentUser.getEmail());
-            txtCustomerPhone.setText(currentUser.getPhone_number());
-            txtCustomerAddress.setText(currentUser.getAddress());
+            if (txtCustomerPhone.getText().toString().isEmpty()) {
+                txtCustomerPhone.setText(currentUser.getPhone_number());
+            }
+            if (txtCustomerAddress.getText().toString().isEmpty()) {
+                String defaultAddress = loadDefaultAddress();
+                if (defaultAddress != null && !defaultAddress.isEmpty()) {
+                    txtCustomerAddress.setText(defaultAddress);
+                } else {
+                    // Nếu không có địa chỉ mặc định, hiển thị địa chỉ từ user
+                    txtCustomerAddress.setText(currentUser.getAddress());
+                }
+            }
         }
     }
+
+    private String loadDefaultAddress() {
+        SharedPreferences prefs = getSharedPreferences("AddressPrefs", MODE_PRIVATE);
+        String addressJson = prefs.getString("default_address", "");
+        if (!addressJson.isEmpty()) {
+            try {
+                com.example.shopbepoly.DTO.Address defaultAddress = new Gson().fromJson(addressJson, com.example.shopbepoly.DTO.Address.class);
+                if (defaultAddress != null) {
+                    return defaultAddress.getAddress();
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error parsing default address", e);
+            }
+        }
+        return null;
+    }
+
+    private com.example.shopbepoly.DTO.Address loadDefaultAddressObject() {
+        SharedPreferences prefs = getSharedPreferences("AddressPrefs", MODE_PRIVATE);
+        String addressJson = prefs.getString("default_address", "");
+        if (!addressJson.isEmpty()) {
+            try {
+                com.example.shopbepoly.DTO.Address defaultAddress = new Gson().fromJson(addressJson, com.example.shopbepoly.DTO.Address.class);
+                if (defaultAddress != null) {
+                    return defaultAddress;
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error parsing default address object", e);
+            }
+        }
+        return null;
+    }
+
     private void displayProductInfo() {
         if (selectedProduct == null) {
             Toast.makeText(this, "Không có thông tin sản phẩm", Toast.LENGTH_SHORT).show();
@@ -263,5 +257,86 @@ public class ThanhToan extends AppCompatActivity {
     private String formatPrice(int price) {
         NumberFormat formatter = NumberFormat.getNumberInstance(Locale.US);
         return formatter.format(price) + "₫";
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQ_ADDRESS && resultCode == RESULT_OK && data != null) {
+            String addressJson = data.getStringExtra("address_result");
+            if (addressJson != null) {
+                try {
+                    com.example.shopbepoly.DTO.Address selectedAddress = new Gson().fromJson(addressJson, com.example.shopbepoly.DTO.Address.class);
+                    if (selectedAddress != null) {
+                        // Lưu địa chỉ mặc định vào SharedPreferences (bền vững)
+                        SharedPreferences prefs = getSharedPreferences("AddressPrefs", MODE_PRIVATE);
+                        prefs.edit()
+                            .putString("default_address", addressJson)
+                            .putLong("last_updated", System.currentTimeMillis())
+                            .apply();
+                        
+                        // Cập nhật thông tin người nhận (không bao gồm email)
+                        txtCustomerName.setText(selectedAddress.getName());
+                        txtCustomerPhone.setText(selectedAddress.getPhone());
+                        txtCustomerAddress.setText(selectedAddress.getAddress());
+                        
+                        // Cập nhật thông tin user với địa chỉ mới
+                        if (currentUser != null) {
+                            currentUser.setAddress(selectedAddress.getAddress());
+                            
+                            // Cập nhật lên server (nếu cần)
+                            updateUserAddressOnServer(selectedAddress.getAddress());
+                        }
+                        
+                        Toast.makeText(this, "Đã chọn địa chỉ: " + selectedAddress.getAddress(), Toast.LENGTH_SHORT).show();
+                        
+                        Log.d(TAG, "Default address saved: " + selectedAddress.getName() + " - " + selectedAddress.getPhone() + " - " + selectedAddress.getAddress());
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error parsing address data", e);
+                    Toast.makeText(this, "Lỗi khi xử lý địa chỉ", Toast.LENGTH_SHORT).show();
+                }
+            }
+        }
+    }
+
+    private void updateUserAddressOnServer(String newAddress) {
+        SharedPreferences sharedPreferences = getSharedPreferences("LoginPrefs", MODE_PRIVATE);
+        String userId = sharedPreferences.getString("userId", "");
+        
+        if (!userId.isEmpty()) {
+            User updateUser = new User();
+            updateUser.setAddress(newAddress);
+            
+            ApiService apiService = ApiClient.getApiService();
+            apiService.updateUser(userId, updateUser).enqueue(new Callback<List<User>>() {
+                @Override
+                public void onResponse(Call<List<User>> call, Response<List<User>> response) {
+                    if (response.isSuccessful()) {
+                        Log.d(TAG, "User address updated successfully on server");
+                    } else {
+                        Log.e(TAG, "Failed to update user address on server");
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<List<User>> call, Throwable t) {
+                    Log.e(TAG, "Error updating user address on server", t);
+                }
+            });
+        }
+    }
+
+    private void loadDefaultAddressOnStartup() {
+        // Load địa chỉ mặc định ngay khi activity khởi tạo
+        com.example.shopbepoly.DTO.Address defaultAddress = loadDefaultAddressObject();
+        if (defaultAddress != null) {
+            // Cập nhật thông tin người nhận (không bao gồm email)
+            txtCustomerName.setText(defaultAddress.getName());
+            txtCustomerPhone.setText(defaultAddress.getPhone());
+            txtCustomerAddress.setText(defaultAddress.getAddress());
+            
+            Log.d(TAG, "Loaded default address info on startup: " + defaultAddress.getName() + " - " + defaultAddress.getPhone());
+        }
     }
 }
