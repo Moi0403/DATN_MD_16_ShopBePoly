@@ -48,7 +48,7 @@ public class ThanhToan extends AppCompatActivity {
     private int shippingFee = 30000;
 
     private TextView txtProductName, txtProductQuantity, txtProductSize, txtProductPrice, txtProductTotal,txtShippingFee, txtTotalPayment,txtCustomerName, txtCustomerEmail, txtCustomerAddress, txtCustomerPhone;
-    private ImageView imgProduct;
+    private ImageView imgProduct,img_next_address;
 
     private static final int REQ_ADDRESS = 3001;
 
@@ -78,8 +78,9 @@ public class ThanhToan extends AppCompatActivity {
         txtTotalPayment = findViewById(R.id.txtTotalPayment);
 
         txtCustomerName = findViewById(R.id.txtCustomerName);
-        txtCustomerEmail = findViewById(R.id.txtCustomerEmail);
+//        txtCustomerEmail = findViewById(R.id.txtCustomerEmail);
         txtCustomerAddress = findViewById(R.id.txtCustomerAddress);
+        img_next_address = findViewById(R.id.img_next_Adress);
         txtCustomerPhone = findViewById(R.id.txtCustomerPhone);
 
     }
@@ -106,7 +107,7 @@ public class ThanhToan extends AppCompatActivity {
         //nut back
         btnBack.setOnClickListener(v -> finish());
 
-        txtCustomerAddress.setOnClickListener(v -> {
+        img_next_address.setOnClickListener(v -> {
             Intent intent = new Intent(this, AddressListActivity.class);
             startActivityForResult(intent, REQ_ADDRESS);
         });
@@ -166,7 +167,7 @@ public class ThanhToan extends AppCompatActivity {
                 txtCustomerName.setText(currentUser.getName());
             }
             // Email luôn hiển thị từ user, không bị ghi đè
-            txtCustomerEmail.setText(currentUser.getEmail());
+//            txtCustomerEmail.setText(currentUser.getEmail());
             if (txtCustomerPhone.getText().toString().isEmpty()) {
                 txtCustomerPhone.setText(currentUser.getPhone_number());
             }
