@@ -1,4 +1,8 @@
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="oval">
-    <solid android:color="#DD2C00" />
+    <solid android:color="@android:color/white" />
+    <stroke
+        android:width="2dp"
+        android:color="#CCCCCC" /> <!-- Viền xám mặc định -->
+    <size android:width="40dp" android:height="40dp" />
 </shape>

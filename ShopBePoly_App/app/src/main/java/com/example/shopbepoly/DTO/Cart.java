@@ -11,12 +11,16 @@ public class Cart implements Serializable {
 
     @SerializedName("id_product")
     private Product idProduct;
-
+    @SerializedName("img_cart")
+    private String img_cart;
     private int quantity;
     private int price;
+    @SerializedName("size")
     private int size;
     private int total;
     private int status;
+    @SerializedName("color")
+    private String color;
 
     public Cart() {
     }
@@ -31,6 +35,22 @@ public class Cart implements Serializable {
         this.size = size;
         this.total = total;
         this.status = status;
+    }
+
+    public String getImg_cart() {
+        return img_cart;
+    }
+
+    public void setImg_cart(String img_cart) {
+        this.img_cart = img_cart;
+    }
+
+    public String getColor() {
+        return color;
+    }
+
+    public void setColor(String color) {
+        this.color = color;
     }
 
     public int getSize() {

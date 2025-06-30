@@ -468,9 +468,11 @@ router.post('/add_cart', async (req, res) => {
         const {
             id_user,
             id_product,
+            img_cart,
             quantity,
             price,
             size,
+            color,
             status
         } = req.body;
 
@@ -480,9 +482,11 @@ router.post('/add_cart', async (req, res) => {
         const newCartItem = new cartModel({
             id_user,
             id_product,
+            img_cart,
             quantity,
             price,
             size,
+            color,
             total,
             status
         });
@@ -546,30 +550,35 @@ router.put('/up_cart/:idCart', async (req, res) => {
 
 // xoá toàn bộ giỏ hàng http://localhost:3000/api/cart/user/:userId
 router.delete('/del_cart/:idCart', async (req, res) => {
+  try {
+    const result = await cartModel.findByIdAndDelete(req.params.idCart);
+    if (!result) return res.status(404).json({ message: "Không tìm thấy giỏ hàng" });
+    res.status(200).json({ message: "Xóa thành công" });
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi server" });
+  }
+});
+
+// xóa tất cả giỏ hàng người dùng
+router.delete('/delete_all_cart/:userId', async (req, res) => {
     try {
-        const cartId = req.params.idCart;
+        const userId = req.params.userId;
+        const objectId = new mongoose.Types.ObjectId(userId); // convert string sang ObjectId
 
-        const deletedCart = await cartModel.findByIdAndDelete(cartId);
+        const result = await cartModel.deleteMany({ id_user: objectId });
 
-        if (deletedCart) {
-            res.json({
-                status: 200,
-                message: "Xóa thành công",
-                data: deletedCart
-            });
-
+        if (result.deletedCount > 0) {
+            return res.status(200).json({ message: 'Đã xóa tất cả giỏ hàng thành công' });
         } else {
-            res.json({
-                status: 400,
-                message: "Không tìm thấy giỏ hàng để xóa",
-                data: []
-            });
+            return res.status(404).json({ message: 'Không tìm thấy giỏ hàng để xóa' });
         }
     } catch (error) {
-        console.error('Lỗi khi xóa giỏ hàng:', error);
-        res.status(500).json({ error: 'Lỗi khi xóa giỏ hàng' });
+        console.error("Lỗi xóa toàn bộ giỏ hàng:", error);
+        return res.status(500).json({ message: 'Lỗi server' });
     }
 });
+
+
 
 // category
 // lấy ds product theo thể loại

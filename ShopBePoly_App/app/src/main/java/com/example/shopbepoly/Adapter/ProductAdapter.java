@@ -14,6 +14,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
@@ -24,6 +25,7 @@ import com.example.shopbepoly.DTO.Favorite;
 import com.example.shopbepoly.DTO.Product;
 import com.example.shopbepoly.R;
 import com.example.shopbepoly.Screen.ChiTietSanPham;
+import com.example.shopbepoly.fragment.CartBottomSheetDialog;
 import com.example.shopbepoly.fragment.FavoriteFragment;
 import com.squareup.picasso.Picasso;
 
@@ -183,23 +185,25 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
         holder.ivCart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                // Lấy userId từ SharedPreferences
-                SharedPreferences sharedPreferences = context.getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
-                String userId = sharedPreferences.getString("userId", null);
-
-                if (userId == null) {
-                    Toast.makeText(context, "Không tìm thấy thông tin người dùng", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-
-                Cart cart = new Cart();
-                cart.setIdProduct(product);
-                cart.setIdUser(userId); // Gán userId lấy từ SharedPreferences
-                cart.setPrice(product.getPrice());
-                cart.setQuantity(1);
-                cart.setTotal(product.getPrice() * 1);
-                cart.setStatus(0);
-                Add_Cart(cart);
+//                // Lấy userId từ SharedPreferences
+//                SharedPreferences sharedPreferences = context.getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
+//                String userId = sharedPreferences.getString("userId", null);
+//
+//                if (userId == null) {
+//                    Toast.makeText(context, "Không tìm thấy thông tin người dùng", Toast.LENGTH_SHORT).show();
+//                    return;
+//                }
+//
+//                Cart cart = new Cart();
+//                cart.setIdProduct(product);
+//                cart.setIdUser(userId); // Gán userId lấy từ SharedPreferences
+//                cart.setPrice(product.getPrice());
+//                cart.setQuantity(1);
+//                cart.setTotal(product.getPrice() * 1);
+//                cart.setStatus(0);
+//                Add_Cart(cart);
+                CartBottomSheetDialog dialog = new CartBottomSheetDialog(context, product);
+                dialog.show(((AppCompatActivity) context).getSupportFragmentManager(), "CartBottomSheetDialog");
             }
         });
 

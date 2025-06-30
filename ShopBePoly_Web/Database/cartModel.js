@@ -11,9 +11,11 @@ const cartSchema = new mongoose.Schema({
         ref: 'product',
         required: true,
     },
+    img_cart: String,
     quantity: Number,
     price: Number,
     size: Number,
+    color: String,
     total: Number,
     status: Number
 });

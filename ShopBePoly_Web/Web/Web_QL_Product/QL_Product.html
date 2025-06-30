@@ -66,38 +66,33 @@
                     </div>
 
                     <div class="row mb-3">
-                        <div>
-                            <label class="form-label">Chọn size và tồn kho:</label>
-                            <div id="variation-wrapper">
-                                <div class="variation-row d-flex gap-2 mb-3">
-                                    <select class="form-select var-size" required>
-                                        <option value="">-- Chọn size --</option>
-                                        <option value="37">37</option>
-                                        <option value="38">38</option>
-                                        <option value="39">39</option>
-                                        <option value="40">40</option>
-                                        <option value="41">41</option>
-                                    </select>
-                                    <input type="number" class="form-control var-stock" placeholder="Tồn kho" required>
-                                    <datalist id="colors">
-                                        <option value="Đen">
-                                        <option value="Trắng">
-                                        <option value="Đỏ">
-                                        <option value="Xanh">
-                                        <option value="Vàng">
-                                    </datalist>
-
-                                    <input type="text" class="form-control var-color" placeholder="Màu sắc"
-                                        list="colors" required>
-                                    <input type="file" class="form-control var-image" accept="image/*" multiple required>
-                                    <button type="button" class="btn btn-danger btn-remove-size">X</button>
-
-                                </div>
+                            <!-- Spinner chọn màu -->
+                            <div class="col-md-4">
+                                <label for="colorSpinner" class="form-label">Chọn màu:</label>
+                                <select id="colorSpinner" class="form-select">
+                                    <option value="">-- Chọn màu --</option>
+                                    <option value="Đen">Đen</option>
+                                    <option value="Trắng">Trắng</option>
+                                    <option value="Đỏ">Đỏ</option>
+                                    <option value="Xanh">Xanh</option>
+                                    <option value="Vàng">Vàng</option>
+                                </select>
                             </div>
-                            <button type="button" id="add-variation" class="btn btn-primary mt-2">Thêm size</button>
+
+                            <!-- <div class="col-md-4">
+                                <label for="price_pro" class="form-label">Chọn ảnh của màu:</label>
+                                <input type="file" class="form-control var-image" accept="image/*" multiple required>
+                            </div> -->
+
+                            <!-- Nút thêm khối màu -->
+                            <div class="col-md-4 d-flex align-items-end">
+                                <button type="button" class="btn btn-success" id="addColorBlock">Thêm màu này</button>
+                            </div>
                         </div>
 
-                    </div>
+                        <!-- Khu vực chứa các khối màu -->
+                        <div id="color-block-container"></div>
+
 
                     <div class="mb-3">
                         <label for="mota_pro" class="form-label">Mô tả:</label>

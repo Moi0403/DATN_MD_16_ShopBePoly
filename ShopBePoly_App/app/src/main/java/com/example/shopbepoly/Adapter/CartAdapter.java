@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -27,6 +28,7 @@ import com.example.shopbepoly.R;
 import com.example.shopbepoly.Screen.ChiTietSanPham;
 import com.example.shopbepoly.fragment.CartFragment;
 
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -58,24 +60,20 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
         Log.d("CartAdapter", "Binding position: " + position);
         if (cart != null && cart.getIdProduct() != null) {
             Log.d("CartAdapter", "Product Name: " + product.getNameproduct() + ", Image: " + product.getAvt_imgproduct());
-            Glide.with(context)
-                    .load(ApiClient.IMAGE_URL + product.getAvt_imgproduct())
-                    .placeholder(R.drawable.ic_launcher_background)
-                    .error(R.drawable.ic_launcher_foreground)
-                    .into(holder.imvAVT);
+//            Glide.with(context)
+//                    .load(cart.getImg_cart())
+//                    .placeholder(R.drawable.ic_launcher_background)
+//                    .error(R.drawable.ic_launcher_foreground)
+//                    .into(holder.imvAVT);
+            Glide.with(context).load(cart.getImg_cart()).into(holder.imvAVT);
             holder.tvName.setText(product.getNameproduct() != null ? product.getNameproduct() : "N/A");
-            holder.tvPrice.setText(cart.getTotal()+"");
-            if (product.getVariations() != null && !product.getVariations().isEmpty()) {
-                Variation variation = product.getVariations().get(0);
-                holder.tvSize.setText(variation.getSize()+"");
-            } else {
-                holder.tvSize.setText("N/A");
-            }
+            holder.tvPrice.setText(String.format("Giá: " + "%,d đ", cart.getTotal()));
+            holder.tvMau.setText("Màu: "+cart.getColor());
+            holder.tvSize.setText("Size: "+cart.getSize());
             holder.tvQuantity.setText(cart.getQuantity() > 0 ? String.valueOf(cart.getQuantity()) : "1");
         } else {
             Log.e("CartAdapter", "Cart hoặc Product null ở vị trí " + position);
         }
-
         holder.imv_tang.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -83,7 +81,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
                 cart.setQuantity(slgHT + 1);
                 int gia = product.getPrice();
                 cart.setTotal(gia * cart.getQuantity());
-                holder.tvPrice.setText(cart.getTotal()+"");
+                holder.tvPrice.setText(String.format("Giá: " + "%,d đ", cart.getTotal()));
                 holder.tvQuantity.setText(cart.getQuantity()+"");
                 update_quantity(cart);
                 updateTotalPrice();
@@ -98,7 +96,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
                     cart.setQuantity(slgHT - 1);
                     int gia = product.getPrice();
                     cart.setTotal(gia * cart.getQuantity());
-                    holder.tvPrice.setText(cart.getTotal()+"");
+                    holder.tvPrice.setText(String.format("Giá: " + "%,d đ", cart.getTotal()));
                     holder.tvQuantity.setText(cart.getQuantity()+"");
                     update_quantity(cart);
                     updateTotalPrice();
@@ -114,6 +112,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
         });
 
         updateTotalPrice();
+        holder.cbk_add.setChecked(cart.getStatus() == 1);
         holder.cbk_add.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -146,7 +145,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
     public static class CartViewHolder extends RecyclerView.ViewHolder{
         ImageView imvAVT, imv_giam, imv_tang, imv_xoa;
         CheckBox cbk_add;
-        TextView tvName, tvPrice, tvSize, tvQuantity;
+        TextView tvName, tvPrice, tvSize, tvQuantity, tvMau;
         public CartViewHolder(@NonNull View itemView) {
             super(itemView);
             imvAVT = itemView.findViewById(R.id.image_product);
@@ -158,6 +157,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
             tvPrice = itemView.findViewById(R.id.text_price);
             tvSize = itemView.findViewById(R.id.text_size);
             tvQuantity = itemView.findViewById(R.id.text_quantity);
+            tvMau = itemView.findViewById(R.id.tv_mau);
         }
     }
     private void update_quantity(Cart cart){
@@ -183,46 +183,44 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
 
     private void showDE(int position){
         Cart cart = list_cart.get(position);
+        SharedPreferences sharedPreferences = context.getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
+        String userId = sharedPreferences.getString("userId", null);
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         builder.setIcon(R.drawable.thongbao);
         builder.setTitle("Thông báo");
-        builder.setMessage("Bạn có chắc chắn muốn xóa " + cart.getIdProduct().getNameproduct() + " không ?");
-        builder.setPositiveButton("Xóa", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                try {
-                    ApiService apiService = ApiClient.getApiService();
-                    Call<List<Cart>> call = apiService.delCart(cart.get_id());
-                    call.enqueue(new Callback<List<Cart>>() {
-                        @Override
-                        public void onResponse(Call<List<Cart>> call, Response<List<Cart>> response) {
-                            if (response.isSuccessful()) {
-                                Toast.makeText(context, "Xóa thành công", Toast.LENGTH_SHORT).show();
-                                list_cart.remove(position);
-                                notifyItemRemoved(position);
-                                notifyItemRangeChanged(position, list_cart.size());
-                            } else {
+        builder.setMessage("Bạn có chắc chắn muốn xóa " + cart.getIdProduct().getNameproduct() + " không?");
+        builder.setPositiveButton("Xóa", (dialog, which) -> {
+            ApiService apiService = ApiClient.getApiService();
+            Call<ResponseBody> call = apiService.delCart(cart.get_id());
 
-                                Toast.makeText(context, "Xóa thất bại", Toast.LENGTH_SHORT).show();
-                            }
+            call.enqueue(new Callback<ResponseBody>() {
+                @Override
+                public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                    if (response.isSuccessful()) {
+                        Toast.makeText(context, "Xóa thành công", Toast.LENGTH_SHORT).show();
+                        list_cart.remove(position);
+                        notifyItemRemoved(position);
+                        notifyItemRangeChanged(position, list_cart.size());
+                        updateTotalPrice();
+                        if (frag_total != null) {
+                            frag_total.LoadCart(userId); // <== cần hàm này
                         }
-
-                        @Override
-                        public void onFailure(Call<List<Cart>> call, Throwable t) {
-
-                        }
-                    });
-
-                } catch (Exception e){
-                    Toast.makeText(context, "Xóa thất bại", Toast.LENGTH_SHORT).show();
+                        frag_total.checkbox_select_all.setChecked(false);
+                    } else {
+                        Toast.makeText(context, "Xóa thất bại (Mã lỗi: " + response.code() + ")", Toast.LENGTH_SHORT).show();
+                    }
                 }
 
-            }
+                @Override
+                public void onFailure(Call<ResponseBody> call, Throwable t) {
+                    Toast.makeText(context, "Lỗi kết nối khi xóa", Toast.LENGTH_SHORT).show();
+                    Log.e("CartAdapter", "Lỗi khi gọi API xóa", t);
+                }
+            });
         });
         builder.setNegativeButton("Hủy", null);
         builder.show();
     }
-
 
     private void updateTotalPrice() {
         int total = 0;
@@ -231,6 +229,22 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
                 total += item.getTotal();
             }
         }
-        frag_total.tvTotal.setText(total + ".000");
+        frag_total.tvTotal.setText(String.format("Giá: " + "%,d đ",total));
     }
+    public void selectAll(boolean isChecked) {
+        for (Cart cart : list_cart) {
+            cart.setStatus(isChecked ? 1 : 0);
+        }
+        notifyDataSetChanged();
+        updateAllQuantities();
+        updateTotalPrice();
+    }
+    private void updateAllQuantities() {
+        for (Cart cart : list_cart) {
+            update_quantity(cart);
+        }
+    }
+
+
+
 }

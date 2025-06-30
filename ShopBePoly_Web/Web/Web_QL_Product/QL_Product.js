@@ -36,34 +36,74 @@ function convertToColorCode(color) {
     }
 }
 
-document.getElementById('add-variation').addEventListener('click', () => {
-    const wrapper = document.getElementById('variation-wrapper');
-    const newRow = document.createElement('div');
-    newRow.classList.add('variation-row', 'd-flex', 'gap-2', 'mb-3');
-    newRow.innerHTML = `
-    <select class="form-select var-size" required>
-        <option value="">-- Chọn size --</option>
-        <option value="37">37</option>
-        <option value="38">38</option>
-        <option value="39">39</option>
-        <option value="40">40</option>
-        <option value="41">41</option>
-    </select>
-    <input type="number" class="form-control var-stock" placeholder="Tồn kho" required>
-    <input type="text" class="form-control var-color" placeholder="Màu sắc" list="colors" required>
-    <input type="file" class="form-control var-image" accept="image/*" required>
-    <button type="button" class="btn btn-danger btn-remove-size">X</button>
-`;
+// Xử lý thêm size trong từng khối màu
+document.getElementById('addColorBlock').addEventListener('click', () => {
+    const colorName = document.getElementById('colorSpinner').value;
+    const colorCode = convertToColorCode(colorName);
+    const container = document.getElementById('color-block-container');
 
-    wrapper.appendChild(newRow);
+    // Kiểm tra trùng màu
+    const existing = [...document.querySelectorAll('.var-color-name')].some(el => el.value === colorName);
+    if (existing) {
+        alert("Màu này đã được thêm.");
+        return;
+    }
+
+    const colorBlock = document.createElement('div');
+    colorBlock.classList.add('color-block', 'border', 'p-3', 'mb-3');
+
+    colorBlock.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5>${colorName}</h5>
+            <button type="button" class="btn btn-danger btn-remove-color">X</button>
+        </div>
+
+        <input type="hidden" class="var-color-name" value="${colorName}">
+        <input type="hidden" class="var-color-code" value="${colorCode}">
+
+        <div class="mb-2">
+            <label>Chọn ảnh cho màu này:</label>
+            <input type="file" class="form-control var-image" accept="image/*" multiple required>
+        </div>
+
+        <div class="variation-wrapper"></div>
+        <button type="button" class="btn btn-primary btn-add-size mt-2">Thêm size</button>
+    `;
+
+    container.appendChild(colorBlock);
 });
 
-// Xử lý nút xóa
-document.getElementById('variation-wrapper').addEventListener('click', (e) => {
+
+
+document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('btn-add-size')) {
+        const wrapper = e.target.previousElementSibling;
+        const sizeRow = document.createElement('div');
+        sizeRow.classList.add('variation-row', 'd-flex', 'gap-2', 'mb-2');
+        sizeRow.innerHTML = `
+            <select class="form-select var-size" required>
+                <option value="">-- Chọn size --</option>
+                <option value="37">37</option>
+                <option value="38">38</option>
+                <option value="39">39</option>
+                <option value="40">40</option>
+                <option value="41">41</option>
+            </select>
+            <input type="number" class="form-control var-stock" placeholder="Tồn kho" required>
+            <button type="button" class="btn btn-danger btn-remove-size">X</button>
+        `;
+        wrapper.appendChild(sizeRow);
+    }
+
     if (e.target.classList.contains('btn-remove-size')) {
         e.target.closest('.variation-row').remove();
     }
+
+    if (e.target.classList.contains('btn-remove-color')) {
+        e.target.closest('.color-block').remove();
+    }
 });
+
 const ThemPro = () => {
     document.getElementById('themPro').addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -74,36 +114,38 @@ const ThemPro = () => {
             formData.append('avt_imgpro', avtInput.files[0]);
         }
 
-        const variationElements = document.querySelectorAll('.variation-row');
+        const colorBlocks = document.querySelectorAll('.color-block');
         const variations = [];
+        let imgIndex = 0;
 
-        variationElements.forEach((row, index) => {
-            const size = row.querySelector('select.var-size').value;
-            const stock = row.querySelector('.var-stock').value;
-            const color = row.querySelector('.var-color').value;
-            const imageFiles = row.querySelector('.var-image').files;
+        colorBlocks.forEach((block) => {
+            const colorName = block.querySelector('.var-color-name').value;
+            const colorCode = block.querySelector('.var-color-code').value;
+            const files = block.querySelector('.var-image')?.files || [];
 
-            if (size && stock && color && imageFiles.length > 0) {
-                const listImg = [];
+            const listImg = [];
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                formData.append(`variationImages-${imgIndex}`, file);
+                listImg.push(file.name);
+                imgIndex++;
+            }
 
-                for (let i = 0; i < imageFiles.length; i++) {
-                    const file = imageFiles[i];
-                    formData.append(`variationImages-${index}`, file);
-                    listImg.push(file.name);
-                }
+            const rows = block.querySelectorAll('.variation-row');
+            rows.forEach(row => {
+                const size = row.querySelector('.var-size').value;
+                const stock = row.querySelector('.var-stock').value;
 
                 variations.push({
                     size,
                     stock: Number(stock),
                     sold: 0,
-                    color: {
-                        name: color,
-                        code: convertToColorCode(color)
-                    },
+                    color: { name: colorName, code: colorCode },
                     list_imgproduct: listImg
                 });
-            }
+            });
         });
+
 
         formData.append("variations", JSON.stringify(variations));
 
@@ -113,10 +155,7 @@ const ThemPro = () => {
                 body: formData
             });
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-
+            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
             const data = await response.json();
             alert('Thêm sản phẩm thành công');
         } catch (error) {
@@ -126,6 +165,7 @@ const ThemPro = () => {
 };
 
 ThemPro();
+
 
 document.getElementById('pl_pro').addEventListener('change', function () {
     const selectedCate = this.value;
@@ -228,7 +268,7 @@ const hienThiPro = async () => {
             [tdSize, tdColor, tdStock, tdSold].forEach(td => td.style.textAlign = 'center');
 
             const tdPrice = document.createElement('td');
-            tdPrice.textContent = item.price + ".000 đ";
+            tdPrice.textContent = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.price);
             tdPrice.style.textAlign = 'center';
 
             const tdXL = document.createElement('td');

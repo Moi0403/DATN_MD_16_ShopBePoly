@@ -105,7 +105,10 @@ public interface ApiService {
     @PUT("up_cart/{cartId}")
     Call<List<Cart>> upCart(@Path("cartId") String cartId, @Body Cart cart);
     @DELETE("del_cart/{cartId}")
-    Call<List<Cart>> delCart(@Path("cartId") String cartId);
+    Call<ResponseBody> delCart(@Path("cartId") String cartId);
+    @DELETE("delete_all_cart/{userId}")
+    Call<ResponseBody> deleteAllCart(@Path("userId") String userId);
+
 
     @PUT("up_password/{userId}")
     Call<ResponseBody> changePassword(@Path("userId") String userId, @Body RequestBody body);

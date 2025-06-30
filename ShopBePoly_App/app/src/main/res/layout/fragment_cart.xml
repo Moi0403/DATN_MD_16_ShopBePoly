@@ -6,7 +6,7 @@
     android:background="@android:color/white"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="24dp"
+    android:padding="10dp"
     tools:context=".fragment.CartFragment">
 
     <RelativeLayout
@@ -14,15 +14,6 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="24dp"
         android:layout_marginTop="8dp">
-
-        <ImageView
-            android:id="@+id/ivBack"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@drawable/ic_back"
-            android:contentDescription="Back"
-            android:layout_alignParentStart="true"
-            android:layout_centerVertical="true" />
 
         <TextView
             android:id="@+id/tvTitle"
@@ -36,7 +27,7 @@
             android:layout_centerVertical="true" />
 
         <ImageView
-            android:id="@+id/ivdelete"
+            android:id="@+id/imv_deleteAll"
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:src="@drawable/delete"
@@ -54,39 +45,38 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="12dp"
         android:orientation="horizontal"
         android:gravity="center_vertical"
         android:background="@android:color/white"
-        android:elevation="4dp">
+        android:paddingTop="10dp"
+        android:elevation="10dp">
 
         <CheckBox
             android:id="@+id/checkbox_select_all"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            />
 
         <TextView
             android:id="@+id/text_total"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:textColor="#D32F2F" />
-
-        <Space
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1" />
+            android:layout_weight="1"
+
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#D32F2F"
+            />
+
 
         <Button
             android:id="@+id/btn_checkout"
             android:layout_width="wrap_content"
             android:layout_height="40dp"
             android:background="@drawable/button_bg"
+            app:backgroundTint="@null"
             android:text="Thanh Toán"
             android:textColor="@android:color/white"
-            android:paddingHorizontal="16dp"
             android:textSize="14sp"
             android:textStyle="bold" />
     </LinearLayout>
