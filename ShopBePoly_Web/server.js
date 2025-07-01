@@ -90,7 +90,7 @@ router.post('/upload-avatar/:id', upload.single('avt_user'), async (req, res) =>
     }
 
     try {
-      
+
         const avatarFileName = req.file.filename;
 
         const updatedUser = await userModel.findByIdAndUpdate(
@@ -155,17 +155,24 @@ router.post('/add_product', uploadProduct.any(), async (req, res) => {
             }
         }
 
-  
+        const avt_imgpro = files.find(f => f.fieldname === 'avt_imgpro');
+
         variations.forEach((variation, index) => {
             const fieldName = `variationImages-${index}`;
             const matchedFiles = files.filter(f => f.fieldname === fieldName);
 
             variation.list_imgproduct = matchedFiles.map(f => f.filename);
             variation.image = matchedFiles[0]?.filename || '';
+
+            if (!variation.list_imgproduct || variation.list_imgproduct.length === 0) {
+                variation.list_imgproduct = []; // Không fallback về avt
+            }
         });
 
 
         const mergedImages = [];
+
+        // Gộp ảnh từ variations vào danh sách ảnh chính
         variations.forEach(variation => {
             if (Array.isArray(variation.list_imgproduct)) {
                 variation.list_imgproduct.forEach(img => {
@@ -173,14 +180,15 @@ router.post('/add_product', uploadProduct.any(), async (req, res) => {
                         mergedImages.push(img);
                     }
                 });
-            } else if (variation.image && !mergedImages.includes(variation.image)) {
-                mergedImages.push(variation.image);
             }
+            if (!variation.list_imgproduct || variation.list_imgproduct.length === 0) {
+                variation.list_imgproduct = [];
+            }
+
+
         });
 
-     
-        const avt_imgpro = files.find(f => f.fieldname === 'avt_imgpro');
-
+        // Gộp thêm ảnh từ field list_imgproduct (ảnh phụ không theo màu)
         const additionalImgs = files.filter(f => f.fieldname === 'list_imgproduct');
         additionalImgs.forEach(f => {
             if (!mergedImages.includes(f.filename)) {
@@ -194,7 +202,7 @@ router.post('/add_product', uploadProduct.any(), async (req, res) => {
             price: body.price_pro,
             description: body.mota_pro,
             avt_imgproduct: avt_imgpro?.filename || '',
-            list_imgproduct: mergedImages, 
+            list_imgproduct: mergedImages,
             variations: variations
         });
 
@@ -550,13 +558,13 @@ router.put('/up_cart/:idCart', async (req, res) => {
 
 // xoá toàn bộ giỏ hàng http://localhost:3000/api/cart/user/:userId
 router.delete('/del_cart/:idCart', async (req, res) => {
-  try {
-    const result = await cartModel.findByIdAndDelete(req.params.idCart);
-    if (!result) return res.status(404).json({ message: "Không tìm thấy giỏ hàng" });
-    res.status(200).json({ message: "Xóa thành công" });
-  } catch (err) {
-    res.status(500).json({ message: "Lỗi server" });
-  }
+    try {
+        const result = await cartModel.findByIdAndDelete(req.params.idCart);
+        if (!result) return res.status(404).json({ message: "Không tìm thấy giỏ hàng" });
+        res.status(200).json({ message: "Xóa thành công" });
+    } catch (err) {
+        res.status(500).json({ message: "Lỗi server" });
+    }
 });
 
 // xóa tất cả giỏ hàng người dùng

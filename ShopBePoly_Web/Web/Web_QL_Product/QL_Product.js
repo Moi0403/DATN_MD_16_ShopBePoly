@@ -121,17 +121,18 @@ const ThemPro = () => {
         const variations = [];
         let imgIndex = 0;
 
-        colorBlocks.forEach((block) => {
+        colorBlocks.forEach((block, colorIndex) => {
             const colorName = block.querySelector('.var-color-name').value;
             const colorCode = block.querySelector('.var-color-code').value;
             const files = block.querySelector('.var-image')?.files || [];
 
             const listImg = [];
+
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
-                formData.append(`variationImages-${imgIndex}`, file);
+                // ❗ Sửa lại index theo màu
+                formData.append(`variationImages-${colorIndex}`, file);
                 listImg.push(file.name);
-                imgIndex++;
             }
 
             const rows = block.querySelectorAll('.variation-row');
@@ -148,6 +149,7 @@ const ThemPro = () => {
                 });
             });
         });
+
 
 
         formData.append("variations", JSON.stringify(variations));
@@ -361,7 +363,7 @@ const hienThiPro = async () => {
                 tdSold.innerHTML = groupedHTML.sold;
             }
             [tdSize, tdColor, tdStock, tdSold].forEach(td => td.style.textAlign = 'center');
-        
+
 
             const tdPrice = document.createElement('td');
             tdPrice.textContent = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.price);
