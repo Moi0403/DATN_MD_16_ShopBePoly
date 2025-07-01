@@ -75,7 +75,13 @@ public class ChiTietSanPham extends AppCompatActivity {
             isFavorite = FavoriteFragment.isFavorite(product);
             updateFavoriteButton();
         }
-        showDefaultProductImages();
+
+        // ⚠️ Sửa tại đây
+        imageSliderAdapter = new ImageSliderAdapter(this, new ArrayList<>());
+        viewPagerProductImages.setAdapter(imageSliderAdapter);
+
+        showDefaultProductImages(); // ← Gọi sau khi adapter đã được gán
+
         showAvailableColors();
         showAvailableSizes();
         viewPagerProductImages.setOrientation(ViewPager2.ORIENTATION_HORIZONTAL);
@@ -486,19 +492,28 @@ public class ChiTietSanPham extends AppCompatActivity {
         if (product == null || product.getVariations() == null) return;
 
         Set<String> uniqueImages = new LinkedHashSet<>();
+        String avtImageUrl = ApiClient.IMAGE_URL + product.getAvt_imgproduct().trim();
 
         for (Variation v : product.getVariations()) {
             if (v.getColor() != null && code.equalsIgnoreCase(v.getColor().getCode())) {
                 Log.d("ImageSlider", "→ matched color: " + code);
 
+                // Lọc ảnh chính nếu khác ảnh đại diện
                 if (v.getImage() != null && !v.getImage().trim().isEmpty()) {
-                    uniqueImages.add(ApiClient.IMAGE_URL + v.getImage().trim());
+                    String fullUrl = ApiClient.IMAGE_URL + v.getImage().trim();
+                    if (!fullUrl.equals(avtImageUrl)) {
+                        uniqueImages.add(fullUrl);
+                    }
                 }
 
+                // Lọc danh sách ảnh nếu khác avt
                 if (v.getList_imgproduct() != null && !v.getList_imgproduct().isEmpty()) {
                     for (String img : v.getList_imgproduct()) {
                         if (img != null && !img.trim().isEmpty()) {
-                            uniqueImages.add(ApiClient.IMAGE_URL + img.trim());
+                            String fullUrl = ApiClient.IMAGE_URL + img.trim();
+                            if (!fullUrl.equals(avtImageUrl)) {
+                                uniqueImages.add(fullUrl);
+                            }
                         }
                     }
                 }
@@ -507,75 +522,51 @@ public class ChiTietSanPham extends AppCompatActivity {
 
         List<String> finalImages;
         if (!uniqueImages.isEmpty()) {
-            Log.d("ImageSlider", "Đã tìm thấy ảnh theo màu: " + uniqueImages.size());
+            Log.d("ImageSlider", "✅ Có ảnh theo màu riêng: " + uniqueImages.size());
 
             if (uniqueImages.size() == 1) {
                 String onlyImage = uniqueImages.iterator().next();
-                Log.d("ImageSlider", "Chỉ có 1 ảnh theo màu, đang nhân đôi ảnh: " + onlyImage);
-                uniqueImages.add(onlyImage);  // Đảm bảo có ít nhất 2 ảnh
+                uniqueImages.add(onlyImage);  // nhân đôi ảnh nếu chỉ có 1
             }
 
             finalImages = new ArrayList<>(uniqueImages);
         } else {
-
-            Set<String> fallbackImages = new LinkedHashSet<>();
-            if (product.getList_imgproduct() != null) {
-                for (String img : product.getList_imgproduct()) {
-                    if (img != null && !img.trim().isEmpty()) {
-                        fallbackImages.add(ApiClient.IMAGE_URL + img.trim());
-                    }
-                }
-            }
-            if (product.getAvt_imgproduct() != null && !product.getAvt_imgproduct().trim().isEmpty()) {
-                fallbackImages.add(ApiClient.IMAGE_URL + product.getAvt_imgproduct().trim());
-            }
-
-            finalImages = new ArrayList<>(fallbackImages);
-            if (finalImages.size() == 1) {
-                finalImages.add(finalImages.get(0));
-            }
+            Log.d("ImageSlider", "⚠️ Không có ảnh riêng theo màu — giữ ảnh mặc định");
+            Toast.makeText(this, "Không có ảnh riêng cho màu này", Toast.LENGTH_SHORT).show();
+            return; // Không cập nhật adapter nếu không có ảnh riêng
         }
 
-
-        if (imageSliderAdapter != null) {
-            imageSliderAdapter.updateImages(finalImages);
-        } else {
-            imageSliderAdapter = new ImageSliderAdapter(this, finalImages);
-            viewPagerProductImages.setAdapter(imageSliderAdapter);
-        }
-
+        imageSliderAdapter = new ImageSliderAdapter(this, finalImages);
+        viewPagerProductImages.setAdapter(imageSliderAdapter);
         viewPagerProductImages.setCurrentItem(0, false);
     }
+
 
 
     private void showDefaultProductImages() {
         Set<String> imageSet = new LinkedHashSet<>();
 
-        if (product.getList_imgproduct() != null) {
-            for (String img : product.getList_imgproduct()) {
-                if (img != null && !img.trim().isEmpty()) {
-                    imageSet.add(ApiClient.IMAGE_URL + img.trim());
-                }
-            }
-        }
-
+        // 👉 Thêm ảnh đại diện trước
         if (product.getAvt_imgproduct() != null && !product.getAvt_imgproduct().trim().isEmpty()) {
             imageSet.add(ApiClient.IMAGE_URL + product.getAvt_imgproduct().trim());
         }
 
-        List<String> finalImages = new ArrayList<>(imageSet); // Đã sửa tên biến
+        // 👉 Sau đó thêm các ảnh giới thiệu (khác avt)
+        if (product.getList_imgproduct() != null) {
+            for (String img : product.getList_imgproduct()) {
+                if (img != null && !img.trim().isEmpty()) {
+                    String fullUrl = ApiClient.IMAGE_URL + img.trim();
+                    imageSet.add(fullUrl); // Set sẽ không thêm lại nếu trùng avt
+                }
+            }
+        }
+
+        List<String> finalImages = new ArrayList<>(imageSet);
 
         if (!finalImages.isEmpty()) {
-            Log.d("ImageSlider", "Hiển thị ảnh mặc định: " + finalImages.size());
-            for (String url : finalImages) {
-                Log.d("ImageSlider", url);
-            }
-
-            // Tạo adapter 1 lần duy nhất
-            imageSliderAdapter = new ImageSliderAdapter(this, finalImages);
-            viewPagerProductImages.setAdapter(imageSliderAdapter);
+            Log.d("ImageSlider", "Hiển thị ảnh mặc định (avt lên đầu): " + finalImages.size());
+            imageSliderAdapter.updateImages(finalImages); // chỉ update
             viewPagerProductImages.setCurrentItem(0, false);
         }
     }
-
 }
