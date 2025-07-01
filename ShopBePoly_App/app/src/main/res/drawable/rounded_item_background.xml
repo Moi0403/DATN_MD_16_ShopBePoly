@@ -1,0 +1,6 @@
+<!-- res/drawable/rounded_item_background.xml -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#CECDCD" /> <!-- Màu nền -->
+    <corners android:radius="10dp" /> <!-- Độ cong góc -->
+</shape>

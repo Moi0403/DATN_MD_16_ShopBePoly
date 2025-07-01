@@ -51,6 +51,9 @@ document.getElementById('addColorBlock').addEventListener('click', () => {
 
     const colorBlock = document.createElement('div');
     colorBlock.classList.add('color-block', 'border', 'p-3', 'mb-3');
+    const divider = document.createElement('hr');
+    container.appendChild(divider);
+
 
     colorBlock.innerHTML = `
         <div class="d-flex justify-content-between align-items-center mb-2">
@@ -194,14 +197,90 @@ const hienThiPro = async () => {
             tdSTT.textContent = index + 1;
             tdSTT.style.textAlign = 'center';
 
+            // const tdIMG = document.createElement('td');
+            // const img = document.createElement('img');
+            // img.src = `http://localhost:3000/uploads/${item.avt_imgproduct}`;
+            // img.width = 100;
+            // img.height = 50;
+            // img.style.objectFit = 'contain';
+            // tdIMG.appendChild(img);
+            // tdIMG.style.textAlign = 'center';
+
+
             const tdIMG = document.createElement('td');
-            const img = document.createElement('img');
-            img.src = `http://localhost:3000/uploads/${item.avt_imgproduct}`;
-            img.width = 100;
-            img.height = 50;
-            img.style.objectFit = 'contain';
-            tdIMG.appendChild(img);
             tdIMG.style.textAlign = 'center';
+
+            // Tạo container slideshow
+            const slideshowContainer = document.createElement('div');
+            slideshowContainer.classList.add('slideshow-container');
+            slideshowContainer.style.position = 'relative';
+            slideshowContainer.style.width = '150px';
+            slideshowContainer.style.height = '150px';
+            slideshowContainer.style.overflow = 'hidden';
+            slideshowContainer.style.borderRadius = '8px';
+            slideshowContainer.style.border = '1px solid #ccc';
+
+            let imgIndex = 0;
+            const images = [
+                item.avt_imgproduct,
+                ...(item.variations?.flatMap(v => v.list_imgproduct || []) || [])
+            ];
+
+            // Tạo thẻ <img>
+            const img = document.createElement('img');
+            img.src = `http://localhost:3000/uploads/${images[imgIndex]}`;
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'contain';
+            slideshowContainer.appendChild(img);
+
+            // Nút prev
+            const btnPrev = document.createElement('button');
+            btnPrev.innerHTML = '&#10094;';
+            Object.assign(btnPrev.style, {
+                position: 'absolute',
+                top: '50%',
+                left: '0',
+                transform: 'translateY(-50%)',
+                background: 'rgba(0,0,0,0.5)',
+                color: 'white',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '5px',
+                zIndex: '1'
+            });
+
+            // Nút next
+            const btnNext = document.createElement('button');
+            btnNext.innerHTML = '&#10095;';
+            Object.assign(btnNext.style, {
+                position: 'absolute',
+                top: '50%',
+                right: '0',
+                transform: 'translateY(-50%)',
+                background: 'rgba(0,0,0,0.5)',
+                color: 'white',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '5px',
+                zIndex: '1'
+            });
+
+            // Sự kiện chuyển ảnh
+            btnPrev.addEventListener('click', () => {
+                imgIndex = (imgIndex - 1 + images.length) % images.length;
+                img.src = `http://localhost:3000/uploads/${images[imgIndex]}?t=${Date.now()}`;
+            });
+            btnNext.addEventListener('click', () => {
+                imgIndex = (imgIndex + 1) % images.length;
+                img.src = `http://localhost:3000/uploads/${images[imgIndex]}?t=${Date.now()}`;
+            });
+
+            slideshowContainer.appendChild(btnPrev);
+            slideshowContainer.appendChild(btnNext);
+            tdIMG.appendChild(slideshowContainer);
+
+
 
             const colorDotsDiv = document.createElement('div');
             colorDotsDiv.classList.add('color-dots');
@@ -255,17 +334,34 @@ const hienThiPro = async () => {
             const tdStock = document.createElement('td');
             const tdSold = document.createElement('td');
 
+
             if (item.variations?.length > 0) {
-                tdSize.innerHTML = item.variations.map(v => v.size).join('<br>');
-                tdColor.innerHTML = item.variations.map(v => v.color?.name || 'N/A').join('<br>');
-                tdStock.innerHTML = item.variations.map(v => v.stock).join('<br>');
-                tdSold.innerHTML = item.variations.map(v => v.sold).join('<br>');
+                let groupedHTML = { size: '', color: '', stock: '', sold: '' };
 
-            } else {
-                tdSize.textContent = tdColor.textContent = tdStock.textContent = tdSold.textContent = 'N/A';
+                const grouped = {};
+
+                item.variations.forEach(v => {
+                    const colorName = v.color?.name || 'N/A';
+                    if (!grouped[colorName]) grouped[colorName] = [];
+                    grouped[colorName].push(v);
+                });
+
+                for (const color in grouped) {
+                    const variations = grouped[color];
+
+                    groupedHTML.size += variations.map(v => v.size).join('<br>') + '<hr>';
+                    groupedHTML.color += variations.map(() => color).join('<br>') + '<hr>';
+                    groupedHTML.stock += variations.map(v => v.stock).join('<br>') + '<hr>';
+                    groupedHTML.sold += variations.map(v => v.sold).join('<br>') + '<hr>';
+                }
+
+                tdSize.innerHTML = groupedHTML.size;
+                tdColor.innerHTML = groupedHTML.color;
+                tdStock.innerHTML = groupedHTML.stock;
+                tdSold.innerHTML = groupedHTML.sold;
             }
-
             [tdSize, tdColor, tdStock, tdSold].forEach(td => td.style.textAlign = 'center');
+        
 
             const tdPrice = document.createElement('td');
             tdPrice.textContent = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.price);
@@ -303,8 +399,8 @@ const hienThiPro = async () => {
             tr.appendChild(tdIMG);
             tr.appendChild(tdName);
             tr.appendChild(tdCate);
-            tr.appendChild(tdSize);
             tr.appendChild(tdColor);
+            tr.appendChild(tdSize);
             tr.appendChild(tdStock);
             tr.appendChild(tdSold);
             tr.appendChild(tdPrice);

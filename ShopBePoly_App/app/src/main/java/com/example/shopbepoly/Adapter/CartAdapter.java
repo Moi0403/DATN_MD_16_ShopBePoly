@@ -11,11 +11,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
@@ -26,6 +28,7 @@ import com.example.shopbepoly.DTO.Product;
 import com.example.shopbepoly.DTO.Variation;
 import com.example.shopbepoly.R;
 import com.example.shopbepoly.Screen.ChiTietSanPham;
+import com.example.shopbepoly.fragment.CartBottomSheetDialog;
 import com.example.shopbepoly.fragment.CartFragment;
 
 import okhttp3.ResponseBody;
@@ -77,16 +80,33 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
         holder.imv_tang.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                int slgHT = cart.getQuantity();
-                cart.setQuantity(slgHT + 1);
-                int gia = product.getPrice();
-                cart.setTotal(gia * cart.getQuantity());
-                holder.tvPrice.setText(String.format("Giá: " + "%,d đ", cart.getTotal()));
-                holder.tvQuantity.setText(cart.getQuantity()+"");
-                update_quantity(cart);
-                updateTotalPrice();
+                int currentQty = cart.getQuantity();
+                int stockQty = 9999; // Mặc định nếu không tìm thấy variation
+
+                // Tìm variation tương ứng với size + color để lấy tồn kho
+                for (Variation v : product.getVariations()) {
+                    if (v.getSize() == cart.getSize()) {
+                        if (cart.getColor() == null || v.getColor() == null || cart.getColor().equalsIgnoreCase(v.getColor().getName())) {
+                            stockQty = v.getStock();
+                            break;
+                        }
+                    }
+                }
+
+                if (currentQty < stockQty) {
+                    cart.setQuantity(currentQty + 1);
+                    int price = product.getPrice();
+                    cart.setTotal(price * cart.getQuantity());
+                    holder.tvPrice.setText(String.format("Giá: %,d đ", cart.getTotal()));
+                    holder.tvQuantity.setText(String.valueOf(cart.getQuantity()));
+                    update_quantity(cart);
+                    updateTotalPrice();
+                } else {
+                    Toast.makeText(context, "Vượt quá số lượng kho (" + stockQty + ")", Toast.LENGTH_SHORT).show();
+                }
             }
         });
+
 
         holder.imv_giam.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -126,12 +146,20 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
             }
         });
 
-        holder.itemView.setOnClickListener(new View.OnClickListener() {
+        holder.imvAVT.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent(context, ChiTietSanPham.class);
                 intent.putExtra("product",product);
                 context.startActivity(intent);
+            }
+        });
+
+        holder.item_mausize.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                CartBottomSheetDialog dialog = new CartBottomSheetDialog(context, product);
+                dialog.show(((AppCompatActivity) context).getSupportFragmentManager(), "CartBottomSheetDialog");
             }
         });
 
@@ -146,6 +174,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
         ImageView imvAVT, imv_giam, imv_tang, imv_xoa;
         CheckBox cbk_add;
         TextView tvName, tvPrice, tvSize, tvQuantity, tvMau;
+        LinearLayout item_mausize;
         public CartViewHolder(@NonNull View itemView) {
             super(itemView);
             imvAVT = itemView.findViewById(R.id.image_product);
@@ -158,6 +187,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
             tvSize = itemView.findViewById(R.id.text_size);
             tvQuantity = itemView.findViewById(R.id.text_quantity);
             tvMau = itemView.findViewById(R.id.tv_mau);
+            item_mausize = itemView.findViewById(R.id.item_mausize);
         }
     }
     private void update_quantity(Cart cart){

@@ -17,29 +17,45 @@
             android:layout_height="150dp"
             android:src="@drawable/img_load"/>
 
+
+
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:layout_gravity="bottom"
             android:padding="20dp">
 
             <TextView
-                android:id="@+id/tv_gia_cart"
+                android:id="@+id/tv_ten_cart"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Giá:"
-                android:textColor="#FF00"
                 android:textStyle="bold"
                 android:textSize="20sp"/>
-            <TextView
-                android:id="@+id/tv_kho_cart"
+
+
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Tồn kho:"
-                android:textColor="#787676"
-                android:textStyle="bold"
-                android:textSize="15sp"/>
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tv_gia_cart"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Giá:"
+                    android:textColor="#FF00"
+                    android:textStyle="bold"
+                    android:textSize="18sp"/>
+                <TextView
+                    android:id="@+id/tv_kho_cart"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Tồn kho:"
+                    android:textColor="#787676"
+                    android:textStyle="bold"
+                    android:textSize="15sp"/>
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
     <TextView

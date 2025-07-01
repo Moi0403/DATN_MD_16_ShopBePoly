@@ -2,43 +2,45 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="10dp"
+    android:layout_margin="8dp"
     app:cardCornerRadius="12dp"
-    app:cardElevation="4dp">
+    app:cardElevation="3dp">
 
     <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="wrap_content">
 
         <LinearLayout
             android:id="@+id/llProductContent"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="8dp">
 
             <ImageView
                 android:id="@+id/ivProductImage"
                 android:layout_width="match_parent"
-                android:layout_height="150dp"
+                android:layout_height="140dp"
                 android:scaleType="centerCrop"
-                android:contentDescription="@string/product_image"
-                android:src="@drawable/default_image" />
+                android:src="@drawable/default_image"
+                android:contentDescription="@string/product_image" />
 
             <TextView
                 android:id="@+id/tvProductName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Nike Wearallday Sneakers"
-                android:textSize="14sp"
+                android:textSize="13sp"
                 android:textStyle="bold"
-                android:layout_marginTop="8dp" />
+                android:maxLines="2"
+                android:ellipsize="end"
+                android:layout_marginTop="6dp" />
 
             <TextView
                 android:id="@+id/tvProductPrice"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="560.000 đ"
+                android:text="360.000đ"
                 android:textColor="#D32F2F"
                 android:textSize="13sp"
                 android:layout_marginTop="4dp" />
@@ -47,57 +49,68 @@
                 android:id="@+id/tvProductSold"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Đã bán: 725 sp"
+                android:text="Đã bán: 0 sp"
                 android:textSize="12sp"
-                android:textColor="#777777" />
+                android:textColor="#777777"
+                android:layout_marginTop="2dp" />
 
             <LinearLayout
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:layout_marginTop="4dp">
+                >
 
-                <RatingBar
-                    android:id="@+id/ratingBar"
-                    style="?android:attr/ratingBarStyleSmall"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:isIndicator="true"
-                    android:numStars="5"
-                    android:rating="4"
-                    android:scaleX="0.8"
-                    android:scaleY="0.8"
-                    android:stepSize="0.4" />
+                    android:layout_weight="1"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
 
-                <TextView
-                    android:id="@+id/tvReviewCount"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="(243)"
-                    android:textSize="12sp"
-                    android:textColor="#777777" />
+                    <RatingBar
+                        android:id="@+id/ratingBar"
+                        style="?android:attr/ratingBarStyleSmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:isIndicator="true"
+                        android:numStars="5"
+                        android:rating="4"
+                        android:stepSize="0.5"
+                        android:scaleX="0.8"
+                        android:scaleY="0.8" />
+
+                    <TextView
+                        android:id="@+id/tvReviewCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="(243)"
+                        android:textSize="12sp"
+                        android:textColor="#777777"
+                        android:layout_marginStart="4dp" />
+                </LinearLayout>
+
+                <ImageView
+                    android:id="@+id/ivCart"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_margin="6dp"
+                    android:src="@drawable/ic_shopping_cart"
+                    android:contentDescription="Add to cart" />
             </LinearLayout>
+
         </LinearLayout>
 
         <ImageView
             android:id="@+id/imgFavorite"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_margin="8dp"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:layout_margin="6dp"
             android:layout_alignParentTop="true"
             android:layout_alignParentEnd="true"
             android:src="@drawable/ic_favorite_product"
             android:contentDescription="Favorite" />
 
-        <ImageView
-            android:id="@+id/ivCart"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_alignParentBottom="true"
-            android:layout_alignParentEnd="true"
-            android:layout_margin="8dp"
-            android:src="@drawable/ic_cart_product"
-            android:contentDescription="Add to cart" />
+
     </RelativeLayout>
 </androidx.cardview.widget.CardView>

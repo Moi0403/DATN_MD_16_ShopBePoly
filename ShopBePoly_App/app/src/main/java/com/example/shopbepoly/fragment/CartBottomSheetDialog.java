@@ -68,6 +68,7 @@ public class CartBottomSheetDialog extends BottomSheetDialogFragment {
         TextView tvQuantity = view.findViewById(R.id.tv_SL);
         TextView tvGia = view.findViewById(R.id.tv_gia_cart);
         TextView tvKho = view.findViewById(R.id.tv_kho_cart);
+        TextView tvTen = view.findViewById(R.id.tv_ten_cart);
         ImageView btnDecrease = view.findViewById(R.id.btn_giamSL);
         ImageView btnIncrease = view.findViewById(R.id.btn_tangSL);
         img = view.findViewById(R.id.img_btm_cart);
@@ -95,6 +96,7 @@ public class CartBottomSheetDialog extends BottomSheetDialogFragment {
                 .centerCrop()
                 .into(img);
 
+        tvTen.setText(product.getNameproduct());
 
         btnDecrease.setOnClickListener(v -> {
             if (quantity > 1) {
@@ -105,10 +107,17 @@ public class CartBottomSheetDialog extends BottomSheetDialogFragment {
         });
 
         btnIncrease.setOnClickListener(v -> {
-            quantity++;
-            tvQuantity.setText(String.valueOf(quantity));
-            tvGia.setText(String.format("Giá: " + "%,d đ", quantity * product.getPrice()));
+            int stock = getCurrentStock(); // Lấy tồn kho của màu + size đang chọn
+
+            if (quantity < stock) {
+                quantity++;
+                tvQuantity.setText(String.valueOf(quantity));
+                tvGia.setText(String.format("Giá: " + "%,d đ", quantity * product.getPrice()));
+            } else {
+                Toast.makeText(context, "Vượt quá số lượng trong kho", Toast.LENGTH_SHORT).show();
+            }
         });
+
 
         // Hiển thị màu
         // Trong onCreateView, sau phần ánh xạ view:
@@ -292,6 +301,7 @@ public class CartBottomSheetDialog extends BottomSheetDialogFragment {
                 }
             }
         }   
+
     }
 
 
@@ -349,6 +359,18 @@ public class CartBottomSheetDialog extends BottomSheetDialogFragment {
                 .centerCrop()
                 .into(img);
     }
+
+    private int getCurrentStock() {
+        for (Variation v : product.getVariations()) {
+            if (v.getColor() != null &&
+                    v.getColor().getCode().equals(selectedColorCode) &&
+                    String.valueOf(v.getSize()).equals(selectedSize)) {
+                return v.getStock();
+            }
+        }
+        return 0;
+    }
+
 
 
 
