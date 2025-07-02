@@ -115,12 +115,18 @@
                                     android:text="Màu: "
                                     android:textSize="14sp"
                                     android:textColor="#444"/>
-                                <View
-                                    android:id="@+id/viewProductColor"
-                                    android:layout_width="20dp"
-                                    android:layout_height="20dp"
-                                    android:background="@drawable/circle_red"
-                                    />
+                                <TextView
+                                    android:id="@+id/txtProductColor"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Màu"
+                                    android:textSize="16sp" />
+<!--                                <View-->
+<!--                                    android:id="@+id/viewProductColor"-->
+<!--                                    android:layout_width="20dp"-->
+<!--                                    android:layout_height="20dp"-->
+<!--                                    android:background="@drawable/circle_red"-->
+<!--                                    />-->
                             </LinearLayout>
 
                             <TextView
