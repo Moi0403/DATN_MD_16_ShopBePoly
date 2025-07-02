@@ -107,28 +107,6 @@
                         android:padding="16dp"
                         android:layout_marginBottom="20dp"/>
 
-                    <!-- Địa chỉ chi tiết -->
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Địa chỉ chi tiết *"
-                        android:textSize="16sp"
-                        android:textColor="#333333"
-                        android:textStyle="bold"
-                        android:layout_marginBottom="8dp"/>
-
-                    <EditText
-                        android:id="@+id/edtAddress"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:hint="Số nhà, tên đường, phường/xã"
-                        android:textSize="16sp"
-                        android:background="@drawable/edittext_modern_bg"
-                        android:padding="16dp"
-                        android:layout_marginBottom="20dp"
-                        android:inputType="textMultiLine"
-                        android:minLines="2"/>
-
                     <!-- Tỉnh/Thành phố -->
                     <TextView
                         android:layout_width="wrap_content"
@@ -185,6 +163,28 @@
                         android:padding="16dp"
                         android:layout_marginBottom="20dp"
                         android:popupBackground="#FFFFFF"/>
+
+                    <!-- Địa chỉ chi tiết -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Số nhà/Khu/Thôn *"
+                        android:textSize="16sp"
+                        android:textColor="#333333"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp"/>
+
+                    <EditText
+                        android:id="@+id/edtAddress"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Số nhà, tên đường"
+                        android:textSize="16sp"
+                        android:background="@drawable/edittext_modern_bg"
+                        android:padding="16dp"
+                        android:layout_marginBottom="20dp"
+                        android:inputType="textMultiLine"
+                        android:minLines="2"/>
 
                     <!-- Label -->
                     <TextView
