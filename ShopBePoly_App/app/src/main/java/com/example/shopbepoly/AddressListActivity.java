@@ -76,8 +76,12 @@ public class AddressListActivity extends AppCompatActivity implements AddressAda
 
     @Override
     public void onDelete(Address address) {
+        if (address.isDefault()) {
+            Toast.makeText(this, "Không thể xóa địa chỉ mặc định!", Toast.LENGTH_SHORT).show();
+            return;
+        }
         addressList.remove(address);
-        if (address.isDefault() && !addressList.isEmpty()) {
+        if (!addressList.isEmpty() && addressList.stream().noneMatch(Address::isDefault)) {
             addressList.get(0).setDefault(true);
         }
         saveAddresses();

@@ -48,6 +48,20 @@ public class AddressAdapter extends RecyclerView.Adapter<AddressAdapter.AddressV
         holder.checkboxDefault.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isChecked && !address.isDefault()) {
                 listener.onSetDefault(address);
+            } else if (!isChecked && address.isDefault()) {
+                // Kiểm tra xem có địa chỉ nào khác là mặc định không
+                boolean hasOtherDefault = false;
+                for (Address a : addressList) {
+                    if (!a.getId().equals(address.getId()) && a.isDefault()) {
+                        hasOtherDefault = true;
+                        break;
+                    }
+                }
+                if (!hasOtherDefault) {
+                    // Không cho phép bỏ tick nếu không có địa chỉ nào khác là mặc định
+                    buttonView.setChecked(true);
+                    android.widget.Toast.makeText(context, "Bạn phải chọn một địa chỉ khác làm mặc định trước!", android.widget.Toast.LENGTH_SHORT).show();
+                }
             }
         });
         holder.btnEdit.setOnClickListener(v -> listener.onEdit(address));
