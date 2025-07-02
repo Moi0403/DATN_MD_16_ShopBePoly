@@ -18,6 +18,7 @@ import com.example.shopbepoly.DTO.VietnamAddress;
 import com.google.gson.Gson;
 import java.util.List;
 import java.util.UUID;
+import java.util.ArrayList;
 
 public class AddEditAddressActivity extends AppCompatActivity {
     private EditText edtName, edtPhone, edtAddress;
@@ -93,7 +94,11 @@ public class AddEditAddressActivity extends AppCompatActivity {
     }
 
     private void loadProvinces() {
-        provinces = VietnamAddress.getProvinces();
+        provinces = VietnamAddress.loadFromJson(this);
+        android.util.Log.d("DEBUG", "Provinces size: " + provinces.size());
+        for (VietnamAddress p : provinces) {
+            android.util.Log.d("DEBUG", "Province: " + p.getName() + " - " + p.getCode());
+        }
         ArrayAdapter<VietnamAddress> provinceAdapter = new ArrayAdapter<VietnamAddress>(this, android.R.layout.simple_spinner_dropdown_item, provinces) {
             @Override
             public android.view.View getView(int position, android.view.View convertView, android.view.ViewGroup parent) {
@@ -169,17 +174,23 @@ public class AddEditAddressActivity extends AppCompatActivity {
     }
 
     private void loadDistricts(String provinceCode) {
-        districts = VietnamAddress.getDistrictsByProvince(provinceCode);
+        districts = VietnamAddress.getDistrictsByProvince(provinces, provinceCode);
+        android.util.Log.d("DEBUG", "Districts size: " + districts.size());
+        for (VietnamAddress.District d : districts) {
+            android.util.Log.d("DEBUG", "District: " + d.getName() + " - " + d.getCode());
+        }
         updateDistrictSpinner();
         // Reset ward spinner
-        if (!isLoadingData) {
-            wards.clear();
-            updateWardSpinner();
-        }
+        wards = new ArrayList<>();
+        updateWardSpinner();
     }
 
     private void loadWards(String districtCode) {
-        wards = VietnamAddress.getWardsByDistrict(districtCode);
+        wards = VietnamAddress.getWardsByDistrict(provinces, districtCode);
+        android.util.Log.d("DEBUG", "Wards size: " + wards.size());
+        for (VietnamAddress.Ward w : wards) {
+            android.util.Log.d("DEBUG", "Ward: " + w.getName() + " - " + w.getCode());
+        }
         updateWardSpinner();
     }
 
@@ -321,7 +332,7 @@ public class AddEditAddressActivity extends AppCompatActivity {
                     selectedProvinceCode = provinces.get(i).getCode();
                     
                     // Load districts cho tỉnh này (không trigger listener vì isLoadingData = true)
-                    districts = VietnamAddress.getDistrictsByProvince(selectedProvinceCode);
+                    districts = VietnamAddress.getDistrictsByProvince(provinces, selectedProvinceCode);
                     updateDistrictSpinner();
                     
                     // Tìm và set huyện
@@ -331,7 +342,7 @@ public class AddEditAddressActivity extends AppCompatActivity {
                             selectedDistrictCode = districts.get(j).getCode();
                             
                             // Load wards cho huyện này (không trigger listener vì isLoadingData = true)
-                            wards = VietnamAddress.getWardsByDistrict(selectedDistrictCode);
+                            wards = VietnamAddress.getWardsByDistrict(provinces, selectedDistrictCode);
                             updateWardSpinner();
                             
                             // Tìm và set xã
@@ -359,6 +370,13 @@ public class AddEditAddressActivity extends AppCompatActivity {
 
         if (name.isEmpty() || phone.isEmpty() || addressDetail.isEmpty()) {
             Toast.makeText(this, "Vui lòng nhập đầy đủ thông tin", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Validate số điện thoại
+        if (!phone.matches("^0\\d{9}$")) {
+            edtPhone.setError("Số điện thoại không hợp lệ. Vui lòng nhập số bắt đầu bằng 0 và đủ 10 số.");
+            edtPhone.requestFocus();
             return;
         }
 
