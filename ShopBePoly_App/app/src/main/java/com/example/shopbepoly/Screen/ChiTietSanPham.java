@@ -55,6 +55,7 @@ public class ChiTietSanPham extends AppCompatActivity {
     private Product product;
     private LinearLayout layoutColorContainer;
     private String selectedColorCode = "";
+    private String selectedColorName = "";
     private ViewPager2 viewPagerProductImages;
     private ImageSliderAdapter imageSliderAdapter;
 
@@ -271,7 +272,14 @@ public class ChiTietSanPham extends AppCompatActivity {
             Gson gson = new Gson();
             intent.putExtra("product", gson.toJson(product));
             intent.putExtra("quantity", quantity);
+            intent.putExtra("color", selectedColorName); //update color
             intent.putExtra("size", selectedSize);
+
+            //update image
+            if (imageSliderAdapter != null && imageSliderAdapter.getImageList() != null && !imageSliderAdapter.getImageList().isEmpty()){
+                String selectedImage = imageSliderAdapter.getImageList().get(0);
+                intent.putExtra("selectedImage", selectedImage);
+            }
             logPaymentData();
             startActivity(intent);
         } catch (Exception e) {
@@ -443,12 +451,14 @@ public class ChiTietSanPham extends AppCompatActivity {
 
                 if (clickedCode.equals(selectedColorCode)) {
                     selectedColorCode = "";
+                    selectedColorName = "";//update color
                     highlightSelectedColor("");
                     showDefaultProductImages();
                     resetSizeSelections();
                     selectedSize = null;
                 } else {
                     selectedColorCode = clickedCode;
+                    selectedColorName = name;//update color
                     highlightSelectedColor(clickedCode);
                     updateImageByColor(clickedCode);
                 }

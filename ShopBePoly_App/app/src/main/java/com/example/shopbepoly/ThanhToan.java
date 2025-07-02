@@ -47,11 +47,12 @@ public class ThanhToan extends AppCompatActivity {
     private int productPrice = 0;
     private int shippingFee = 30000;
 
-    private TextView txtProductName, txtProductQuantity, txtProductSize, txtProductPrice, txtProductTotal,txtShippingFee, txtTotalPayment,txtCustomerName, txtCustomerEmail, txtCustomerAddress, txtCustomerPhone;
+    private TextView txtProductName, txtProductColor, txtProductQuantity, txtProductSize, txtProductPrice, txtProductTotal,txtShippingFee, txtTotalPayment,txtCustomerName, txtCustomerEmail, txtCustomerAddress, txtCustomerPhone;
     private ImageView imgProduct,img_next_address;
 
     private static final int REQ_ADDRESS = 3001;
     private String userId;
+    private String selectedColor = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,6 +62,9 @@ public class ThanhToan extends AppCompatActivity {
         // Lấy userId
         SharedPreferences sharedPreferences = getSharedPreferences("LoginPrefs", MODE_PRIVATE);
         userId = sharedPreferences.getString("userId", "");
+
+        selectedColor = getIntent().getStringExtra("color");
+
         initViews();
         getDataFromIntent();
         loadUserInfo();
@@ -73,7 +77,7 @@ public class ThanhToan extends AppCompatActivity {
         imgProduct = findViewById(R.id.imgProduct);
         txtProductName = findViewById(R.id.txtProductName);
         txtProductQuantity = findViewById(R.id.txtProductQuantity);
-        View viewProductColor = findViewById(R.id.viewProductColor);
+        txtProductColor = findViewById(R.id.txtProductColor);
         txtProductSize = findViewById(R.id.txtProductSize);
         txtProductPrice = findViewById(R.id.txtProductPrice);
         txtProductTotal = findViewById(R.id.txtProductTotal);
@@ -227,6 +231,7 @@ public class ThanhToan extends AppCompatActivity {
         // Hiển thị thông tin sản phẩm
         txtProductName.setText(selectedProduct.getNameproduct());
         txtProductQuantity.setText("Số lượng: " + quantity);
+        txtProductColor.setText((selectedColor == null || selectedColor.isEmpty() ? "Không có" : selectedColor));
         txtProductSize.setText("Size: " + (selectedSize.isEmpty() ? "Không có" : selectedSize));
 
         productPrice = selectedProduct.getPrice();
@@ -235,16 +240,39 @@ public class ThanhToan extends AppCompatActivity {
         int totalProductPrice = productPrice * quantity;
         txtProductTotal.setText(formatPrice(totalProductPrice));
 
-        // Load hình ảnh sản phẩm
+        // Load hình ảnh sản phẩm old
         if (selectedProduct.getAvt_imgproduct() != null && !selectedProduct.getAvt_imgproduct().isEmpty()){
             String imageUrl = ApiClient.IMAGE_URL + selectedProduct.getAvt_imgproduct();
+            String selectedImage = getIntent().getStringExtra("selectedImage");//update
             Log.d(TAG, "Loading image from: " + imageUrl);
+//
+//            Glide.with(this)
+//                            .load(imageUrl)
+//                                    .placeholder(R.drawable.ic_launcher_background)
+//                                            .error(R.drawable.ic_launcher_background)
+//                                                    .into(imgProduct);
 
+        if (selectedImage != null && !selectedImage.isEmpty()) {
+            Log.d(TAG, "Loading selected image from: " + selectedImage);
             Glide.with(this)
-                            .load(imageUrl)
-                                    .placeholder(R.drawable.ic_launcher_background)
-                                            .error(R.drawable.ic_launcher_background)
-                                                    .into(imgProduct);
+                    .load(selectedImage)
+                    .placeholder(R.drawable.ic_launcher_background)
+                    .error(R.drawable.ic_launcher_background)
+                    .into(imgProduct);
+        } else if (selectedProduct.getAvt_imgproduct() != null && !selectedProduct.getAvt_imgproduct().isEmpty()) {
+            String imageUrl1 = ApiClient.IMAGE_URL + selectedProduct.getAvt_imgproduct();
+            Log.d(TAG, "Loading default product image from: " + imageUrl);
+            Glide.with(this)
+                    .load(imageUrl1)
+                    .placeholder(R.drawable.ic_launcher_background)
+                    .error(R.drawable.ic_launcher_background)
+                    .into(imgProduct);
+        } else {
+            Log.w(TAG, "No product image available");
+            imgProduct.setImageResource(R.drawable.ic_launcher_background);
+        }
+
+
 
 //            Picasso.get()
 //                    .load(imageUrl)
