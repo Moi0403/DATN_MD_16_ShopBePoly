@@ -3,6 +3,8 @@ package com.example.shopbepoly.Screen;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
@@ -51,6 +53,11 @@ public class TimKiem extends AppCompatActivity {
     private static final String PREF_NAME = "SearchHistory";
     private static final String KEY_HISTORY = "history";
     private static final int MAX_HISTORY_ITEMS = 10;
+    
+    // Add debouncing for search
+    private Handler searchHandler = new Handler(Looper.getMainLooper());
+    private Runnable searchRunnable;
+    private static final long SEARCH_DELAY = 500; // 500ms delay
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -117,10 +124,18 @@ public class TimKiem extends AppCompatActivity {
             @Override
             public void afterTextChanged(Editable s) {
                 String query = s.toString().trim();
+                
+                // Cancel previous search
+                if (searchRunnable != null) {
+                    searchHandler.removeCallbacks(searchRunnable);
+                }
+                
                 if (query.isEmpty()) {
                     showSearchHistory();
                 } else {
-                    showSearchResults(query);
+                    // Debounce search with delay
+                    searchRunnable = () -> showSearchResults(query);
+                    searchHandler.postDelayed(searchRunnable, SEARCH_DELAY);
                 }
             }
         });
@@ -166,22 +181,21 @@ public class TimKiem extends AppCompatActivity {
         searchHistoryContainer.setVisibility(View.GONE);
         searchResultsContainer.setVisibility(View.VISIBLE);
 
-        // Tìm kiếm local: lấy toàn bộ sản phẩm rồi lọc theo tên
-        apiService.getProducts().enqueue(new Callback<List<Product>>() {
+        // Use the search API endpoint instead of local filtering
+        apiService.searchProduct(query).enqueue(new Callback<List<Product>>() {
             @Override
             public void onResponse(Call<List<Product>> call, Response<List<Product>> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    List<Product> allProducts = response.body();
-                    List<Product> filtered = new ArrayList<>();
-                    String lowerQuery = query.toLowerCase();
-                    for (Product p : allProducts) {
-                        if (p.getNameproduct() != null && p.getNameproduct().toLowerCase().contains(lowerQuery)) {
-                            filtered.add(p);
-                        }
+                    List<Product> searchResults = response.body();
+                    productAdapter.setData(searchResults);
+                    
+                    // Show message if no results found
+                    if (searchResults.isEmpty()) {
+                        Toast.makeText(TimKiem.this, "Không tìm thấy sản phẩm phù hợp", Toast.LENGTH_SHORT).show();
                     }
-                    productAdapter.setData(filtered);
                 } else {
                     productAdapter.setData(new ArrayList<>());
+                    Toast.makeText(TimKiem.this, "Lỗi tìm kiếm", Toast.LENGTH_SHORT).show();
                 }
             }
 
@@ -189,6 +203,7 @@ public class TimKiem extends AppCompatActivity {
             public void onFailure(Call<List<Product>> call, Throwable t) {
                 productAdapter.setData(new ArrayList<>());
                 Toast.makeText(TimKiem.this, "Lỗi kết nối", Toast.LENGTH_SHORT).show();
+                Log.e("TimKiem", "Search failed", t);
             }
         });
     }
@@ -308,5 +323,14 @@ public class TimKiem extends AppCompatActivity {
         List<Product> shuffled = new ArrayList<>(products);
         Collections.shuffle(shuffled);
         return shuffled.subList(0, Math.min(count, shuffled.size()));
+    }
+    
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // Clean up handler to prevent memory leaks
+        if (searchHandler != null && searchRunnable != null) {
+            searchHandler.removeCallbacks(searchRunnable);
+        }
     }
 }

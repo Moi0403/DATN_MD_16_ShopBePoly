@@ -3,6 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
+    android:fitsSystemWindows="true"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#FFF"
@@ -56,99 +57,14 @@
                         android:layout_height="24dp" />
                 </LinearLayout>
 
-                <!-- CardView sản phẩm -->
-                <androidx.cardview.widget.CardView
-                    android:id="@+id/cardProduct"
+                <!-- recyclerview sản phẩm -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/recyclerView_cart_items"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="4dp"
                     android:layout_marginTop="16dp"
-                    android:layout_marginStart="4dp"
-                    android:layout_marginEnd="4dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:padding="12dp">
-
-                        <ImageView
-                            android:id="@+id/imgProduct"
-                            android:layout_width="80dp"
-                            android:layout_height="80dp"
-                            android:scaleType="fitCenter" />
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical"
-                            android:paddingStart="12dp">
-
-                            <TextView
-                                android:id="@+id/txtProductName"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Tên sản phẩm"
-                                android:textStyle="bold"
-                                android:textSize="16sp"
-                                android:textColor="#222"/>
-
-                            <TextView
-                                android:id="@+id/txtProductQuantity"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Số lượng: "
-                                android:textSize="14sp"
-                                android:textColor="#444"/>
-
-                            <LinearLayout
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:orientation="horizontal"
-                                android:gravity="center">
-                                <TextView
-                                    android:id="@+id/txtProductColorLabel"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="Màu: "
-                                    android:textSize="14sp"
-                                    android:textColor="#444"/>
-                                <TextView
-                                    android:id="@+id/txtProductColor"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="Màu"
-                                    android:textSize="16sp" />
-<!--                                <View-->
-<!--                                    android:id="@+id/viewProductColor"-->
-<!--                                    android:layout_width="20dp"-->
-<!--                                    android:layout_height="20dp"-->
-<!--                                    android:background="@drawable/circle_red"-->
-<!--                                    />-->
-                            </LinearLayout>
-
-                            <TextView
-                                android:id="@+id/txtProductSize"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Size "
-                                android:textSize="14sp"
-                                android:textColor="#444"/>
-
-                            <TextView
-                                android:id="@+id/txtProductPrice"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="0 VND"
-                                android:textStyle="bold"
-                                android:textColor="#000"
-                                android:textSize="15sp"
-                                android:layout_marginTop="4dp" />
-                        </LinearLayout>
-                    </LinearLayout>
-                </androidx.cardview.widget.CardView>
+                    android:layout_marginBottom="8dp"
+                    android:nestedScrollingEnabled="false"/>
 
                 <!-- Thông tin khách hàng -->
                 <TextView

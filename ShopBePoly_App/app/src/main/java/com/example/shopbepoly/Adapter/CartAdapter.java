@@ -36,6 +36,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder> {
@@ -136,11 +137,11 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
         holder.cbk_add.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (holder.cbk_add.isChecked()) {
-                    cart.setStatus(1);
-                } else {
-                    cart.setStatus(0);
-                }
+                boolean isChecked = holder.cbk_add.isChecked();
+
+                cart.setStatus(isChecked ? 1 : 0);
+                cart.setChecked(isChecked);
+
                 update_quantity(cart);
                 updateTotalPrice();
             }
@@ -264,6 +265,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
     public void selectAll(boolean isChecked) {
         for (Cart cart : list_cart) {
             cart.setStatus(isChecked ? 1 : 0);
+            cart.setChecked(isChecked); // ĐỒNG BỘ trạng thái checked
         }
         notifyDataSetChanged();
         updateAllQuantities();
@@ -275,6 +277,14 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
         }
     }
 
-
+    public List<Cart> getSelectedItems() {
+        List<Cart> selected = new ArrayList<>();
+        for (Cart cart : list_cart) {
+            if (cart.getStatus() == 1) {
+                selected.add(cart);
+            }
+        }
+        return selected;
+    }
 
 }

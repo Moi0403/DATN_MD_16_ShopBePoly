@@ -1,6 +1,7 @@
 package com.example.shopbepoly.fragment;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
@@ -8,6 +9,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -26,6 +28,7 @@ import com.example.shopbepoly.Adapter.ProductAdapter;
 import com.example.shopbepoly.DTO.Cart;
 import com.example.shopbepoly.DTO.Product;
 import com.example.shopbepoly.R;
+import com.example.shopbepoly.ThanhToan;
 import com.google.gson.Gson;
 
 import java.util.ArrayList;
@@ -43,6 +46,7 @@ public class CartFragment extends Fragment {
     public TextView tvTotal;
     public CheckBox checkbox_select_all;
     private ImageView imv_delAll;
+    private Button btn_thanhtoan;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -52,7 +56,20 @@ public class CartFragment extends Fragment {
         tvTotal = view.findViewById(R.id.text_total);
         checkbox_select_all = view.findViewById(R.id.checkbox_select_all);
         imv_delAll = view.findViewById(R.id.imv_deleteAll);
+        btn_thanhtoan = view.findViewById(R.id.btn_checkout);
 
+        btn_thanhtoan.setOnClickListener(view1 -> {
+            List<Cart> selectedItems = cartAdapter.getSelectedItems();
+            if (selectedItems.isEmpty()) {
+                Toast.makeText(getContext(), "Vui lòng chọn sản phẩm để thanh toán", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            String jsonCart = new Gson().toJson(selectedItems); // List<Cart>
+            Intent intent = new Intent(getContext(), ThanhToan.class);
+            intent.putExtra("cart_list", jsonCart);
+            getContext().startActivity(intent);
+        });
 
         SharedPreferences prefs = requireContext().getSharedPreferences("CartPrefs", Context.MODE_PRIVATE);
         boolean isSelectAll = prefs.getBoolean("select_all_checked", false);

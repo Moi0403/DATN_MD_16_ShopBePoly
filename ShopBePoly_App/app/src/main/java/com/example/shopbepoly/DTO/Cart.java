@@ -21,6 +21,7 @@ public class Cart implements Serializable {
     private int status;
     @SerializedName("color")
     private String color;
+    private boolean checked;
 
     public Cart() {
     }
@@ -115,5 +116,13 @@ public class Cart implements Serializable {
 
     public void setStatus(int status) {
         this.status = status;
+    }
+
+    public boolean isChecked() {
+        return checked;
+    }
+
+    public void setChecked(boolean checked) {
+        this.checked = checked;
     }
 }

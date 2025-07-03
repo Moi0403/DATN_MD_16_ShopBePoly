@@ -18,6 +18,7 @@ import android.widget.Toast;
 import com.bumptech.glide.Glide;
 import com.example.shopbepoly.API.ApiClient;
 import com.example.shopbepoly.API.ApiService;
+import com.example.shopbepoly.DTO.Cart;
 import com.example.shopbepoly.DTO.Product;
 import com.example.shopbepoly.DTO.User;
 import com.google.gson.Gson;
@@ -28,6 +29,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import java.text.NumberFormat;
 import java.util.List;
@@ -49,6 +52,7 @@ public class ThanhToan extends AppCompatActivity {
 
     private TextView txtProductName, txtProductColor, txtProductQuantity, txtProductSize, txtProductPrice, txtProductTotal,txtShippingFee, txtTotalPayment,txtCustomerName, txtCustomerEmail, txtCustomerAddress, txtCustomerPhone;
     private ImageView imgProduct,img_next_address;
+    private Button btnDatHang;
 
     private static final int REQ_ADDRESS = 3001;
     private String userId;
@@ -59,7 +63,7 @@ public class ThanhToan extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_thanh_toan);
-        // Lấy userId
+
         SharedPreferences sharedPreferences = getSharedPreferences("LoginPrefs", MODE_PRIVATE);
         userId = sharedPreferences.getString("userId", "");
 
@@ -67,10 +71,62 @@ public class ThanhToan extends AppCompatActivity {
 
         initViews();
         getDataFromIntent();
+        //loadDefaultAddressOnStartup();
         loadUserInfo();
-        displayProductInfo();
-        loadDefaultAddressOnStartup();
+
+        //Chỉ gọi displayProductInfo nếu có sản phẩm đơn
+        if (selectedProduct != null) {
+            displayProductInfo();
+        }
+
+        //Nếu là giỏ hàng thì load danh sách
+        String jsonCart = getIntent().getStringExtra("cart_list");
+        if (jsonCart != null && !jsonCart.isEmpty()) {
+            RecyclerView recyclerView = findViewById(R.id.recyclerView_cart_items);
+            recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+            List<Cart> cartList = new Gson().fromJson(jsonCart, new com.google.gson.reflect.TypeToken<List<Cart>>(){}.getType());
+
+            com.example.shopbepoly.Adapter.PayAdapter adapter = new com.example.shopbepoly.Adapter.PayAdapter(this, cartList);
+            recyclerView.setAdapter(adapter);
+
+            calculateTotalFromCart(cartList);
+        }
+
         setupListeners();
+
+        btnDatHang.setOnClickListener(v -> {
+            String name = txtCustomerName.getText().toString().trim();
+            String phone = txtCustomerPhone.getText().toString().trim();
+            String address = txtCustomerAddress.getText().toString().trim();
+
+            RadioGroup radioGroupPaymentMain = findViewById(R.id.radioGroupPaymentMain);
+            RadioGroup radioGroupBank = findViewById(R.id.radioGroupBank);
+            int selectedPaymentId = radioGroupPaymentMain.getCheckedRadioButtonId();
+
+            if (name.isEmpty() || phone.isEmpty() || address.isEmpty()) {
+                Toast.makeText(this, "Vui lòng điền đầy đủ thông tin khách hàng", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (selectedPaymentId == -1) {
+                Toast.makeText(this, "Vui lòng chọn phương thức thanh toán", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (selectedPaymentId == R.id.radioAppBank) {
+                int selectedBankId = radioGroupBank.getCheckedRadioButtonId();
+                if (selectedBankId == -1) {
+                    Toast.makeText(this, "Vui lòng chọn ngân hàng để thanh toán", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+            }
+
+            //thông tin hợp lệ chuyển màn hình đặt hàng thành công
+            Intent intent = new Intent(ThanhToan.this, Dathangthanhcong.class);
+            startActivity(intent);
+            finish();
+        });
     }
 
     private void initViews(){
@@ -89,7 +145,7 @@ public class ThanhToan extends AppCompatActivity {
         txtCustomerAddress = findViewById(R.id.txtCustomerAddress);
         img_next_address = findViewById(R.id.img_next_Adress);
         txtCustomerPhone = findViewById(R.id.txtCustomerPhone);
-
+        btnDatHang = findViewById(R.id.btnDatHang);
     }
 
     private void setupListeners(){
@@ -121,12 +177,10 @@ public class ThanhToan extends AppCompatActivity {
     }
     private void getDataFromIntent(){
         Intent intent = getIntent();
-        //lay thong tin san pham
         if (intent.hasExtra("product")){
             String productJson = intent.getStringExtra("product");
             selectedProduct = new Gson().fromJson(productJson, Product.class);
 
-            // Lấy thông tin khác
             quantity = intent.getIntExtra("quantity", 1);
             selectedSize = intent.getStringExtra("size");
             if (selectedSize == null) selectedSize = "";
@@ -135,13 +189,13 @@ public class ThanhToan extends AppCompatActivity {
             Log.d(TAG, "Quantity: " + quantity);
             Log.d(TAG, "Size: " + selectedSize);
         } else {
-            Log.e(TAG, "No product data found in intent");
-            Toast.makeText(this, "Khong co thong tin san pham", Toast.LENGTH_SHORT).show();
+            //Không cần thông báo nếu đi từ giỏ hàng
+            Log.w(TAG, "Không có sản phẩm đơn, có thể đi từ giỏ hàng");
         }
     }
     private void loadUserInfo() {
         SharedPreferences sharedPreferences = getSharedPreferences("LoginPrefs", MODE_PRIVATE);
-        String userId = sharedPreferences.getString("userId", "");
+        String userIdPref = sharedPreferences.getString("userId", "");
 
         ApiService apiService = ApiClient.getApiService();
         apiService.getUsers().enqueue(new Callback<List<User>>() {
@@ -149,9 +203,11 @@ public class ThanhToan extends AppCompatActivity {
             public void onResponse(Call<List<User>> call, Response<List<User>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     for (User user : response.body()) {
-                        if (user.getId().equals(userId)) {
-                            currentUser = user; // ✅ Gán user vào currentUser
-                            displayUserInfo(); // ✅ Hiển thị sau khi có dữ liệu
+                        if (user.getId().equals(userIdPref)) {
+                            currentUser = user;
+                            userId = user.getId(); //cập nhật lại userId chính xác
+                            loadDefaultAddressOnStartup(); //GỌI Ở ĐÂY SAU KHI ĐÃ CÓ userId
+                            displayUserInfo(); //Hiển thị sau khi có user + address
                             break;
                         }
                     }
@@ -168,24 +224,35 @@ public class ThanhToan extends AppCompatActivity {
 
 
     private void displayUserInfo(){
+//        if (currentUser != null){
+//            // Chỉ hiển thị thông tin từ user nếu chưa có thông tin từ địa chỉ mặc định
+//            if (txtCustomerName.getText().toString().isEmpty()) {
+//                txtCustomerName.setText(currentUser.getName());
+//            }
+//            // Email luôn hiển thị từ user, không bị ghi đè
+////            txtCustomerEmail.setText(currentUser.getEmail());
+//            if (txtCustomerPhone.getText().toString().isEmpty()) {
+//                txtCustomerPhone.setText(currentUser.getPhone_number());
+//            }
+//            if (txtCustomerAddress.getText().toString().isEmpty()) {
+//                String defaultAddress = loadDefaultAddress();
+//                if (defaultAddress != null && !defaultAddress.isEmpty()) {
+//                    txtCustomerAddress.setText(defaultAddress);
+//                } else {
+//                    // Nếu không có địa chỉ mặc định, hiển thị địa chỉ từ user
+//                    txtCustomerAddress.setText(currentUser.getAddress());
+//                }
+//            }
+//        }
         if (currentUser != null){
-            // Chỉ hiển thị thông tin từ user nếu chưa có thông tin từ địa chỉ mặc định
-            if (txtCustomerName.getText().toString().isEmpty()) {
-                txtCustomerName.setText(currentUser.getName());
-            }
-            // Email luôn hiển thị từ user, không bị ghi đè
-//            txtCustomerEmail.setText(currentUser.getEmail());
-            if (txtCustomerPhone.getText().toString().isEmpty()) {
-                txtCustomerPhone.setText(currentUser.getPhone_number());
-            }
-            if (txtCustomerAddress.getText().toString().isEmpty()) {
-                String defaultAddress = loadDefaultAddress();
-                if (defaultAddress != null && !defaultAddress.isEmpty()) {
-                    txtCustomerAddress.setText(defaultAddress);
-                } else {
-                    // Nếu không có địa chỉ mặc định, hiển thị địa chỉ từ user
-                    txtCustomerAddress.setText(currentUser.getAddress());
-                }
+            txtCustomerName.setText(currentUser.getName());
+            txtCustomerPhone.setText(currentUser.getPhone_number());
+
+            String defaultAddress = loadDefaultAddress();
+            if (defaultAddress != null && !defaultAddress.isEmpty()) {
+                txtCustomerAddress.setText(defaultAddress);
+            } else {
+                txtCustomerAddress.setText(currentUser.getAddress());
             }
         }
     }
@@ -365,5 +432,19 @@ public class ThanhToan extends AppCompatActivity {
             
             Log.d(TAG, "Loaded default address info on startup: " + defaultAddress.getName() + " - " + defaultAddress.getPhone());
         }
+    }
+
+    private void calculateTotalFromCart(List<Cart> cartList) {
+        int totalProductPrice = 0;
+
+        for (Cart cart : cartList) {
+            int price = cart.getIdProduct().getPrice();
+            int qty = cart.getQuantity();
+            totalProductPrice += price * qty;
+        }
+
+        txtProductTotal.setText(formatPrice(totalProductPrice));
+        txtShippingFee.setText(formatPrice(shippingFee));
+        txtTotalPayment.setText(formatPrice(totalProductPrice + shippingFee));
     }
 }
