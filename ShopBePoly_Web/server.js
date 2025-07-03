@@ -260,6 +260,10 @@ router.delete('/del_product/:id', async (req, res) => {
 router.get('/search_product', async (req, res) => {
     try {
         const keyword = req.query.q;
+        if (!keyword || keyword.trim() === "") {
+            // Trả về mảng rỗng thay vì toàn bộ sản phẩm
+            return res.json([]);
+        }
         const results = await productModel.find({
             nameproduct: { $regex: keyword, $options: 'i' }
         }).populate('id_category');
