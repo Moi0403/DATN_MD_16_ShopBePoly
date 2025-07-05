@@ -125,10 +125,7 @@ public class AddressListActivity extends AppCompatActivity implements AddressAda
                 addressList.add(address);
                 saveAddresses();
                 prefs.edit().putString("default_address_" + userId, gson.toJson(address)).apply();
-                Intent intent = new Intent();
-                intent.putExtra("address_result", gson.toJson(address));
-                setResult(RESULT_OK, intent);
-                finish();
+                adapter.notifyDataSetChanged();
             } else if (requestCode == REQ_EDIT) {
                 for (int i = 0; i < addressList.size(); i++) {
                     if (addressList.get(i).getId().equals(address.getId())) {
