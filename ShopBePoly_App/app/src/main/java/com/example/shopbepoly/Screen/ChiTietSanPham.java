@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -20,6 +21,7 @@ import androidx.viewpager2.widget.ViewPager2;
 
 import com.example.shopbepoly.API.ApiClient;
 import com.example.shopbepoly.API.ApiService;
+import com.example.shopbepoly.Adapter.CartAdapter;
 import com.example.shopbepoly.Adapter.ImageSliderAdapter;
 import com.example.shopbepoly.DTO.Cart;
 import com.example.shopbepoly.DTO.Favorite;
@@ -58,6 +60,8 @@ public class ChiTietSanPham extends AppCompatActivity {
     private String selectedColorName = "";
     private ViewPager2 viewPagerProductImages;
     private ImageSliderAdapter imageSliderAdapter;
+    private CartAdapter cartAdapter;
+    private Button btn_AddToPay;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,6 +69,7 @@ public class ChiTietSanPham extends AppCompatActivity {
         setContentView(R.layout.activity_chi_tiet_san_pham);
 
         btnCart = findViewById(R.id.btnCart);
+        btn_AddToPay = findViewById(R.id.btnAddToCart);
         layoutColorContainer = findViewById(R.id.layoutColorContainer);
 
         initViews();
@@ -131,6 +136,61 @@ public class ChiTietSanPham extends AppCompatActivity {
 
                 Add_Cart(cart);
             }
+        });
+
+        btn_AddToPay.setOnClickListener(view1 -> {
+            SharedPreferences sharedPreferences = getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
+            String userId = sharedPreferences.getString("userId", null);
+
+            if (selectedSize == null || selectedSize.trim().isEmpty()) {
+                Toast.makeText(this, "Vui lòng chọn size và màu trước khi thanh toán", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            Variation selectedVariation = null;
+            for (Variation v : product.getVariations()) {
+                if (v.getSize() == Integer.parseInt(selectedSize)) {
+                    if (selectedColorCode.isEmpty() ||
+                            (v.getColor() != null && selectedColorCode.equalsIgnoreCase(v.getColor().getCode()))) {
+                        selectedVariation = v;
+                        break;
+                    }
+                }
+            }
+
+            if (selectedVariation == null) {
+                Toast.makeText(this, "Không tìm thấy biến thể phù hợp", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            Cart cart = new Cart();
+            cart.setIdUser(userId);
+            cart.setIdProduct(product);
+            cart.setQuantity(quantity);
+            cart.setPrice(product.getPrice());
+            cart.setTotal(product.getPrice() * quantity);
+            cart.setSize(Integer.parseInt(selectedSize));
+            cart.setStatus(0);
+
+            if (selectedVariation.getColor() != null) {
+                cart.setColor(selectedVariation.getColor().getName());
+            }
+
+            String image = selectedVariation.getImage();
+            if (image != null && !image.trim().isEmpty()) {
+                cart.setImg_cart(ApiClient.IMAGE_URL + image.trim());
+            } else if (product.getAvt_imgproduct() != null) {
+                cart.setImg_cart(ApiClient.IMAGE_URL + product.getAvt_imgproduct());
+            }
+
+            // Gửi cart dưới dạng list để tương thích với ThanhToan nhận list
+            List<Cart> selectedItems = new ArrayList<>();
+            selectedItems.add(cart);
+
+            String jsonCart = new Gson().toJson(selectedItems);
+            Intent intent = new Intent(ChiTietSanPham.this, ThanhToan.class);
+            intent.putExtra("cart_list", jsonCart);
+            startActivity(intent);
         });
     }
 
