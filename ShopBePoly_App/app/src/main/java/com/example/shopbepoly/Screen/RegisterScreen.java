@@ -24,7 +24,7 @@ import retrofit2.Response;
 public class RegisterScreen extends AppCompatActivity {
 
     private TextView tvLogin;
-    private EditText edtName, edtEmail, edtPhone, edtPassword, edtConfirmPassword;
+    private EditText edt_userName, edtName, edtEmail, edtPhone, edtPassword, edtConfirmPassword;
     private Button btnRegister;
     private CheckBox checkBoxRegister;
 
@@ -33,6 +33,7 @@ public class RegisterScreen extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
 
+        edt_userName = findViewById(R.id.edt_userName);
         edtName = findViewById(R.id.edtName);
         edtEmail = findViewById(R.id.edtEmail);
         edtPhone = findViewById(R.id.edtPhone);
@@ -62,13 +63,15 @@ public class RegisterScreen extends AppCompatActivity {
         });
 
         btnRegister.setOnClickListener(v -> {
+
+            String userName = edt_userName.getText().toString().trim();
             String name = edtName.getText().toString().trim();
             String email = edtEmail.getText().toString().trim();
             String phone = edtPhone.getText().toString().trim();
             String password = edtPassword.getText().toString().trim();
             String confirmPassword = edtConfirmPassword.getText().toString().trim();
 
-            if (name.isEmpty() || email.isEmpty() || phone.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
+            if (userName.isEmpty() || name.isEmpty() || email.isEmpty() || phone.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
                 Toast.makeText(this, "Vui lòng nhập đầy đủ thông tin", Toast.LENGTH_SHORT).show();
                 return;
             }
@@ -90,7 +93,8 @@ public class RegisterScreen extends AppCompatActivity {
             }
 
             User user = new User();
-            user.setUsername(name);
+            user.setName(name);
+            user.setUsername(userName);
             user.setEmail(email);
             user.setPhone_number(phone);
             user.setPassword(password);
