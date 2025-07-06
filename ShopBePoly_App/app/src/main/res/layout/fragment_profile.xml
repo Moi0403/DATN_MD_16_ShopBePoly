@@ -102,6 +102,15 @@
                 android:text="Thông tin cá nhân"
                 android:textColor="#000000"
                 android:textSize="14sp" />
+            <TextView
+                android:id="@+id/txtDonmua"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="10dp"
+                android:paddingVertical="4dp"
+                android:text="Đơn Mua"
+                android:textColor="#000000"
+                android:textSize="14sp" />
 
             <TextView
                 android:id="@+id/txtLichsugiaodich"

@@ -59,8 +59,16 @@ public class AddressListActivity extends AppCompatActivity implements AddressAda
     private List<Address> loadAddresses() {
         String json = prefs.getString("address_list_" + userId, "");
         if (json.isEmpty()) return new ArrayList<>();
-        Type type = new TypeToken<List<Address>>(){}.getType();
-        return gson.fromJson(json, type);
+        Type type = new com.google.gson.reflect.TypeToken<List<Address>>(){}.getType();
+        List<Address> list = gson.fromJson(json, type);
+        // Đảm bảo luôn có 1 địa chỉ mặc định
+        if (!list.isEmpty() && list.stream().noneMatch(Address::isDefault)) {
+            list.get(0).setDefault(true);
+            // Lưu lại nếu phải sửa
+            prefs.edit().putString("address_list_" + userId, gson.toJson(list)).apply();
+            prefs.edit().putString("default_address_" + userId, gson.toJson(list.get(0))).apply();
+        }
+        return list;
     }
 
     private void saveAddresses() {
@@ -77,14 +85,37 @@ public class AddressListActivity extends AppCompatActivity implements AddressAda
     @Override
     public void onDelete(Address address) {
         if (address.isDefault()) {
-            Toast.makeText(this, "Không thể xóa địa chỉ mặc định!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Không thể xóa địa chỉ mặc định! Hãy chọn địa chỉ khác làm mặc định trước.", Toast.LENGTH_SHORT).show();
             return;
         }
         addressList.remove(address);
-        if (!addressList.isEmpty() && addressList.stream().noneMatch(Address::isDefault)) {
+        // Nếu sau khi xóa chỉ còn 1 địa chỉ, set nó là mặc định
+        if (addressList.size() == 1) {
+            addressList.get(0).setDefault(true);
+        } else if (!addressList.isEmpty() && addressList.stream().noneMatch(Address::isDefault)) {
             addressList.get(0).setDefault(true);
         }
         saveAddresses();
+        // Luôn cập nhật lại địa chỉ mặc định hiện tại vào SharedPreferences (nếu còn địa chỉ)
+        if (!addressList.isEmpty()) {
+            Address currentDefault = addressList.stream().filter(Address::isDefault).findFirst().orElse(addressList.get(0));
+            android.util.Log.d("AddressListActivity", "Cập nhật default_address: " + currentDefault.getName() + " - " + currentDefault.getPhone() + " - " + currentDefault.getAddress());
+            prefs.edit().putString("default_address_" + userId, gson.toJson(currentDefault)).apply();
+            // Gửi intent về địa chỉ mặc định mới nhất
+            Intent resultIntent = new Intent();
+            resultIntent.putExtra("address_result", gson.toJson(currentDefault));
+            setResult(RESULT_OK, resultIntent);
+            finish();
+        } else {
+            // Nếu không còn địa chỉ nào, xóa key default_address
+            android.util.Log.d("AddressListActivity", "Xóa default_address vì không còn địa chỉ nào");
+            prefs.edit().remove("default_address_" + userId).apply();
+            // Gửi intent về báo không còn địa chỉ nào
+            Intent resultIntent = new Intent();
+            resultIntent.putExtra("address_result", "");
+            setResult(RESULT_OK, resultIntent);
+            finish();
+        }
         adapter.notifyDataSetChanged();
     }
 
@@ -121,14 +152,20 @@ public class AddressListActivity extends AppCompatActivity implements AddressAda
         if (resultCode == RESULT_OK && data != null) {
             Address address = gson.fromJson(data.getStringExtra("address_result"), Address.class);
             if (requestCode == REQ_ADD) {
-                if (address.isDefault()) for (Address a : addressList) a.setDefault(false);
+                // Nếu chưa có địa chỉ nào là mặc định, set địa chỉ mới làm mặc định
+                boolean hasDefault = false;
+                for (Address a : addressList) {
+                    if (a.isDefault()) {
+                        hasDefault = true;
+                        break;
+                    }
+                }
+                if (!hasDefault) {
+                    address.setDefault(true);
+                }
                 addressList.add(address);
                 saveAddresses();
-                prefs.edit().putString("default_address_" + userId, gson.toJson(address)).apply();
-                Intent intent = new Intent();
-                intent.putExtra("address_result", gson.toJson(address));
-                setResult(RESULT_OK, intent);
-                finish();
+                adapter.notifyDataSetChanged();
             } else if (requestCode == REQ_EDIT) {
                 for (int i = 0; i < addressList.size(); i++) {
                     if (addressList.get(i).getId().equals(address.getId())) {
@@ -138,11 +175,7 @@ public class AddressListActivity extends AppCompatActivity implements AddressAda
                     }
                 }
                 saveAddresses();
-                prefs.edit().putString("default_address_" + userId, gson.toJson(address)).apply();
-                Intent intent = new Intent();
-                intent.putExtra("address_result", gson.toJson(address));
-                setResult(RESULT_OK, intent);
-                finish();
+                adapter.notifyDataSetChanged();
             }
         }
     }

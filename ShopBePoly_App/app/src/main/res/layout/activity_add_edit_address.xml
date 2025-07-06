@@ -9,33 +9,34 @@
     <!-- Header -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
+        android:layout_height="48dp"
         android:gravity="center_vertical"
-        android:background="#FFFFFF"
-        android:elevation="4dp"
-        android:padding="16dp">
+        android:orientation="horizontal">
 
         <ImageButton
             android:id="@+id/btnBack"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_back"
             android:contentDescription="Back"
-            android:padding="8dp"/>
+            android:padding="4dp"
+            android:src="@drawable/ic_back" />
 
         <TextView
-            android:id="@+id/tvTitle"
+            android:id="@+id/txtTitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Thêm/Sửa địa chỉ"
+            android:gravity="center_horizontal"
+            android:text="Thêm/Sửa Địa Chỉ"
             android:textSize="20sp"
-            android:textStyle="bold"
-            android:textColor="#333333"
-            android:gravity="center"/>
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="24dp"
+            android:layout_height="24dp" />
     </LinearLayout>
+
 
     <!-- Scrollable Content -->
     <ScrollView

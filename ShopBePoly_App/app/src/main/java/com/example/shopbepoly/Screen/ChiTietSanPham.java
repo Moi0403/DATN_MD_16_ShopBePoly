@@ -315,6 +315,10 @@ public class ChiTietSanPham extends AppCompatActivity {
             Toast.makeText(this, "Không có thông tin sản phẩm", Toast.LENGTH_SHORT).show();
             return false;
         }
+        if (selectedColorCode == null || selectedColorCode.isEmpty()){
+            Toast.makeText(this, "Vui lòng chọn màu", Toast.LENGTH_SHORT).show();
+            return false;
+        }
         if (selectedSize == null || selectedSize.isEmpty()) {
             Toast.makeText(this, "Vui lòng chọn size", Toast.LENGTH_SHORT).show();
             return false;
