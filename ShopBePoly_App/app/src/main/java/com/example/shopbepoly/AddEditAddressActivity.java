@@ -283,43 +283,17 @@ public class AddEditAddressActivity extends AppCompatActivity {
     private void loadDefaultAddressData() {
         isLoadingData = true; // Bắt đầu load dữ liệu
 
-        // Load địa chỉ mặc định từ SharedPreferences
-        android.content.SharedPreferences prefs = getSharedPreferences("AddressPrefs", MODE_PRIVATE);
-        String addressJson = prefs.getString("default_address_" + userId, "");
-        if (!addressJson.isEmpty()) {
-            try {
-                Address defaultAddress = gson.fromJson(addressJson, Address.class);
-                if (defaultAddress != null) {
-                    // Cập nhật thông tin cá nhân vào form
-                    edtName.setText(defaultAddress.getName());
-                    edtPhone.setText(defaultAddress.getPhone());
-
-                    // Để trống ô địa chỉ chi tiết để người dùng nhập mới
-                    edtAddress.setText("");
-
-                    // Set label
-                    String[] labels = {"Nhà", "Công ty", "Khác"};
-                    int labelIndex = 0;
-                    for (int i = 0; i < labels.length; i++) {
-                        if (labels[i].equalsIgnoreCase(defaultAddress.getLabel())) {
-                            labelIndex = i;
-                            break;
-                        }
-                    }
-                    spinnerLabel.setSelection(labelIndex);
-
-                    // Set các spinner tỉnh/huyện/xã từ địa chỉ mặc định
-                    setAddressSpinnersFromFullAddress(defaultAddress.getAddress());
-
-                    // Không set checkbox mặc định vì đây là địa chỉ mới
-                    checkboxDefault.setChecked(false);
-
-                    android.util.Log.d("AddEditAddress", "Loaded default address info: " + defaultAddress.getName());
-                }
-            } catch (Exception e) {
-                android.util.Log.e("AddEditAddress", "Error parsing default address", e);
-            }
-        }
+        // Reset tất cả các trường về rỗng/mặc định
+        edtName.setText("");
+        edtPhone.setText("");
+        edtAddress.setText("");
+        spinnerLabel.setSelection(0); // "Nhà"
+        spinnerProvince.setSelection(0);
+        districts.clear();
+        updateDistrictSpinner();
+        wards.clear();
+        updateWardSpinner();
+        checkboxDefault.setChecked(false);
 
         isLoadingData = false; // Kết thúc load dữ liệu
     }
@@ -413,14 +387,12 @@ public class AddEditAddressActivity extends AppCompatActivity {
         }
     }
 
-
-
     private void saveAddress() {
         String name = edtName.getText().toString().trim();
         String phone = edtPhone.getText().toString().trim();
         String addressDetail = edtAddress.getText().toString().trim();
         String label = spinnerLabel.getSelectedItem().toString();
-        boolean isDefault = checkboxDefault.isChecked();
+        boolean isDefault;
 
         if (name.isEmpty() || phone.isEmpty() || addressDetail.isEmpty()) {
             Toast.makeText(this, "Vui lòng nhập đầy đủ thông tin", Toast.LENGTH_SHORT).show();
@@ -434,14 +406,33 @@ public class AddEditAddressActivity extends AppCompatActivity {
             return;
         }
 
+        // Kiểm tra logic bắt buộc chọn làm mặc định nếu là địa chỉ đầu tiên
+        if (editingAddress == null) {
+            android.content.SharedPreferences prefs = getSharedPreferences("AddressPrefs", MODE_PRIVATE);
+            String json = prefs.getString("address_list_" + userId, "");
+            java.lang.reflect.Type type = new com.google.gson.reflect.TypeToken<java.util.List<com.example.shopbepoly.DTO.Address>>(){}.getType();
+            java.util.List<com.example.shopbepoly.DTO.Address> addressList = new java.util.ArrayList<>();
+            if (!json.isEmpty()) {
+                addressList = new com.google.gson.Gson().fromJson(json, type);
+            }
+            if (addressList.size() == 0 && !checkboxDefault.isChecked()) {
+                Toast.makeText(this, "Địa chỉ đầu tiên phải được chọn làm mặc định!", Toast.LENGTH_LONG).show();
+                return;
+            }
+        }
+
         // Tạo địa chỉ đầy đủ từ các thành phần
         String fullAddress = buildFullAddress(addressDetail);
 
         Address result;
         if (editingAddress != null) {
+            // Khi sửa, lấy trạng thái checkbox
+            isDefault = checkboxDefault.isChecked();
             result = new Address(editingAddress.getId(), name, phone, fullAddress, label, isDefault);
         } else {
-            result = new Address(UUID.randomUUID().toString(), name, phone, fullAddress, label, isDefault);
+            // Khi thêm mới, lấy trạng thái checkbox
+            isDefault = checkboxDefault.isChecked();
+            result = new Address(java.util.UUID.randomUUID().toString(), name, phone, fullAddress, label, isDefault);
         }
 
         Intent intent = new Intent();

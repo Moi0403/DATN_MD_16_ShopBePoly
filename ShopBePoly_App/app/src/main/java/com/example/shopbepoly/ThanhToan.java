@@ -58,13 +58,11 @@ public class ThanhToan extends AppCompatActivity {
         SharedPreferences prefs = getSharedPreferences("LoginPrefs", MODE_PRIVATE);
         userId = prefs.getString("userId", "");
 
-
         initViews();
         loadUserInfo();
         radioStandardShipping.setChecked(true);
 
         getDataFromIntent();
-
         selectedColor = getIntent().getStringExtra("color");
         setupListeners();
 
@@ -117,7 +115,7 @@ public class ThanhToan extends AppCompatActivity {
         txtProductTotal = findViewById(R.id.txtProductTotal);
         txtShippingFee = findViewById(R.id.txtShippingFee);
         txtTotalPayment = findViewById(R.id.txtTotalPayment);
-        txtShippingNote = findViewById(R.id.txtShippingNote); // thêm vào XML layout nếu chưa có
+        txtShippingNote = findViewById(R.id.txtShippingNote);
         txtCustomerName = findViewById(R.id.txtCustomerName);
         txtCustomerAddress = findViewById(R.id.txtCustomerAddress);
         txtCustomerPhone = findViewById(R.id.txtCustomerPhone);
@@ -156,26 +154,30 @@ public class ThanhToan extends AppCompatActivity {
     }
 
     private void loadUserInfo() {
-        ApiClient.getApiService().getUsers().enqueue(new Callback<List<User>>() {
-            @Override public void onResponse(Call<List<User>> call, Response<List<User>> response) {
-                if (response.isSuccessful()) {
+        ApiService apiService = ApiClient.getApiService();
+        apiService.getUsers().enqueue(new Callback<List<User>>() {
+            @Override
+            public void onResponse(Call<List<User>> call, Response<List<User>> response) {
+                if (response.isSuccessful() && response.body() != null) {
                     for (User user : response.body()) {
                         if (user.getId().equals(userId)) {
                             currentUser = user;
                             displayUserInfo();
-                            updateShippingFeeBasedOnAddress();
                             break;
                         }
                     }
                 }
             }
-            @Override public void onFailure(Call<List<User>> call, Throwable t) {
-                Toast.makeText(ThanhToan.this, "Lỗi tải thông tin người dùng", Toast.LENGTH_SHORT).show();
+
+            @Override
+            public void onFailure(Call<List<User>> call, Throwable t) {
+                Toast.makeText(ThanhToan.this, "Không thể tải thông tin người dùng", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
     private void displayUserInfo() {
+        // Ưu tiên lấy địa chỉ mặc định nếu có
         SharedPreferences prefs = getSharedPreferences("AddressPrefs", MODE_PRIVATE);
         String json = prefs.getString("default_address_" + userId, "");
         if (!json.isEmpty()) {
@@ -185,35 +187,36 @@ public class ThanhToan extends AppCompatActivity {
                     txtCustomerName.setText(address.getName());
                     txtCustomerPhone.setText(address.getPhone());
                     txtCustomerAddress.setText(address.getAddress());
-                    return; // nếu đã có địa chỉ mặc định thì không cần hiển thị từ user nữa
+                    return;
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
 
-        // Nếu không có địa chỉ mặc định thì fallback sang thông tin người dùng
-        if (currentUser != null) {
-            txtCustomerName.setText(currentUser.getName());
-            txtCustomerPhone.setText(currentUser.getPhone_number());
-            txtCustomerAddress.setText(currentUser.getAddress());
-        }
+        // Nếu không có địa chỉ mặc định, để trống toàn bộ các trường
+        txtCustomerName.setText("");
+        txtCustomerPhone.setText("");
+        txtCustomerAddress.setText("");
+        txtCustomerName.setHint("Tên khách hàng");
+        txtCustomerPhone.setHint("Số điện thoại");
+        txtCustomerAddress.setHint("Địa chỉ");
     }
 
-
-    private String loadDefaultAddress() {
+    private com.example.shopbepoly.DTO.Address loadDefaultAddressObject() {
         SharedPreferences prefs = getSharedPreferences("AddressPrefs", MODE_PRIVATE);
-        String json = prefs.getString("default_address_" + userId, "");
-        if (!json.isEmpty()) {
+        String addressJson = prefs.getString("default_address_" + userId, "");
+        if (!addressJson.isEmpty()) {
             try {
-                Address address = new Gson().fromJson(json, Address.class);
-                return address.getAddress();
-            } catch (Exception ignored) {}
+                return new Gson().fromJson(addressJson, com.example.shopbepoly.DTO.Address.class);
+            } catch (Exception e) {
+                Log.e(TAG, "Error parsing default address object", e);
+            }
         }
         return null;
     }
 
-    private void displayProductInfo() {
+        private void displayProductInfo() {
         txtProductName.setText(selectedProduct.getNameproduct());
         txtProductQuantity.setText("Số lượng: " + quantity);
         txtProductColor.setText(selectedColor);
@@ -236,13 +239,11 @@ public class ThanhToan extends AppCompatActivity {
         int totalProductPrice = 0;
 
         if (jsonCart != null && !jsonCart.isEmpty()) {
-            // Đặt hàng từ giỏ hàng
             List<Cart> cartList = new Gson().fromJson(jsonCart, new com.google.gson.reflect.TypeToken<List<Cart>>() {}.getType());
             for (Cart cart : cartList) {
                 totalProductPrice += cart.getIdProduct().getPrice() * cart.getQuantity();
             }
         } else if (selectedProduct != null) {
-            // Đặt hàng một sản phẩm
             totalProductPrice = productPrice * quantity;
         }
 
@@ -251,11 +252,8 @@ public class ThanhToan extends AppCompatActivity {
         txtTotalPayment.setText(formatPrice(totalProductPrice + shippingFee));
     }
 
-
     private void updateShippingFeeBasedOnAddress() {
         String address = txtCustomerAddress.getText().toString();
-        Log.d("ShippingDebug", "Địa chỉ hiện tại: " + address); // ✅ Debug log
-
         boolean isFast = radioFastShipping.isChecked();
         shippingFee = calculateShippingFeeByAddress(address, isFast);
 
@@ -271,76 +269,42 @@ public class ThanhToan extends AppCompatActivity {
 
     private int calculateShippingFeeByAddress(String address, boolean isFastShipping) {
         if (address == null || address.isEmpty()) {
-            return isFastShipping ? 50000 : 30000; // mặc định nếu không rõ địa chỉ
+            return isFastShipping ? 50000 : 30000;
         }
 
         address = address.toLowerCase();
 
-        // Danh sách địa chỉ gần (nội thành hoặc tỉnh gần)
-        boolean isNear = address.contains("hà nội")
-                || address.contains("ha noi")
-                || address.contains("tp.hcm")
-                || address.contains("hồ chí minh")
-                || address.contains("ho chi minh")
-                || address.contains("tphcm")
-                || address.contains("thành phố hồ chí minh")
-                || address.contains("hải phòng")
-                || address.contains("đà nẵng")
-                || address.contains("bình dương")
-                || address.contains("đồng nai");
+        boolean isNear = address.contains("hà nội") || address.contains("ha noi") || address.contains("tp.hcm")
+                || address.contains("hồ chí minh") || address.contains("ho chi minh") || address.contains("tphcm")
+                || address.contains("thành phố hồ chí minh") || address.contains("hải phòng")
+                || address.contains("đà nẵng") || address.contains("bình dương") || address.contains("đồng nai");
 
-        // Danh sách địa chỉ xa (tỉnh miền núi, vùng sâu vùng xa)
-        boolean isFar = address.contains("sơn la")
-                || address.contains("điện biên")
-                || address.contains("cao bằng")
-                || address.contains("hà giang")
-                || address.contains("lào cai")
-                || address.contains("kon tum")
-                || address.contains("gia lai")
-                || address.contains("phú yên");
+        boolean isFar = address.contains("sơn la") || address.contains("điện biên") || address.contains("cao bằng")
+                || address.contains("hà giang") || address.contains("lào cai") || address.contains("kon tum")
+                || address.contains("gia lai") || address.contains("phú yên");
 
-        // Tính phí dựa trên khoảng cách và loại giao hàng
-        if (isNear) {
-            return isFastShipping ? 40000 : 20000;
-        } else if (isFar) {
-            return isFastShipping ? 60000 : 40000;
-        } else {
-            return isFastShipping ? 50000 : 30000; // trung bình
-        }
+        if (isNear) return isFastShipping ? 40000 : 20000;
+        else if (isFar) return isFastShipping ? 60000 : 40000;
+        else return isFastShipping ? 50000 : 30000;
     }
-
-
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REQ_ADDRESS && resultCode == RESULT_OK && data != null) {
             String json = data.getStringExtra("address_result");
-            if (json != null) {
-                Address selectedAddress = new Gson().fromJson(json, Address.class);
-                if (selectedAddress != null) {
-                    txtCustomerName.setText(selectedAddress.getName());
-                    txtCustomerPhone.setText(selectedAddress.getPhone());
-                    txtCustomerAddress.setText(selectedAddress.getAddress());
+            if (json != null && !json.isEmpty()) {
+                // Lưu vào SharedPreferences làm địa chỉ mặc định
+                SharedPreferences.Editor editor = getSharedPreferences("AddressPrefs", MODE_PRIVATE).edit();
+                editor.putString("default_address_" + userId, json);
+                editor.apply();
 
-                    // Cập nhật lại địa chỉ mặc định vào SharedPreferences
-                    SharedPreferences.Editor editor = getSharedPreferences("AddressPrefs", MODE_PRIVATE).edit();
-                    editor.putString("default_address_" + userId, json);
-                    editor.apply();
-
-                    // Gán lại vào currentUser nếu cần đồng bộ
-                    if (currentUser != null) {
-                        currentUser.setName(selectedAddress.getName());
-                        currentUser.setPhone_number(selectedAddress.getPhone());
-                        currentUser.setAddress(selectedAddress.getAddress());
-                    }
-
-                    updateShippingFeeBasedOnAddress();
-                }
+                // Hiển thị địa chỉ mặc định mới nhất ra màn ThanhToan
+                displayUserInfo();
+                updateShippingFeeBasedOnAddress();
             }
         }
     }
-
 
     private void calculateTotalFromCart(List<Cart> cartList) {
         int totalProductPrice = 0;
