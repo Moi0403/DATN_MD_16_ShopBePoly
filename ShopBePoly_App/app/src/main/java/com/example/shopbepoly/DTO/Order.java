@@ -105,6 +105,14 @@ public class Order {
     public void setPay(String pay) {
         this.pay = pay;
     }
+
+    public boolean isCancellable(){
+        if (status == null) return true;
+        String statusLower = status.toLowerCase();
+        return !statusLower.contains("đã hủy") &&
+                !statusLower.contains("đã giao") &&
+                !statusLower.contains("hoàn thành");
+    }
 }
 
 

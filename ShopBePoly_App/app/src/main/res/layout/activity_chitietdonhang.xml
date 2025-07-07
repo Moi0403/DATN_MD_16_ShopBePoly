@@ -34,7 +34,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:gravity="center_horizontal"
-                android:text="Chi tiết lịch sử giao dịch"
+                android:text="Chi tiết đơn hàng"
                 android:textSize="16sp"
                 android:textStyle="bold" />
 

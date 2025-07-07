@@ -124,4 +124,7 @@ public interface ApiService {
 
     @GET("favorites/{userId}")
     Call<List<Favorite>> getFavorites(@Path("userId") String userId);
+
+    @POST("add_order")
+    Call<Order> createOrder(@Body Order order);
 }
