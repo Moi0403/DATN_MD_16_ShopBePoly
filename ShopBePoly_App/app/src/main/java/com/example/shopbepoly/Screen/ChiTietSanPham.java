@@ -142,8 +142,13 @@ public class ChiTietSanPham extends AppCompatActivity {
             SharedPreferences sharedPreferences = getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
             String userId = sharedPreferences.getString("userId", null);
 
+            if (selectedColorCode == null || selectedColorCode.isEmpty()) {
+                Toast.makeText(this, "Vui lòng chọn màu trước khi mua hàng", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
             if (selectedSize == null || selectedSize.trim().isEmpty()) {
-                Toast.makeText(this, "Vui lòng chọn size và màu trước khi thanh toán", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Vui lòng chọn size trước khi mua hàng", Toast.LENGTH_SHORT).show();
                 return;
             }
 

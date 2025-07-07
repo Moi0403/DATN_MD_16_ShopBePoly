@@ -18,14 +18,18 @@ import com.example.shopbepoly.API.ApiClient;
 import com.example.shopbepoly.API.ApiService;
 import com.example.shopbepoly.DTO.Address;
 import com.example.shopbepoly.DTO.Cart;
+import com.example.shopbepoly.DTO.Order;
 import com.example.shopbepoly.DTO.Product;
 import com.example.shopbepoly.DTO.User;
 import com.google.gson.Gson;
 
 import java.text.NumberFormat;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.PrimitiveIterator;
 
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -100,8 +104,9 @@ public class ThanhToan extends AppCompatActivity {
                 return;
             }
 
-            startActivity(new Intent(ThanhToan.this, Dathangthanhcong.class));
-            finish();
+//            startActivity(new Intent(ThanhToan.this, Dathangthanhcong.class));
+//            finish();
+            createNewOrder(name, phone, address, selectedPaymentId, selectedBankId);
         });
     }
 
@@ -314,5 +319,188 @@ public class ThanhToan extends AppCompatActivity {
         txtProductTotal.setText(formatPrice(totalProductPrice));
         txtShippingFee.setText(formatPrice(shippingFee));
         txtTotalPayment.setText(formatPrice(totalProductPrice + shippingFee));
+    }
+
+    private void createNewOrder(String name, String phone, String address, int paymentId, int bankId){
+        try {
+            Order newOrder = new Order();
+
+            //set thông tin cơ bản
+            newOrder.setDate(getCurrentDate());
+            newOrder.setStatus("Đang xử lý");
+            newOrder.setAddress(address);
+
+            //set phương thức thanh toán
+            String paymentMethod = getPaymentMethodText(paymentId, bankId);
+            newOrder.setPay(paymentMethod);
+
+            //tính tổng tiền và lấy thông tin sản phẩm
+            String jsonCart = getIntent().getStringExtra("cart_list");
+            int totalAmount = 0;
+            String productNames = "";
+            List<String> productImages = new ArrayList<>();
+
+            if (jsonCart != null && !jsonCart.isEmpty()){
+                //xử lsy cart
+                List<Cart> cartList = new Gson().fromJson(jsonCart, new com.google.gson.reflect.TypeToken<List<Cart>>() {}.getType());
+                for (Cart cart : cartList){
+                    if (!productNames.isEmpty()){
+                        productNames += ", ";
+                    }
+                    productNames += cart.getIdProduct().getNameproduct() + " (x" + cart.getQuantity() + ")";
+                    productImages.add(cart.getIdProduct().getAvt_imgproduct());
+                }
+            } else if (selectedProduct != null) {
+                //xử lý single product
+                totalAmount = productPrice * quantity;
+                productNames = selectedProduct.getNameproduct() + " (x" + quantity + ")";
+                productImages.add(selectedProduct.getAvt_imgproduct());
+            }
+
+            //thêm phí vận chuyển
+            totalAmount += shippingFee;
+
+            //set thông tin vào order
+            newOrder.setBill(String.valueOf(totalAmount));
+            newOrder.setNameproduct(productNames);
+            newOrder.setImg(productImages);
+
+            //
+            createOrderViaAPI(newOrder);
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating order", e);
+            Toast.makeText(this, "Lỗi tạo đơn hàng: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private String getCurrentDate() {
+        return new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new java.util.Date());
+    }
+
+    private String getPaymentMethodText(int paymentId, int bankId){
+        try {
+            if (paymentId == R.id.radioAppBank){
+                RadioButton selectedBank = findViewById(bankId);
+                return "Chuyển khoản - " + (selectedBank != null ? selectedBank.getText().toString() : "Ngân Hàng");
+            } else {
+                RadioButton selectedPayment = findViewById(paymentId);
+                return selectedPayment != null ? selectedPayment.getText().toString() : "Tiền mặt";
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting payment method", e);
+            return "Tiền mặt";
+        }
+    }
+
+    private void createOrderViaAPI(Order order){
+        //Hiển thị loading
+        btnDatHang.setEnabled(false);
+        btnDatHang.setText("Đang xử lý ...");
+
+        ApiService apiService = ApiClient.getApiService();
+
+        Call<Order> call = apiService.createOrder(order);
+
+        call.enqueue(new Callback<Order>() {
+            @Override
+            public void onResponse(Call<Order> call, Response<Order> response) {
+                //reset button
+                btnDatHang.setEnabled(true);
+                btnDatHang.setText("Đặt hàng");
+
+                if (response.isSuccessful() && response.body() != null){
+                    Toast.makeText(ThanhToan.this, "Đặt hàng thaành công", Toast.LENGTH_SHORT).show();
+
+                    //xóa cart nếu đặt hàng từ cart
+                    String jsonCart = getIntent().getStringExtra("cart_list");
+                    if (jsonCart != null && !jsonCart.isEmpty()){
+                        clearCartAfterOrder();
+                    }
+
+                    startActivity(new Intent(ThanhToan.this, Dathangthanhcong.class));
+                    finish();
+                } else {
+                    //nếu Api fail, lưu vào local
+                    Log.e(TAG, "API create order failed: " + response.code());
+                    saveOrderToLocal(order);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Order> call, Throwable t) {
+                //reset button
+                btnDatHang.setEnabled(true);
+                btnDatHang.setText("Đặt hàng");
+
+                Log.e(TAG, "API create order failed", t);
+                //lưu vào local khi API fail
+                saveOrderToLocal(order);
+            }
+        });
+
+    }
+
+    private void saveOrderToLocal(Order order){
+        try {
+            SharedPreferences prefs = getSharedPreferences("OrderPrefs", MODE_PRIVATE);
+            SharedPreferences.Editor editor = prefs.edit();
+
+            //tạo ID cho order
+            String orderId = "ORD" + System.currentTimeMillis();
+            order.set_id(orderId);
+
+            //láy danh sách order hiện có
+            String existingOrders = prefs.getString("orders_list", "[]");
+            List<Order> orderList = new Gson().fromJson(existingOrders, new com.google.gson.reflect.TypeToken<List<Order>>() {}.getType());
+
+            if (orderList == null){
+                orderList = new ArrayList<>();
+            }
+
+            //thêm order mới vào đầu danh sách
+            orderList.add(0, order);
+
+            //lưu lại
+            String updatedOrders = new Gson().toJson(orderList);
+            editor.putString("orders_list", updatedOrders);
+            editor.apply();
+
+            Toast.makeText(this, "Đặt hàng thành công", Toast.LENGTH_SHORT).show();
+
+            //xóa cart nếu đặt hàng từ cart
+            String jsonCart = getIntent().getStringExtra("cart_list");
+            if (jsonCart != null && !jsonCart.isEmpty()){
+                clearCartAfterOrder();
+            }
+
+            startActivity(new Intent(ThanhToan.this, Dathangthanhcong.class));
+            finish();
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error saving order locally", e);
+            Toast.makeText(this, "Lỗi lưu đơn hàng: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void clearCartAfterOrder(){
+        try {
+            ApiService apiService = ApiClient.getApiService();
+            apiService.deleteAllCart(userId).enqueue(new Callback<ResponseBody>() {
+                @Override
+                public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                    if (response.isSuccessful()){
+                        Log.d(TAG, "Cart cleared successfully");
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<ResponseBody> call, Throwable t) {
+                    Log.e(TAG, "Failed to clear cart", t);
+                }
+            });
+        } catch (Exception e) {
+            Log.e(TAG, "Error clearing cart", e);
+        }
     }
 }

@@ -49,35 +49,51 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
     @Override
     public void onBindViewHolder(@NonNull OrderViewHolder holder, int position) {
         Order ord = ordList.get(position);
+
+        //Hiển thị thông tin đơn hàng
         holder.tvmaDH.setText("Mã đơn hàng:" + ord.get_id());
+        //format giá tiền
         DecimalFormat formatter = new DecimalFormat("#,###");
         try {
             double billAmount = ord.getBillAsDouble();
             holder.tvthanhTien.setText("Giá:" + formatter.format(billAmount) + " đ");
         } catch (Exception e) {
-            holder.tvthanhTien.setText("Giá:" + ord.getBill());
+            holder.tvthanhTien.setText("Giá:" + ord.getBill() + " đ");
         }
         holder.tvngayMua.setText("Ngày mua:" + ord.getDate());
-        holder.tvTT.setText(ord.getStatus());
+        holder.tvTT.setText("Trạng thái: " + ord.getStatus());
 
-        holder.btnHuy.setOnClickListener(v -> {
-            new androidx.appcompat.app.AlertDialog.Builder(context)
-                .setTitle("Xác nhận hủy đơn hàng")
-                .setMessage("Bạn có chắc chắn muốn hủy đơn hàng này không?")
-                .setPositiveButton("Có", (dialog, which) -> {
-                    listener.onDelete(ord.get_id());
-                })
-                .setNegativeButton("Không", null)
-                .show();
-        });
-
-        // Ẩn nút hủy nếu trạng thái đã là 'Đã hủy'
-        if ("Đã hủy".equalsIgnoreCase(ord.getStatus())) {
+        //xử lý nút hủy
+        String status = ord.getStatus();
+        if ("Đã hủy".equalsIgnoreCase(status) || "Đã giao".equalsIgnoreCase(status) || "Hoàn thành".equalsIgnoreCase(status)){
             holder.btnHuy.setVisibility(View.GONE);
-            holder.tvTT.setText("Đã hủy");
         } else {
             holder.btnHuy.setVisibility(View.VISIBLE);
+            holder.btnHuy.setOnClickListener(v -> {
+                if (listener != null){
+                    listener.onDelete(ord.get_id());
+                }
+            });
         }
+
+//        holder.btnHuy.setOnClickListener(v -> {
+//            new androidx.appcompat.app.AlertDialog.Builder(context)
+//                .setTitle("Xác nhận hủy đơn hàng")
+//                .setMessage("Bạn có chắc chắn muốn hủy đơn hàng này không?")
+//                .setPositiveButton("Có", (dialog, which) -> {
+//                    listener.onDelete(ord.get_id());
+//                })
+//                .setNegativeButton("Không", null)
+//                .show();
+//        });
+//
+//        // Ẩn nút hủy nếu trạng thái đã là 'Đã hủy'
+//        if ("Đã hủy".equalsIgnoreCase(ord.getStatus())) {
+//            holder.btnHuy.setVisibility(View.GONE);
+//            holder.tvTT.setText("Đã hủy");
+//        } else {
+//            holder.btnHuy.setVisibility(View.VISIBLE);
+//        }
 
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(context, Chitietdonhang.class);

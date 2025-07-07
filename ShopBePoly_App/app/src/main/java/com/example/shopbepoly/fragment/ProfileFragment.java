@@ -23,6 +23,7 @@ import com.bumptech.glide.signature.ObjectKey;
 import com.example.shopbepoly.ChinhSachvaQuyenRiengTu;
 import com.example.shopbepoly.DieuKhoanvaDieuKien;
 import com.example.shopbepoly.DoiMatKhau;
+import com.example.shopbepoly.Donhang;
 import com.example.shopbepoly.Gioithieu;
 import com.example.shopbepoly.Lichsugiaodich;
 import com.example.shopbepoly.LienHe;
@@ -42,7 +43,7 @@ import retrofit2.Response;
 
 public class ProfileFragment extends Fragment {
 
-    private TextView txtThongtincanhan, txtLichsugiaodich, txtGioiThieu, txtDoimatkhau, txtLienhe, txtDieuKhoan, txtChinhsach, txtLogout;
+    private TextView txtThongtincanhan, txtLichsugiaodich, txtGioiThieu, txtDoimatkhau, txtLienhe, txtDieuKhoan, txtChinhsach, txtLogout, txtDonmua;
     private ImageView imgAvatar;
     private TextView txtName, txtEmail;
 
@@ -61,6 +62,7 @@ public class ProfileFragment extends Fragment {
         imgAvatar = view.findViewById(R.id.imgAvatar);
         txtName = view.findViewById(R.id.txtName);
         txtEmail = view.findViewById(R.id.txtEmail);
+        txtDonmua = view.findViewById(R.id.txtDonmua);
 
         loadUserProfile();
 
@@ -69,6 +71,12 @@ public class ProfileFragment extends Fragment {
             public void onClick(View v) {
                 Intent intent = new Intent(getActivity(), ThongTinCaNhan.class);
                 startActivityForResult(intent, 1001);
+            }
+        });
+        txtDonmua.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(getActivity(), Donhang.class));
             }
         });
 

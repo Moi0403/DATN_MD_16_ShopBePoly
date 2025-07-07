@@ -2,9 +2,13 @@ package com.example.shopbepoly;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.example.shopbepoly.Screen.ChiTietSanPham;
+import com.example.shopbepoly.fragment.HomeFragment;
 
 public class Dathangthanhcong extends AppCompatActivity {
     @Override
@@ -21,6 +25,13 @@ public class Dathangthanhcong extends AppCompatActivity {
             startActivity(intent);
             finish();
         });
+//        btnQuayLai.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                Intent intent = new Intent(Dathangthanhcong.this, HomeFragment.class);
+//                startActivity(intent);
+//            }
+//        });
         btnBack.setOnClickListener(v -> finish());
     }
 }
