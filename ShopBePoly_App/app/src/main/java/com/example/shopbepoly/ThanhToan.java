@@ -198,8 +198,17 @@ public class ThanhToan extends AppCompatActivity {
                 e.printStackTrace();
             }
         }
-
-        // Nếu không có địa chỉ mặc định, để trống toàn bộ các trường
+        // Nếu không có địa chỉ mặc định, thử lấy địa chỉ đầu tiên trong danh sách địa chỉ (nếu có)
+        String allAddressesJson = prefs.getString("address_list_" + userId, "[]");
+        List<Address> addressList = new Gson().fromJson(allAddressesJson, new com.google.gson.reflect.TypeToken<List<Address>>() {}.getType());
+        if (addressList != null && !addressList.isEmpty()) {
+            Address firstAddress = addressList.get(0);
+            txtCustomerName.setText(firstAddress.getName());
+            txtCustomerPhone.setText(firstAddress.getPhone());
+            txtCustomerAddress.setText(firstAddress.getAddress());
+            return;
+        }
+        // Nếu không có địa chỉ nào, để trống toàn bộ các trường
         txtCustomerName.setText("");
         txtCustomerPhone.setText("");
         txtCustomerAddress.setText("");
@@ -296,18 +305,22 @@ public class ThanhToan extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQ_ADDRESS && resultCode == RESULT_OK && data != null) {
-            String json = data.getStringExtra("address_result");
-            if (json != null && !json.isEmpty()) {
-                // Lưu vào SharedPreferences làm địa chỉ mặc định
-                SharedPreferences.Editor editor = getSharedPreferences("AddressPrefs", MODE_PRIVATE).edit();
-                editor.putString("default_address_" + userId, json);
-                editor.apply();
-
-                // Hiển thị địa chỉ mặc định mới nhất ra màn ThanhToan
-                displayUserInfo();
-                updateShippingFeeBasedOnAddress();
+        if (requestCode == REQ_ADDRESS && resultCode == RESULT_OK) {
+            if (data != null && data.hasExtra("address_result")) {
+                // Lấy địa chỉ vừa chọn và hiển thị lên giao diện
+                String addressJson = data.getStringExtra("address_result");
+                if (addressJson != null && !addressJson.isEmpty()) {
+                    Address address = new Gson().fromJson(addressJson, Address.class);
+                    txtCustomerName.setText(address.getName());
+                    txtCustomerPhone.setText(address.getPhone());
+                    txtCustomerAddress.setText(address.getAddress());
+                    updateShippingFeeBasedOnAddress();
+                    return;
+                }
             }
+            // Nếu không có address_result thì fallback về mặc định
+            displayUserInfo();
+            updateShippingFeeBasedOnAddress();
         }
     }
 

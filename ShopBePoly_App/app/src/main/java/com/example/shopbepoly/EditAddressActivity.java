@@ -17,10 +17,16 @@ import com.example.shopbepoly.DTO.Address;
 import com.example.shopbepoly.DTO.VietnamAddress;
 import com.google.gson.Gson;
 import java.util.List;
-import java.util.UUID;
 import java.util.ArrayList;
+import android.content.SharedPreferences;
+import com.example.shopbepoly.DTO.User;
+import com.example.shopbepoly.API.ApiClient;
+import com.example.shopbepoly.API.ApiService;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
-public class AddEditAddressActivity extends AppCompatActivity {
+public class EditAddressActivity extends AppCompatActivity {
     private EditText edtName, edtPhone, edtAddress;
     private Spinner spinnerLabel, spinnerProvince, spinnerDistrict, spinnerWard;
     private CheckBox checkboxDefault;
@@ -35,8 +41,9 @@ public class AddEditAddressActivity extends AppCompatActivity {
     private List<VietnamAddress.Ward> wards;
     private String selectedProvinceCode = "";
     private String selectedDistrictCode = "";
-    private boolean isLoadingData = false; // Flag để tránh trigger listener khi đang load dữ liệu
+    private boolean isLoadingData = false;
     private String userId;
+    private User currentUser;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,26 +59,49 @@ public class AddEditAddressActivity extends AppCompatActivity {
         android.content.SharedPreferences loginPrefs = getSharedPreferences("LoginPrefs", MODE_PRIVATE);
         userId = loginPrefs.getString("userId", "");
 
+        // Lấy thông tin user từ API
+        loadUserInfo();
+
         initViews();
         setupSpinners();
         loadProvinces();
         setupListeners();
+        setTitle("Sửa Địa Chỉ");
+        android.widget.TextView txtTitle = findViewById(R.id.txtTitle);
+        if (txtTitle != null) txtTitle.setText("Sửa Địa Chỉ");
 
-        // Nếu là sửa, nhận dữ liệu và hiển thị lên các ô
+        // Nhận dữ liệu địa chỉ cần sửa
         String editJson = getIntent().getStringExtra("edit_address");
         if (editJson != null) {
             editingAddress = gson.fromJson(editJson, Address.class);
             loadEditData();
-        } else {
-            // Nếu là thêm mới, load địa chỉ mặc định hiện tại
-            loadDefaultAddressData();
         }
+    }
+
+    private void loadUserInfo() {
+        ApiService apiService = ApiClient.getApiService();
+        apiService.getUsers().enqueue(new Callback<List<User>>() {
+            @Override
+            public void onResponse(Call<List<User>> call, Response<List<User>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    for (User user : response.body()) {
+                        if (user.getId().equals(userId)) {
+                            currentUser = user;
+                            break;
+                        }
+                    }
+                }
+            }
+            @Override
+            public void onFailure(Call<List<User>> call, Throwable t) {
+                // Có thể xử lý lỗi nếu cần
+            }
+        });
     }
 
     private void initViews() {
         ImageButton btnBack = findViewById(R.id.btnBack);
         btnBack.setOnClickListener(v -> finish());
-
         edtName = findViewById(R.id.edtName);
         edtPhone = findViewById(R.id.edtPhone);
         edtAddress = findViewById(R.id.edtAddress);
@@ -81,10 +111,8 @@ public class AddEditAddressActivity extends AppCompatActivity {
         spinnerWard = findViewById(R.id.spinnerWard);
         checkboxDefault = findViewById(R.id.checkboxDefault);
         btnSave = findViewById(R.id.btnSave);
-
-        // Khởi tạo các list để tránh NullPointerException
-        districts = new java.util.ArrayList<>();
-        wards = new java.util.ArrayList<>();
+        districts = new ArrayList<>();
+        wards = new ArrayList<>();
     }
 
     private void setupSpinners() {
@@ -95,10 +123,6 @@ public class AddEditAddressActivity extends AppCompatActivity {
 
     private void loadProvinces() {
         provinces = VietnamAddress.loadFromJson(this);
-        android.util.Log.d("DEBUG", "Provinces size: " + provinces.size());
-        for (VietnamAddress p : provinces) {
-            android.util.Log.d("DEBUG", "Province: " + p.getName() + " - " + p.getCode());
-        }
         ArrayAdapter<VietnamAddress> provinceAdapter = new ArrayAdapter<VietnamAddress>(this, android.R.layout.simple_spinner_dropdown_item, provinces) {
             @Override
             public android.view.View getView(int position, android.view.View convertView, android.view.ViewGroup parent) {
@@ -109,7 +133,6 @@ public class AddEditAddressActivity extends AppCompatActivity {
                 }
                 return textView;
             }
-
             @Override
             public android.view.View getDropDownView(int position, android.view.View convertView, android.view.ViewGroup parent) {
                 android.widget.TextView textView = (android.widget.TextView) super.getDropDownView(position, convertView, parent);
@@ -124,21 +147,15 @@ public class AddEditAddressActivity extends AppCompatActivity {
     }
 
     private void setupListeners() {
-        // Spinner tỉnh
         spinnerProvince.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(android.widget.AdapterView<?> parent, android.view.View view, int position, long id) {
-                if (isLoadingData) return; // Bỏ qua nếu đang load dữ liệu
-
                 VietnamAddress selectedProvince = provinces.get(position);
                 selectedProvinceCode = selectedProvince.getCode();
                 loadDistricts(selectedProvinceCode);
             }
-
             @Override
             public void onNothingSelected(android.widget.AdapterView<?> parent) {
-                if (isLoadingData) return; // Bỏ qua nếu đang load dữ liệu
-
                 selectedProvinceCode = "";
                 districts.clear();
                 wards.clear();
@@ -146,51 +163,34 @@ public class AddEditAddressActivity extends AppCompatActivity {
                 updateWardSpinner();
             }
         });
-
-        // Spinner huyện
         spinnerDistrict.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(android.widget.AdapterView<?> parent, android.view.View view, int position, long id) {
-                if (isLoadingData) return; // Bỏ qua nếu đang load dữ liệu
-
                 if (position >= 0 && position < districts.size()) {
                     VietnamAddress.District selectedDistrict = districts.get(position);
                     selectedDistrictCode = selectedDistrict.getCode();
                     loadWards(selectedDistrictCode);
                 }
             }
-
             @Override
             public void onNothingSelected(android.widget.AdapterView<?> parent) {
-                if (isLoadingData) return; // Bỏ qua nếu đang load dữ liệu
-
                 selectedDistrictCode = "";
                 wards.clear();
                 updateWardSpinner();
             }
         });
-
         btnSave.setOnClickListener(v -> saveAddress());
     }
 
     private void loadDistricts(String provinceCode) {
         districts = VietnamAddress.getDistrictsByProvince(provinces, provinceCode);
-        android.util.Log.d("DEBUG", "Districts size: " + districts.size());
-        for (VietnamAddress.District d : districts) {
-            android.util.Log.d("DEBUG", "District: " + d.getName() + " - " + d.getCode());
-        }
         updateDistrictSpinner();
-        // Reset ward spinner
         wards = new ArrayList<>();
         updateWardSpinner();
     }
 
     private void loadWards(String districtCode) {
         wards = VietnamAddress.getWardsByDistrict(provinces, districtCode);
-        android.util.Log.d("DEBUG", "Wards size: " + wards.size());
-        for (VietnamAddress.Ward w : wards) {
-            android.util.Log.d("DEBUG", "Ward: " + w.getName() + " - " + w.getCode());
-        }
         updateWardSpinner();
     }
 
@@ -205,7 +205,6 @@ public class AddEditAddressActivity extends AppCompatActivity {
                 }
                 return textView;
             }
-
             @Override
             public android.view.View getDropDownView(int position, android.view.View convertView, android.view.ViewGroup parent) {
                 android.widget.TextView textView = (android.widget.TextView) super.getDropDownView(position, convertView, parent);
@@ -230,7 +229,6 @@ public class AddEditAddressActivity extends AppCompatActivity {
                 }
                 return textView;
             }
-
             @Override
             public android.view.View getDropDownView(int position, android.view.View convertView, android.view.ViewGroup parent) {
                 android.widget.TextView textView = (android.widget.TextView) super.getDropDownView(position, convertView, parent);
@@ -245,71 +243,26 @@ public class AddEditAddressActivity extends AppCompatActivity {
     }
 
     private void loadEditData() {
-        isLoadingData = true; // Bắt đầu load dữ liệu
-
+        if (editingAddress == null) return;
         edtName.setText(editingAddress.getName());
         edtPhone.setText(editingAddress.getPhone());
-
-        // Hiển thị địa chỉ chi tiết (số nhà, tên đường, ...) vào ô edtAddress
-        String fullAddress = editingAddress.getAddress();
-        String addressDetail = "";
-        if (fullAddress != null && !fullAddress.isEmpty()) {
-            String[] parts = fullAddress.split(",");
-            if (parts.length > 3) {
-                // Lấy phần đầu (trước 3 thành phần cuối là xã, huyện, tỉnh)
-                addressDetail = String.join(",", java.util.Arrays.copyOfRange(parts, 0, parts.length - 3)).trim();
-            }
-        }
-        edtAddress.setText(addressDetail);
-
+        edtAddress.setText(editingAddress.getAddress().split(",")[0]);
+        checkboxDefault.setChecked(editingAddress.isDefault());
         // Set label
         String[] labels = {"Nhà", "Công ty", "Khác"};
-        int labelIndex = 0;
         for (int i = 0; i < labels.length; i++) {
-            if (labels[i].equalsIgnoreCase(editingAddress.getLabel())) {
-                labelIndex = i;
+            if (labels[i].equals(editingAddress.getLabel())) {
+                spinnerLabel.setSelection(i);
                 break;
             }
         }
-        spinnerLabel.setSelection(labelIndex);
-        checkboxDefault.setChecked(editingAddress.isDefault());
-
-        // Set các spinner tỉnh/huyện/xã từ địa chỉ đang edit
+        // Set các spinner địa chỉ (province, district, ward)
         setAddressSpinnersFromFullAddress(editingAddress.getAddress());
-
-        isLoadingData = false; // Kết thúc load dữ liệu
-    }
-
-    private void loadDefaultAddressData() {
-        isLoadingData = true; // Bắt đầu load dữ liệu
-
-        // Reset tất cả các trường về rỗng/mặc định
-        edtName.setText("");
-        edtPhone.setText("");
-        edtAddress.setText("");
-        spinnerLabel.setSelection(0); // "Nhà"
-        spinnerProvince.setSelection(0);
-        districts.clear();
-        updateDistrictSpinner();
-        wards.clear();
-        updateWardSpinner();
-        checkboxDefault.setChecked(false);
-
-        isLoadingData = false; // Kết thúc load dữ liệu
     }
 
     private String normalizeAdminName(String name) {
         if (name == null) return "";
-        name = name.toLowerCase().trim();
-        // Loại bỏ các tiền tố hành chính phổ biến
-        String[] prefixes = {"tỉnh ", "thành phố ", "tp. ", "huyện ", "quận ", "thị xã ", "xã ", "phường ", "thị trấn ", "tt. ", "tx. "};
-        for (String prefix : prefixes) {
-            if (name.startsWith(prefix)) {
-                name = name.substring(prefix.length());
-                break;
-            }
-        }
-        return name.replaceAll("\\s+", " ").trim();
+        return name.replace("Tỉnh ", "").replace("Thành phố ", "").replace("Quận ", "").replace("Huyện ", "").replace("Thị xã ", "").replace("Phường ", "").replace("Xã ", "").replace("Thị trấn ", "");
     }
 
     private void setAddressSpinnersFromFullAddress(String fullAddress) {
@@ -387,91 +340,62 @@ public class AddEditAddressActivity extends AppCompatActivity {
         }
     }
 
+    private String buildFullAddress(String addressDetail) {
+        String province = spinnerProvince.getSelectedItem() != null ? ((VietnamAddress) spinnerProvince.getSelectedItem()).getName() : "";
+        String district = spinnerDistrict.getSelectedItem() != null ? ((VietnamAddress.District) spinnerDistrict.getSelectedItem()).getName() : "";
+        String ward = spinnerWard.getSelectedItem() != null ? ((VietnamAddress.Ward) spinnerWard.getSelectedItem()).getName() : "";
+        return addressDetail + ", " + ward + ", " + district + ", " + province;
+    }
+
     private void saveAddress() {
+        if (editingAddress == null) return;
         String name = edtName.getText().toString().trim();
         String phone = edtPhone.getText().toString().trim();
         String addressDetail = edtAddress.getText().toString().trim();
         String label = spinnerLabel.getSelectedItem().toString();
-        boolean isDefault;
-
-        if (name.isEmpty() || phone.isEmpty() || addressDetail.isEmpty()) {
-            Toast.makeText(this, "Vui lòng nhập đầy đủ thông tin", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        // Validate số điện thoại
-        if (!phone.matches("^0\\d{9}$")) {
-            edtPhone.setError("Số điện thoại không hợp lệ. Vui lòng nhập số bắt đầu bằng 0 và đủ 10 số.");
-            edtPhone.requestFocus();
-            return;
-        }
-
-        // Kiểm tra logic bắt buộc chọn làm mặc định nếu là địa chỉ đầu tiên
-        if (editingAddress == null) {
-            android.content.SharedPreferences prefs = getSharedPreferences("AddressPrefs", MODE_PRIVATE);
-            String json = prefs.getString("address_list_" + userId, "");
-            java.lang.reflect.Type type = new com.google.gson.reflect.TypeToken<java.util.List<com.example.shopbepoly.DTO.Address>>(){}.getType();
-            java.util.List<com.example.shopbepoly.DTO.Address> addressList = new java.util.ArrayList<>();
-            if (!json.isEmpty()) {
-                addressList = new com.google.gson.Gson().fromJson(json, type);
-            }
-            if (addressList.size() == 0 && !checkboxDefault.isChecked()) {
-                Toast.makeText(this, "Địa chỉ đầu tiên phải được chọn làm mặc định!", Toast.LENGTH_LONG).show();
-                return;
-            }
-        }
-
-        // Tạo địa chỉ đầy đủ từ các thành phần
+        boolean isDefault = checkboxDefault.isChecked();
         String fullAddress = buildFullAddress(addressDetail);
-
-        Address result;
-        if (editingAddress != null) {
-            // Khi sửa, lấy trạng thái checkbox
-            isDefault = checkboxDefault.isChecked();
-            result = new Address(editingAddress.getId(), name, phone, fullAddress, label, isDefault);
-        } else {
-            // Khi thêm mới, lấy trạng thái checkbox
-            isDefault = checkboxDefault.isChecked();
-            result = new Address(java.util.UUID.randomUUID().toString(), name, phone, fullAddress, label, isDefault);
+        if (name.isEmpty() || phone.isEmpty() || addressDetail.isEmpty() || spinnerProvince.getSelectedItem() == null || spinnerDistrict.getSelectedItem() == null || spinnerWard.getSelectedItem() == null) {
+            Toast.makeText(this, "Vui lòng nhập đầy đủ thông tin!", Toast.LENGTH_SHORT).show();
+            return;
         }
-
-        Intent intent = new Intent();
-        intent.putExtra("address_result", gson.toJson(result));
-        setResult(RESULT_OK, intent);
+        editingAddress.setName(name);
+        editingAddress.setPhone(phone);
+        editingAddress.setAddress(fullAddress);
+        editingAddress.setLabel(label);
+        editingAddress.setDefault(isDefault);
+        // Nếu là địa chỉ mặc định thì lưu vào SharedPreferences và cập nhật thông tin user
+        if (isDefault) {
+            SharedPreferences.Editor editor = getSharedPreferences("AddressPrefs", MODE_PRIVATE).edit();
+            editor.putString("default_address_" + userId, gson.toJson(editingAddress));
+            editor.apply();
+            // Cập nhật thông tin user (nếu cần)
+            if (currentUser != null) {
+                currentUser.setName(name);
+                currentUser.setPhone_number(phone);
+                // Lấy đầy đủ địa chỉ từ spinner
+                String province = spinnerProvince.getSelectedItem() != null ? ((VietnamAddress) spinnerProvince.getSelectedItem()).getName() : "";
+                String district = spinnerDistrict.getSelectedItem() != null ? ((VietnamAddress.District) spinnerDistrict.getSelectedItem()).getName() : "";
+                String ward = spinnerWard.getSelectedItem() != null ? ((VietnamAddress.Ward) spinnerWard.getSelectedItem()).getName() : "";
+                String fullUserAddress = addressDetail + ", " + ward + ", " + district + ", " + province;
+                currentUser.setAddress(fullUserAddress);
+                // Gọi API cập nhật user
+                ApiService apiService = ApiClient.getApiService();
+                apiService.updateUser(userId, currentUser).enqueue(new Callback<List<User>>() {
+                    @Override
+                    public void onResponse(Call<List<User>> call, Response<List<User>> response) {
+                        // Thành công, có thể thông báo hoặc reload UI nếu cần
+                    }
+                    @Override
+                    public void onFailure(Call<List<User>> call, Throwable t) {
+                        // Thông báo lỗi nếu cần
+                    }
+                });
+            }
+        }
+        Intent resultIntent = new Intent();
+        resultIntent.putExtra("address_result", gson.toJson(editingAddress));
+        setResult(RESULT_OK, resultIntent);
         finish();
     }
-
-    private String buildFullAddress(String addressDetail) {
-        StringBuilder fullAddress = new StringBuilder();
-
-        if (!addressDetail.isEmpty()) {
-            fullAddress.append(addressDetail).append(", ");
-        }
-
-        if (spinnerWard.getSelectedItem() != null) {
-            VietnamAddress.Ward selectedWard = (VietnamAddress.Ward) spinnerWard.getSelectedItem();
-            fullAddress.append(selectedWard.getName()).append(", ");
-        }
-
-        if (spinnerDistrict.getSelectedItem() != null) {
-            VietnamAddress.District selectedDistrict = (VietnamAddress.District) spinnerDistrict.getSelectedItem();
-            fullAddress.append(selectedDistrict.getName()).append(", ");
-        }
-
-        if (spinnerProvince.getSelectedItem() != null) {
-            VietnamAddress selectedProvince = (VietnamAddress) spinnerProvince.getSelectedItem();
-            fullAddress.append(selectedProvince.getName());
-        }
-
-        return fullAddress.toString();
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQ_MAP && resultCode == RESULT_OK && data != null) {
-            String address = data.getStringExtra("selected_address");
-            if (address != null) edtAddress.setText(address);
-        }
-    }
-}
+} 
