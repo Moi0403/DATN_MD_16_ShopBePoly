@@ -127,4 +127,7 @@ public interface ApiService {
 
     @POST("add_order")
     Call<Order> createOrder(@Body Order order);
+
+    @GET("list_order/{userId}")
+    Call<List<Order>> getOrderListByUser(@Path("userId") String userId);
 }

@@ -198,8 +198,17 @@ public class ThanhToan extends AppCompatActivity {
                 e.printStackTrace();
             }
         }
-
-        // Nếu không có địa chỉ mặc định, để trống toàn bộ các trường
+        // Nếu không có địa chỉ mặc định, thử lấy địa chỉ đầu tiên trong danh sách địa chỉ (nếu có)
+        String allAddressesJson = prefs.getString("address_list_" + userId, "[]");
+        List<Address> addressList = new Gson().fromJson(allAddressesJson, new com.google.gson.reflect.TypeToken<List<Address>>() {}.getType());
+        if (addressList != null && !addressList.isEmpty()) {
+            Address firstAddress = addressList.get(0);
+            txtCustomerName.setText(firstAddress.getName());
+            txtCustomerPhone.setText(firstAddress.getPhone());
+            txtCustomerAddress.setText(firstAddress.getAddress());
+            return;
+        }
+        // Nếu không có địa chỉ nào, để trống toàn bộ các trường
         txtCustomerName.setText("");
         txtCustomerPhone.setText("");
         txtCustomerAddress.setText("");
@@ -296,18 +305,22 @@ public class ThanhToan extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQ_ADDRESS && resultCode == RESULT_OK && data != null) {
-            String json = data.getStringExtra("address_result");
-            if (json != null && !json.isEmpty()) {
-                // Lưu vào SharedPreferences làm địa chỉ mặc định
-                SharedPreferences.Editor editor = getSharedPreferences("AddressPrefs", MODE_PRIVATE).edit();
-                editor.putString("default_address_" + userId, json);
-                editor.apply();
-
-                // Hiển thị địa chỉ mặc định mới nhất ra màn ThanhToan
-                displayUserInfo();
-                updateShippingFeeBasedOnAddress();
+        if (requestCode == REQ_ADDRESS && resultCode == RESULT_OK) {
+            if (data != null && data.hasExtra("address_result")) {
+                // Lấy địa chỉ vừa chọn và hiển thị lên giao diện
+                String addressJson = data.getStringExtra("address_result");
+                if (addressJson != null && !addressJson.isEmpty()) {
+                    Address address = new Gson().fromJson(addressJson, Address.class);
+                    txtCustomerName.setText(address.getName());
+                    txtCustomerPhone.setText(address.getPhone());
+                    txtCustomerAddress.setText(address.getAddress());
+                    updateShippingFeeBasedOnAddress();
+                    return;
+                }
             }
+            // Nếu không có address_result thì fallback về mặc định
+            displayUserInfo();
+            updateShippingFeeBasedOnAddress();
         }
     }
 
@@ -321,51 +334,68 @@ public class ThanhToan extends AppCompatActivity {
         txtTotalPayment.setText(formatPrice(totalProductPrice + shippingFee));
     }
 
-    private void createNewOrder(String name, String phone, String address, int paymentId, int bankId){
+    private void createNewOrder(String name, String phone, String address, int paymentId, int bankId) {
         try {
             Order newOrder = new Order();
 
-            //set thông tin cơ bản
+            newOrder.setId_user(userId);
+
+            // Set thông tin cơ bản
             newOrder.setDate(getCurrentDate());
             newOrder.setStatus("Đang xử lý");
             newOrder.setAddress(address);
 
-            //set phương thức thanh toán
+            // Set phương thức thanh toán
             String paymentMethod = getPaymentMethodText(paymentId, bankId);
             newOrder.setPay(paymentMethod);
 
-            //tính tổng tiền và lấy thông tin sản phẩm
+            // Xử lý sản phẩm
             String jsonCart = getIntent().getStringExtra("cart_list");
             int totalAmount = 0;
-            String productNames = "";
+            StringBuilder productNames = new StringBuilder();
             List<String> productImages = new ArrayList<>();
 
-            if (jsonCart != null && !jsonCart.isEmpty()){
-                //xử lsy cart
+            if (jsonCart != null && !jsonCart.isEmpty()) {
                 List<Cart> cartList = new Gson().fromJson(jsonCart, new com.google.gson.reflect.TypeToken<List<Cart>>() {}.getType());
-                for (Cart cart : cartList){
-                    if (!productNames.isEmpty()){
-                        productNames += ", ";
+                for (Cart cart : cartList) {
+                    int itemPrice = cart.getIdProduct().getPrice() * cart.getQuantity();
+                    totalAmount += itemPrice;
+
+//                    if (productNames.length() > 0) productNames.append(", ");
+//                    productNames.append(cart.getIdProduct().getNameproduct()).append(" (x").append(cart.getQuantity()).append(")");
+                    if (productNames.length() > 50) {
+                        productNames = new StringBuilder(productNames.substring(0, 50) + "...");
                     }
-                    productNames += cart.getIdProduct().getNameproduct() + " (x" + cart.getQuantity() + ")";
-                    productImages.add(cart.getIdProduct().getAvt_imgproduct());
+
+                    List<String> images = cart.getIdProduct().getList_imgproduct();
+                    if (images != null && !images.isEmpty()) {
+                        productImages.add(images.get(0));
+                    }
                 }
             } else if (selectedProduct != null) {
-                //xử lý single product
-                totalAmount = productPrice * quantity;
-                productNames = selectedProduct.getNameproduct() + " (x" + quantity + ")";
-                productImages.add(selectedProduct.getAvt_imgproduct());
+                int itemPrice = productPrice * quantity;
+                totalAmount += itemPrice;
+
+                productNames.append(selectedProduct.getNameproduct()).append(" (x").append(quantity).append(")");
+
+                List<String> images = selectedProduct.getList_imgproduct();
+                if (images != null && !images.isEmpty()) {
+                    productImages.add(images.get(0));
+                }
             }
 
-            //thêm phí vận chuyển
+            // Cộng thêm phí vận chuyển
             totalAmount += shippingFee;
 
-            //set thông tin vào order
-            newOrder.setBill(String.valueOf(totalAmount));
-            newOrder.setNameproduct(productNames);
-            newOrder.setImg(productImages);
+            // Set vào đối tượng Order
+            newOrder.setTotal(totalAmount); // vì total là double
+            if (!productImages.isEmpty()) {
+                newOrder.setImg_oder(productImages.get(0)); // chỉ lấy 1 ảnh đại diện
+            }
+            newOrder.setNameproduct(productNames.toString());
+            //newOrder.setImg(productImages);
 
-            //
+            // Gửi lên API
             createOrderViaAPI(newOrder);
 
         } catch (Exception e) {

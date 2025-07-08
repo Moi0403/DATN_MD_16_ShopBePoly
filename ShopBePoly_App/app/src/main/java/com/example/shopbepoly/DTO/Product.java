@@ -97,6 +97,10 @@ public class Product implements Serializable {
         return list_imgproduct;
     }
 
+    public List<String> getImgproduct() {
+        return list_imgproduct;
+    }
+
     public void setList_imgproduct(List<String> list_imgproduct) {
         this.list_imgproduct = list_imgproduct;
     }

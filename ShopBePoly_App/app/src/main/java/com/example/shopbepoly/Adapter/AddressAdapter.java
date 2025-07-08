@@ -18,10 +18,12 @@ public class AddressAdapter extends RecyclerView.Adapter<AddressAdapter.AddressV
         void onEdit(Address address);
         void onDelete(Address address);
         void onSetDefault(Address address);
+        void onSelect(Address address);
     }
     private List<Address> addressList;
     private AddressListener listener;
     private Context context;
+    private boolean isDeleting = false;
 
     public AddressAdapter(Context context, List<Address> addressList, AddressListener listener) {
         this.context = context;
@@ -44,12 +46,13 @@ public class AddressAdapter extends RecyclerView.Adapter<AddressAdapter.AddressV
         holder.tvAddress.setText(address.getAddress());
         holder.tvLabel.setText(address.getLabel());
         holder.tvDefault.setVisibility(address.isDefault() ? View.VISIBLE : View.GONE);
+        holder.checkboxDefault.setOnCheckedChangeListener(null);
         holder.checkboxDefault.setChecked(address.isDefault());
         holder.checkboxDefault.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isDeleting) return;
             if (isChecked && !address.isDefault()) {
                 listener.onSetDefault(address);
             } else if (!isChecked && address.isDefault()) {
-                // Kiểm tra xem có địa chỉ nào khác là mặc định không
                 boolean hasOtherDefault = false;
                 for (Address a : addressList) {
                     if (!a.getId().equals(address.getId()) && a.isDefault()) {
@@ -58,14 +61,20 @@ public class AddressAdapter extends RecyclerView.Adapter<AddressAdapter.AddressV
                     }
                 }
                 if (!hasOtherDefault) {
-                    // Không cho phép bỏ tick nếu không có địa chỉ nào khác là mặc định
                     buttonView.setChecked(true);
                     android.widget.Toast.makeText(context, "Bạn phải chọn một địa chỉ khác làm mặc định trước!", android.widget.Toast.LENGTH_SHORT).show();
                 }
             }
         });
         holder.btnEdit.setOnClickListener(v -> listener.onEdit(address));
-        holder.btnDelete.setOnClickListener(v -> listener.onDelete(address));
+        holder.btnDelete.setOnClickListener(v -> {
+            isDeleting = true;
+            listener.onDelete(address);
+            isDeleting = false;
+        });
+        holder.itemView.setOnClickListener(v -> {
+            if (!isDeleting) listener.onSelect(address);
+        });
     }
 
     @Override

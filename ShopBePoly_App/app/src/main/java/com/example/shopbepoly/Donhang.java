@@ -32,6 +32,7 @@ public class Donhang extends AppCompatActivity {
     private List<Order> ordList = new ArrayList<>();
     private ApiService apiService;
     private MaterialButton btnBack;
+    private String userId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,13 +41,21 @@ public class Donhang extends AppCompatActivity {
         setContentView(R.layout.activity_donhang);
 
         try {
+            SharedPreferences loginPrefs = getSharedPreferences("LoginPrefs", MODE_PRIVATE);
+            userId = loginPrefs.getString("userId", "");
+            if (userId.isEmpty()) {
+                Toast.makeText(this, "Không tìm thấy thông tin người dùng", Toast.LENGTH_SHORT).show();
+                finish();
+                return;
+            }
+
             // Initialize views
             recyclerView = findViewById(R.id.listOrd);
             btnBack = findViewById(R.id.btnBack);
 
             // Setup RecyclerView
             recyclerView.setLayoutManager(new LinearLayoutManager(this));
-            
+
             // Initialize API service
             apiService = ApiClient.getApiService();
             if (apiService == null) {
@@ -54,7 +63,7 @@ public class Donhang extends AppCompatActivity {
                 Toast.makeText(this, "Lỗi khởi tạo kết nối", Toast.LENGTH_SHORT).show();
                 return;
             }
-            
+
             // Initialize adapter
             adapter = new OrderAdapter(this, ordList, new OrderAdapter.OrderListener() {
                 @Override
@@ -62,7 +71,7 @@ public class Donhang extends AppCompatActivity {
                     huyDH(id);
                 }
             });
-            
+
             recyclerView.setAdapter(adapter);
 
             // Setup back button
@@ -79,7 +88,8 @@ public class Donhang extends AppCompatActivity {
     private void loadord() {
         Log.d(TAG, "Starting to load orders...");
         try {
-            Call<List<Order>> call = apiService.getOrderList();
+//            Call<List<Order>> call = apiService.getOrderList();
+            Call<List<Order>> call = apiService.getOrderListByUser(userId);
             if (call == null) {
                 Log.e(TAG, "API call is null");
                 loadOrdersFromLocal();
@@ -209,7 +219,7 @@ public class Donhang extends AppCompatActivity {
 //            Toast.makeText(this, "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
 //        }
     }
-    
+
     private void performOrderCancellation(String id){
         try {
             //thử xóa qua API trước
@@ -246,7 +256,7 @@ public class Donhang extends AppCompatActivity {
             String ordersJson = prefs.getString("orders_list", "[]");
 
             List<Order> orderList = new Gson().fromJson(ordersJson, new com.google.gson.reflect.TypeToken<List<Order>>() {}.getType());
-            
+
             if (orderList != null){
                 boolean found = false;
                 for (Order order : orderList) {
@@ -256,7 +266,7 @@ public class Donhang extends AppCompatActivity {
                         break;
                     }
                 }
-                
+
                 if (found) {
                     //lưu lại danh sách đã cập nhật
                     SharedPreferences.Editor editor = prefs.edit();
@@ -273,5 +283,20 @@ public class Donhang extends AppCompatActivity {
             Log.e(TAG, "Error updating order status in local", e);
             Toast.makeText(this, "Lỗi cập nhật: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        // Xóa list hiện tại
+        ordList.clear();
+        adapter.notifyDataSetChanged();
+
+        // Tải đơn từ local trước (hiển thị nhanh)
+        loadOrdersFromLocal();
+
+        // Sau đó gọi API để lấy đơn từ server (cập nhật mới hơn)
+        loadord();
     }
 }

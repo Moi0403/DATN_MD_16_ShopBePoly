@@ -1,27 +1,35 @@
 package com.example.shopbepoly.DTO;
 
-import java.util.List;
-
 public class Order {
     private String _id;
-    private String bill;
+    private String id_user;
+    private String id_product;
+    private String img_oder;
+    private int quantity;
+    private String color;
+    private double price;
+    private String total;
     private String date;
     private String status;
     private String address;
-    private List<String> img;
     private String nameproduct;
     private String pay;
 
-    public Order() {
-    }
+    public Order() {}
 
-    public Order(String _id, String bill, String date, String status, String address, List<String> img, String nameproduct, String pay) {
-        this._id = _id;
-        this.bill = bill;
+    public Order(String id_user, String id_product, String img_oder, int quantity, String color,
+                 double price, String total, String date, String status,
+                 String address, String nameproduct, String pay) {
+        this.id_user = id_user;
+        this.id_product = id_product;
+        this.img_oder = img_oder;
+        this.quantity = quantity;
+        this.color = color;
+        this.price = price;
+        this.total = total;
         this.date = date;
         this.status = status;
         this.address = address;
-        this.img = img;
         this.nameproduct = nameproduct;
         this.pay = pay;
     }
@@ -34,21 +42,64 @@ public class Order {
         this._id = _id;
     }
 
-    public String getBill() {
-        return bill;
+    public String getId_user() {
+        return id_user;
     }
 
-    public void setBill(String bill) {
-        this.bill = bill;
+    public void setId_user(String id_user) {
+        this.id_user = id_user;
     }
 
-    public double getBillAsDouble() {
+    public String getId_product() {
+        return id_product;
+    }
+
+    public void setId_product(String id_product) {
+        this.id_product = id_product;
+    }
+
+    public String getImg_oder() {
+        return img_oder;
+    }
+
+    public void setImg_oder(String img_oder) {
+        this.img_oder = img_oder;
+    }
+
+    public int getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(int quantity) {
+        this.quantity = quantity;
+    }
+
+    public String getColor() {
+        return color;
+    }
+
+    public void setColor(String color) {
+        this.color = color;
+    }
+
+    public double getPrice() {
+        return price;
+    }
+
+    public void setPrice(double price) {
+        this.price = price;
+    }
+
+    public double getTotal() {
         try {
-            String cleanBill = bill.replace("đ", "").replace(".", "");
-            return Double.parseDouble(cleanBill);
-        } catch (NumberFormatException e) {
+            return Double.parseDouble(total);
+        } catch (Exception e) {
             return 0.0;
         }
+    }
+
+    public void setTotal(String total) {
+        this.total = total;
     }
 
     public String getDate() {
@@ -75,21 +126,6 @@ public class Order {
         this.address = address;
     }
 
-    public List<String> getImg() {
-        return img;
-    }
-
-    public void setImg(List<String> img) {
-        this.img = img;
-    }
-
-    public String getFirstImage() {
-        if (img != null && !img.isEmpty()) {
-            return img.get(0);
-        }
-        return "";
-    }
-
     public String getNameproduct() {
         return nameproduct;
     }
@@ -106,13 +142,9 @@ public class Order {
         this.pay = pay;
     }
 
-    public boolean isCancellable(){
+    public boolean isCancellable() {
         if (status == null) return true;
-        String statusLower = status.toLowerCase();
-        return !statusLower.contains("đã hủy") &&
-                !statusLower.contains("đã giao") &&
-                !statusLower.contains("hoàn thành");
+        String s = status.toLowerCase();
+        return !s.contains("đã hủy") && !s.contains("đã giao") && !s.contains("hoàn thành");
     }
 }
-
-

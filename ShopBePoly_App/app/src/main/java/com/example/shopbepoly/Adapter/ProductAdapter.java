@@ -67,13 +67,26 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
 
         holder.tvProductSold.setText("Đã bán: " + product.getSold() + " sp");
 
-        Glide.with(context)
-                .load(ApiClient.IMAGE_URL + product.getAvt_imgproduct())
-                .placeholder(R.drawable.ic_launcher_background) // thêm ảnh chờ
-                .error(R.drawable.ic_launcher_foreground) // thêm ảnh lỗi
-                .override(300, 300) // giảm độ phân giải để nhẹ
-                .centerCrop()
-                .into(holder.ivProductImage);
+//        Glide.with(context)
+//                .load(ApiClient.IMAGE_URL + product.getAvt_imgproduct())
+//                .placeholder(R.drawable.ic_launcher_background) // thêm ảnh chờ
+//                .error(R.drawable.ic_launcher_foreground) // thêm ảnh lỗi
+//                .override(300, 300) // giảm độ phân giải để nhẹ
+//                .centerCrop()
+//                .into(holder.ivProductImage);
+        List<String> images = product.getList_imgproduct();
+        if (images != null && !images.isEmpty()) {
+            Glide.with(context)
+                    .load(ApiClient.IMAGE_URL + images.get(0)) // ảnh đầu tiên trong list
+                    .placeholder(R.drawable.ic_launcher_background)
+                    .error(R.drawable.ic_launcher_foreground)
+                    .override(300, 300)
+                    .centerCrop()
+                    .into(holder.ivProductImage);
+        } else {
+            // fallback nếu không có ảnh
+            holder.ivProductImage.setImageResource(R.drawable.ic_launcher_foreground);
+        }
 
         updateFavoriteIcon(holder.imgFavorite,product);
         holder.ivProductImage.setOnClickListener(new View.OnClickListener() {

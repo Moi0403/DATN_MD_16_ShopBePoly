@@ -105,6 +105,12 @@
         <activity
             android:name=".AddEditAddressActivity"
             android:exported="false" />
+        <activity
+            android:name=".AddAddressActivity"
+            android:exported="false" />
+        <activity
+            android:name=".EditAddressActivity"
+            android:exported="false" />
     </application>
 
 </manifest>
