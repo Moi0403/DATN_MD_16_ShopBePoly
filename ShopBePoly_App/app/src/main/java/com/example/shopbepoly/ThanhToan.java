@@ -388,7 +388,8 @@ public class ThanhToan extends AppCompatActivity {
             totalAmount += shippingFee;
 
             // Set vào đối tượng Order
-            newOrder.setTotal(totalAmount); // vì total là double
+            newOrder.setTotal(String.valueOf(totalAmount));
+            // vì total là double
             if (!productImages.isEmpty()) {
                 newOrder.setImg_oder(productImages.get(0)); // chỉ lấy 1 ảnh đại diện
             }

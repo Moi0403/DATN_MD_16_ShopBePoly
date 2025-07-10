@@ -3,25 +3,24 @@ package com.example.shopbepoly.Adapter;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
 import com.example.shopbepoly.Chitietdonhang;
 import com.google.android.material.button.MaterialButton;
-import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.shopbepoly.DTO.Order;
 import com.example.shopbepoly.R;
 import com.google.gson.Gson;
-import com.squareup.picasso.Picasso;
 
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.List;
 
 public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHolder> {
@@ -29,15 +28,32 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
     private Context context;
     private List<Order> ordList;
     private OrderListener listener;
+    private String currentUserId;
 
     public interface OrderListener {
         void onDelete(String id);
     }
 
-    public OrderAdapter(Context context, List<Order> ordList, OrderListener listener) {
+    public OrderAdapter(Context context, OrderListener listener) {
         this.context = context;
-        this.ordList = ordList;
         this.listener = listener;
+        this.ordList = new ArrayList<>();
+
+        SharedPreferences prefs = context.getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
+        currentUserId = prefs.getString("userId", null);
+    }
+
+    // Gọi hàm này để set dữ liệu cho adapter
+    public void setData(List<Order> originalList) {
+        ordList.clear();
+        if (originalList != null && currentUserId != null) {
+            for (Order o : originalList) {
+                if (currentUserId.equals(o.getId_user())) {
+                    ordList.add(o);
+                }
+            }
+        }
+        notifyDataSetChanged();
     }
 
     @NonNull
@@ -51,10 +67,8 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
     public void onBindViewHolder(@NonNull OrderViewHolder holder, int position) {
         Order ord = ordList.get(position);
 
-        // Hiển thị thông tin đơn hàng
         holder.tvmaDH.setText("Mã đơn hàng: " + ord.get_id());
 
-        // Format giá tiền
         try {
             double billAmount = ord.getTotal();
             DecimalFormat formatter = new DecimalFormat("#,###.##");
@@ -63,7 +77,7 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
             holder.tvthanhTien.setText("Tổng tiền: " + ord.getTotal() + " đ");
         }
 
-        // Tính tổng số lượng sản phẩm từ chuỗi "Áo thun (x1), Quần (x2)"
+        // Tính tổng số lượng sản phẩm từ chuỗi nameProduct
         int tongSoLuong = 0;
         String nameProductStr = ord.getNameproduct();
         if (nameProductStr != null) {
@@ -79,12 +93,12 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
                 }
             }
         }
-        holder.tvSoLuongSP.setText("Số lượng sản phẩm: " + tongSoLuong);
 
+        holder.tvSoLuongSP.setText("Số lượng sản phẩm: " + tongSoLuong);
         holder.tvngayMua.setText("Ngày mua: " + ord.getDate());
         holder.tvTT.setText("Trạng thái: " + ord.getStatus());
 
-        // Xử lý nút Hủy
+        // Hiển thị hoặc ẩn nút hủy
         String status = ord.getStatus();
         if ("Đã hủy".equalsIgnoreCase(status) || "Đã giao".equalsIgnoreCase(status) || "Hoàn thành".equalsIgnoreCase(status)) {
             holder.btnHuy.setVisibility(View.GONE);
@@ -97,25 +111,7 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
             });
         }
 
-//        holder.btnHuy.setOnClickListener(v -> {
-//            new androidx.appcompat.app.AlertDialog.Builder(context)
-//                .setTitle("Xác nhận hủy đơn hàng")
-//                .setMessage("Bạn có chắc chắn muốn hủy đơn hàng này không?")
-//                .setPositiveButton("Có", (dialog, which) -> {
-//                    listener.onDelete(ord.get_id());
-//                })
-//                .setNegativeButton("Không", null)
-//                .show();
-//        });
-//
-//        // Ẩn nút hủy nếu trạng thái đã là 'Đã hủy'
-//        if ("Đã hủy".equalsIgnoreCase(ord.getStatus())) {
-//            holder.btnHuy.setVisibility(View.GONE);
-//            holder.tvTT.setText("Đã hủy");
-//        } else {
-//            holder.btnHuy.setVisibility(View.VISIBLE);
-//        }
-
+        // Mở chi tiết đơn hàng khi click
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(context, Chitietdonhang.class);
             intent.putExtra("order_id", ord.get_id());
@@ -125,7 +121,6 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
             intent.putExtra("order_date", ord.getDate());
             intent.putExtra("order_pay", ord.getPay());
             intent.putExtra("order_nameproduct", ord.getNameproduct());
-//            intent.putExtra("order_image", ord.getFirstImage());
             intent.putExtra("order_image", new Gson().toJson(ord.getImg_oder()));
             context.startActivity(intent);
         });
@@ -151,22 +146,4 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
             btnHuy = itemView.findViewById(R.id.btnHuy);
         }
     }
-
-//    private void detailDonHang(Order ord) {
-//
-//        tv.setText(xe.getTen_xe_ph41100());
-//        DecimalFormat formatter = new DecimalFormat("#,###");
-//        tvGiaXe.setText("Giá: " + formatter.format(xe.getGia_ban_ph41100()) + " đ");
-//        tvMauXe.setText("Màu: " + xe.getMau_sac_ph41100());
-//        tvMoTaXe.setText("Mô tả: " + xe.getMo_ta_ph41100());
-//
-//        builder.setView(dialogView);
-//
-//        builder.setPositiveButton("Đóng", (dialog, which) -> dialog.dismiss());
-//
-//        builder.show();
-//    }
 }
-
-
-
