@@ -17,9 +17,11 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.shopbepoly.API.ApiClient;
 import com.example.shopbepoly.API.ApiService;
 import com.example.shopbepoly.Adapter.MessageAdapter;
+import com.example.shopbepoly.DTO.AdminResponse;
 import com.example.shopbepoly.DTO.Message;
 import com.example.shopbepoly.DTO.User;
 import com.example.shopbepoly.Screen.LoginScreen;
+import com.google.gson.JsonObject;
 
 import org.json.JSONObject;
 
@@ -70,45 +72,39 @@ public class Chat extends AppCompatActivity {
 
         // Gọi hàm lấy adminId và khởi tạo adapter
         loadAdminId();
-
+        btnSend.setEnabled(false);
         btnSend.setOnClickListener(v -> sendMessage());
     }
 
     private void loadAdminId() {
-        apiService.getUsers().enqueue(new Callback<List<User>>() {
+        apiService.getAdminId().enqueue(new Callback<AdminResponse>() {
             @Override
-            public void onResponse(Call<List<User>> call, Response<List<User>> response) {
+            public void onResponse(Call<AdminResponse> call, Response<AdminResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    for (User user : response.body()) {
-                        if (user.getRole() == 1) {
-                            adminId = user.getId();
-                            Log.d("Chat", "adminId: " + adminId);
+                    adminId = response.body().get_id();  // Lấy id admin
+                    btnSend.setEnabled(true);
 
-                            adapter = new MessageAdapter(Chat.this, messageList, currentUserId);
-                            recyclerMessages.setAdapter(adapter);
+                    Log.d("Chat", "adminId: " + adminId);
 
+                    adapter = new MessageAdapter(Chat.this, messageList, currentUserId);
+                    recyclerMessages.setAdapter(adapter);
 
-                            SharedPreferences prefs = getSharedPreferences("LoginPrefs", MODE_PRIVATE);
-                            boolean hasChatted = prefs.getBoolean("hasChatted", false);
-                            if (hasChatted) {
-                                loadMessages();
-                            }
-
-                            return;
-                        }
+                    SharedPreferences prefs = getSharedPreferences("LoginPrefs", MODE_PRIVATE);
+                    if (prefs.getBoolean("hasChatted", false)) {
+                        loadMessages();
                     }
-                    Toast.makeText(Chat.this, "Không tìm thấy tài khoản admin", Toast.LENGTH_SHORT).show();
                 } else {
-                    Toast.makeText(Chat.this, "Lỗi khi tải danh sách người dùng", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(Chat.this, "Không tìm thấy tài khoản admin", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
-            public void onFailure(Call<List<User>> call, Throwable t) {
+            public void onFailure(Call<AdminResponse> call, Throwable t) {
                 Toast.makeText(Chat.this, "Lỗi mạng: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
+
 
     private void loadMessages() {
         apiService.getMessages(currentUserId, adminId).enqueue(new Callback<List<Message>>() {
@@ -135,8 +131,12 @@ public class Chat extends AppCompatActivity {
         String content = edtMessage.getText().toString().trim();
         if (content.isEmpty()) return;
 
-        btnSend.setEnabled(false);
+        if (adminId == null || adminId.isEmpty()) {
+            Toast.makeText(this, "Đang tải dữ liệu, vui lòng thử lại sau...", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
+        btnSend.setEnabled(false);
 
         SharedPreferences.Editor editor = getSharedPreferences("LoginPrefs", MODE_PRIVATE).edit();
         editor.putBoolean("hasChatted", true);
@@ -167,8 +167,7 @@ public class Chat extends AppCompatActivity {
                         adapter.notifyItemInserted(messageList.size() - 1);
                         recyclerMessages.scrollToPosition(messageList.size() - 1);
 
-
-                        loadMessages();
+                        new android.os.Handler().postDelayed(() -> loadMessages(), 500);
 
                     } catch (Exception e) {
                         Toast.makeText(Chat.this, "Lỗi phân tích dữ liệu", Toast.LENGTH_SHORT).show();
