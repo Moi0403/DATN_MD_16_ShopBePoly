@@ -685,20 +685,80 @@ router.get('/list_order', async (req, res) => {
 });
 
 // thêm order 'http://localhost:3000/api/order'
+// router.post('/add_order', async (req, res) => {
+
+//     let data = req.body;
+//     let kq = await orderModel.create(data);
+
+//     if (kq) {
+//         console.log('Thêm don hang thành công');
+//         let ord = await orderModel.find();
+//         res.send(ord);
+//     } else {
+//         console.log('Thêm don hang không thành công');
+//     }
+
+// })
 router.post('/add_order', async (req, res) => {
+    try {
+        const {
+            id_user,
+            id_product,
+            img_oder,
+            quantity,
+            color,
+            date,
+            price,
+            status,
+            address,
+            nameproduct,
+            pay
+        } = req.body;
 
-    let data = req.body;
-    let kq = await orderModel.create(data);
+        const total = quantity * price;
 
-    if (kq) {
-        console.log('Thêm don hang thành công');
-        let ord = await orderModel.find();
-        res.send(ord);
-    } else {
-        console.log('Thêm don hang không thành công');
+        const newOrderItem = new orderModel({
+            id_user,
+            id_product,
+            img_oder,
+            quantity,
+            color,
+            price,
+            total,
+            date,
+            status,
+            address,
+            nameproduct,
+            pay
+        });
+
+        const savedOrder = await newOrderItem.save();
+
+        res.status(201).json({
+            message: 'Đặt hàng thành công',
+            data: savedOrder
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            message: 'Lỗi đặt hàng',
+            error: error.message
+        });
     }
+});
 
-})
+//lay danh sach don hang theo user
+router.get('/list_order/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const objectUserId = new mongoose.Types.ObjectId(userId);
+    const orders = await orderModel.find({ id_user: objectUserId });
+    res.json(orders);
+  } catch (error) {
+    console.error('Lỗi lấy đơn hàng theo user:', error);
+    res.status(500).json({ message: 'Lỗi server' });
+  }
+});
 
 // huy don hang 'http://localhost:3000/api/order/ id'
 router.delete('/del_order/:id', async (req, res) => {

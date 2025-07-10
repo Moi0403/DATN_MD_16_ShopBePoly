@@ -334,51 +334,68 @@ public class ThanhToan extends AppCompatActivity {
         txtTotalPayment.setText(formatPrice(totalProductPrice + shippingFee));
     }
 
-    private void createNewOrder(String name, String phone, String address, int paymentId, int bankId){
+    private void createNewOrder(String name, String phone, String address, int paymentId, int bankId) {
         try {
             Order newOrder = new Order();
 
-            //set thông tin cơ bản
+            newOrder.setId_user(userId);
+
+            // Set thông tin cơ bản
             newOrder.setDate(getCurrentDate());
             newOrder.setStatus("Đang xử lý");
             newOrder.setAddress(address);
 
-            //set phương thức thanh toán
+            // Set phương thức thanh toán
             String paymentMethod = getPaymentMethodText(paymentId, bankId);
             newOrder.setPay(paymentMethod);
 
-            //tính tổng tiền và lấy thông tin sản phẩm
+            // Xử lý sản phẩm
             String jsonCart = getIntent().getStringExtra("cart_list");
             int totalAmount = 0;
-            String productNames = "";
+            StringBuilder productNames = new StringBuilder();
             List<String> productImages = new ArrayList<>();
 
-            if (jsonCart != null && !jsonCart.isEmpty()){
-                //xử lsy cart
+            if (jsonCart != null && !jsonCart.isEmpty()) {
                 List<Cart> cartList = new Gson().fromJson(jsonCart, new com.google.gson.reflect.TypeToken<List<Cart>>() {}.getType());
-                for (Cart cart : cartList){
-                    if (!productNames.isEmpty()){
-                        productNames += ", ";
+                for (Cart cart : cartList) {
+                    int itemPrice = cart.getIdProduct().getPrice() * cart.getQuantity();
+                    totalAmount += itemPrice;
+
+//                    if (productNames.length() > 0) productNames.append(", ");
+//                    productNames.append(cart.getIdProduct().getNameproduct()).append(" (x").append(cart.getQuantity()).append(")");
+                    if (productNames.length() > 50) {
+                        productNames = new StringBuilder(productNames.substring(0, 50) + "...");
                     }
-                    productNames += cart.getIdProduct().getNameproduct() + " (x" + cart.getQuantity() + ")";
-                    productImages.add(cart.getIdProduct().getAvt_imgproduct());
+
+                    List<String> images = cart.getIdProduct().getList_imgproduct();
+                    if (images != null && !images.isEmpty()) {
+                        productImages.add(images.get(0));
+                    }
                 }
             } else if (selectedProduct != null) {
-                //xử lý single product
-                totalAmount = productPrice * quantity;
-                productNames = selectedProduct.getNameproduct() + " (x" + quantity + ")";
-                productImages.add(selectedProduct.getAvt_imgproduct());
+                int itemPrice = productPrice * quantity;
+                totalAmount += itemPrice;
+
+                productNames.append(selectedProduct.getNameproduct()).append(" (x").append(quantity).append(")");
+
+                List<String> images = selectedProduct.getList_imgproduct();
+                if (images != null && !images.isEmpty()) {
+                    productImages.add(images.get(0));
+                }
             }
 
-            //thêm phí vận chuyển
+            // Cộng thêm phí vận chuyển
             totalAmount += shippingFee;
 
-            //set thông tin vào order
-            newOrder.setBill(String.valueOf(totalAmount));
-            newOrder.setNameproduct(productNames);
-            newOrder.setImg(productImages);
+            // Set vào đối tượng Order
+            newOrder.setTotal(totalAmount); // vì total là double
+            if (!productImages.isEmpty()) {
+                newOrder.setImg_oder(productImages.get(0)); // chỉ lấy 1 ảnh đại diện
+            }
+            newOrder.setNameproduct(productNames.toString());
+            //newOrder.setImg(productImages);
 
-            //
+            // Gửi lên API
             createOrderViaAPI(newOrder);
 
         } catch (Exception e) {

@@ -30,10 +30,20 @@
             android:layout_marginStart="10dp" />
 
         <TextView
+            android:id="@+id/tvSoLuongSP"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/tvthanhTien"
+            android:layout_marginStart="10dp"
+            android:layout_marginTop="4dp"
+            android:textSize="14sp"
+            android:textColor="#444444" />
+
+        <TextView
             android:id="@+id/tvngayMua"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@id/tvthanhTien"
+            android:layout_below="@+id/tvSoLuongSP"
             android:layout_marginStart="10dp" />
 
         <TextView

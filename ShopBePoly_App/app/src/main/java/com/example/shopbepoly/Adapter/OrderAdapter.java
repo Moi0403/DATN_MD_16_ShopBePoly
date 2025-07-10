@@ -18,6 +18,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.shopbepoly.DTO.Order;
 import com.example.shopbepoly.R;
+import com.google.gson.Gson;
 import com.squareup.picasso.Picasso;
 
 import java.text.DecimalFormat;
@@ -50,27 +51,47 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
     public void onBindViewHolder(@NonNull OrderViewHolder holder, int position) {
         Order ord = ordList.get(position);
 
-        //Hiển thị thông tin đơn hàng
-        holder.tvmaDH.setText("Mã đơn hàng:" + ord.get_id());
-        //format giá tiền
-        DecimalFormat formatter = new DecimalFormat("#,###");
+        // Hiển thị thông tin đơn hàng
+        holder.tvmaDH.setText("Mã đơn hàng: " + ord.get_id());
+
+        // Format giá tiền
         try {
-            double billAmount = ord.getBillAsDouble();
-            holder.tvthanhTien.setText("Giá:" + formatter.format(billAmount) + " đ");
+            double billAmount = ord.getTotal();
+            DecimalFormat formatter = new DecimalFormat("#,###.##");
+            holder.tvthanhTien.setText("Tổng tiền: " + formatter.format(billAmount) + " đ");
         } catch (Exception e) {
-            holder.tvthanhTien.setText("Giá:" + ord.getBill() + " đ");
+            holder.tvthanhTien.setText("Tổng tiền: " + ord.getTotal() + " đ");
         }
-        holder.tvngayMua.setText("Ngày mua:" + ord.getDate());
+
+        // Tính tổng số lượng sản phẩm từ chuỗi "Áo thun (x1), Quần (x2)"
+        int tongSoLuong = 0;
+        String nameProductStr = ord.getNameproduct();
+        if (nameProductStr != null) {
+            String[] parts = nameProductStr.split(",");
+            for (String part : parts) {
+                int start = part.indexOf("(x");
+                int end = part.indexOf(")");
+                if (start != -1 && end != -1 && end > start) {
+                    try {
+                        int sl = Integer.parseInt(part.substring(start + 2, end).trim());
+                        tongSoLuong += sl;
+                    } catch (Exception ignored) {}
+                }
+            }
+        }
+        holder.tvSoLuongSP.setText("Số lượng sản phẩm: " + tongSoLuong);
+
+        holder.tvngayMua.setText("Ngày mua: " + ord.getDate());
         holder.tvTT.setText("Trạng thái: " + ord.getStatus());
 
-        //xử lý nút hủy
+        // Xử lý nút Hủy
         String status = ord.getStatus();
-        if ("Đã hủy".equalsIgnoreCase(status) || "Đã giao".equalsIgnoreCase(status) || "Hoàn thành".equalsIgnoreCase(status)){
+        if ("Đã hủy".equalsIgnoreCase(status) || "Đã giao".equalsIgnoreCase(status) || "Hoàn thành".equalsIgnoreCase(status)) {
             holder.btnHuy.setVisibility(View.GONE);
         } else {
             holder.btnHuy.setVisibility(View.VISIBLE);
             holder.btnHuy.setOnClickListener(v -> {
-                if (listener != null){
+                if (listener != null) {
                     listener.onDelete(ord.get_id());
                 }
             });
@@ -100,11 +121,12 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
             intent.putExtra("order_id", ord.get_id());
             intent.putExtra("order_status", ord.getStatus());
             intent.putExtra("order_address", ord.getAddress());
-            intent.putExtra("order_bill", ord.getBill());
+            intent.putExtra("order_bill", ord.getTotal());
             intent.putExtra("order_date", ord.getDate());
             intent.putExtra("order_pay", ord.getPay());
             intent.putExtra("order_nameproduct", ord.getNameproduct());
-            intent.putExtra("order_image", ord.getFirstImage());
+//            intent.putExtra("order_image", ord.getFirstImage());
+            intent.putExtra("order_image", new Gson().toJson(ord.getImg_oder()));
             context.startActivity(intent);
         });
     }
@@ -115,7 +137,7 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
     }
 
     public static class OrderViewHolder extends RecyclerView.ViewHolder {
-        TextView tvmaDH, tvthanhTien, tvngayMua, tvTT;
+        TextView tvmaDH, tvthanhTien, tvngayMua, tvTT, tvSoLuongSP;
         MaterialButton btnHuy;
 
         @SuppressLint("WrongViewCast")
@@ -123,6 +145,7 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
             super(itemView);
             tvmaDH = itemView.findViewById(R.id.tvmaDH);
             tvthanhTien = itemView.findViewById(R.id.tvthanhTien);
+            tvSoLuongSP = itemView.findViewById(R.id.tvSoLuongSP);
             tvngayMua = itemView.findViewById(R.id.tvngayMua);
             tvTT = itemView.findViewById(R.id.tvTT);
             btnHuy = itemView.findViewById(R.id.btnHuy);
