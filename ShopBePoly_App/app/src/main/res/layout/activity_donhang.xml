@@ -21,13 +21,13 @@
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
-            <com.google.android.material.button.MaterialButton
+            <ImageButton
                 android:id="@+id/btnBack"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Back"
-                android:padding="12dp"
+                android:padding="4dp"
                 android:src="@drawable/ic_back" />
 
             <TextView
@@ -37,9 +37,12 @@
                 android:layout_weight="1"
                 android:gravity="center_horizontal"
                 android:text="Đơn hàng"
-                android:textSize="16sp"
+                android:textSize="20sp"
                 android:textStyle="bold" />
 
+            <View
+                android:layout_width="24dp"
+                android:layout_height="24dp" />
         </LinearLayout>
 
         <androidx.recyclerview.widget.RecyclerView
