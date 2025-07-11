@@ -3,23 +3,25 @@ package com.example.shopbepoly;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.util.Log;
 import android.widget.Button;
-import android.widget.TextView;
-import android.widget.ImageView;
 import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
-
-import com.example.shopbepoly.Screen.DanhGia;
-import com.squareup.picasso.Picasso;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.shopbepoly.Adapter.OrderProductAdapter;
+import com.example.shopbepoly.DTO.Order;
+import com.example.shopbepoly.Screen.DanhGia;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
 import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class Chitietdonhang extends AppCompatActivity {
@@ -42,8 +44,8 @@ public class Chitietdonhang extends AppCompatActivity {
         String date = intent.getStringExtra("order_date");
         String pay = intent.getStringExtra("order_pay");
         String nameproduct = intent.getStringExtra("order_nameproduct");
-        String imageJson = intent.getStringExtra("order_image");
         String quantity = intent.getStringExtra("order_quantity");
+        ArrayList<String> imageList = intent.getStringArrayListExtra("order_image_list");
 
         // Ánh xạ view
         TextView txtMaDH = findViewById(R.id.txtmaDH);
@@ -53,41 +55,56 @@ public class Chitietdonhang extends AppCompatActivity {
         TextView txtThanhTien = findViewById(R.id.txtthanhTien);
         TextView txtNgayMua = findViewById(R.id.txtngayMua);
         TextView txtPay = findViewById(R.id.txtPay);
-        TextView txtTenSP = findViewById(R.id.txtenSP);
-        ImageView imgSP = findViewById(R.id.imgSP);
         ImageButton btnBack = findViewById(R.id.btnBack);
         Button btnDaNhanHang = findViewById(R.id.btnXacNhan);
 
-        // Set dữ liệu lên view
+        // Set dữ liệu đơn hàng
         txtMaDH.setText(orderId != null ? orderId : "N/A");
         txtTT.setText(status != null ? status : "N/A");
         txtDiaChi.setText(address != null ? address : "N/A");
         txtNgayMua.setText(date != null ? date : "N/A");
         txtPay.setText(pay != null ? pay : "N/A");
-        txtTenSP.setText(nameproduct != null ? nameproduct : "N/A");
         txtSoLuong.setText(quantity != null ? quantity : "N/A");
 
         // Format tiền
         DecimalFormat formatter = new DecimalFormat("#,###");
         txtThanhTien.setText(formatter.format(bill) + " đ");
 
-        // Load ảnh sản phẩm
-        try {
-            List<String> imageList = new Gson().fromJson(imageJson, new TypeToken<List<String>>(){}.getType());
-            if (imageList != null && !imageList.isEmpty()) {
-                Picasso.get().load(imageList.get(0)).placeholder(R.drawable.avatar_default).into(imgSP);
-            } else {
-                imgSP.setImageResource(R.drawable.avatar_default);
+        // Parse danh sách tên sản phẩm
+        List<String> productNames = new ArrayList<>();
+        if (nameproduct != null && !nameproduct.isEmpty()) {
+            String[] parts = nameproduct.split(",");
+            for (String part : parts) {
+                String clean = part.trim();
+                if (!clean.isEmpty()) {
+                    productNames.add(clean);
+                }
             }
-        } catch (Exception e) {
-            Log.e("ChiTietDonHang", "Lỗi parse ảnh", e);
-            imgSP.setImageResource(R.drawable.avatar_default);
         }
+
+        // Đảm bảo ảnh và tên sản phẩm có cùng số lượng
+        List<String> safeImageList = imageList != null ? imageList : new ArrayList<>();
+
+        // Nếu thiếu ảnh => thêm ảnh rỗng để tránh crash
+        while (safeImageList.size() < productNames.size()) {
+            safeImageList.add("");
+        }
+
+        // Nếu thừa ảnh => cắt bớt
+        if (safeImageList.size() > productNames.size()) {
+            safeImageList = safeImageList.subList(0, productNames.size());
+        }
+
+        // RecyclerView hiển thị ảnh và tên từng sản phẩm
+        RecyclerView recyclerView = findViewById(R.id.rcv_order_products);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        OrderProductAdapter adapter = new OrderProductAdapter(this, productNames, safeImageList);
+        recyclerView.setAdapter(adapter);
 
         // Nút quay lại
         btnBack.setOnClickListener(v -> finish());
 
-        // Xác nhận "Đã nhận hàng"
+        // Nút xác nhận "Đã nhận"
         if ("Đang xử lý".equalsIgnoreCase(status)) {
             btnDaNhanHang.setVisibility(Button.VISIBLE);
             btnDaNhanHang.setOnClickListener(v -> {
@@ -112,11 +129,10 @@ public class Chitietdonhang extends AppCompatActivity {
         SharedPreferences prefs = getSharedPreferences("OrderPrefs", MODE_PRIVATE);
         String ordersJson = prefs.getString("orders_list", "[]");
 
-        List<com.example.shopbepoly.DTO.Order> orderList = new Gson()
-                .fromJson(ordersJson, new TypeToken<List<com.example.shopbepoly.DTO.Order>>(){}.getType());
+        List<Order> orderList = new Gson().fromJson(ordersJson, new TypeToken<List<Order>>() {}.getType());
 
         boolean found = false;
-        for (com.example.shopbepoly.DTO.Order order : orderList) {
+        for (Order order : orderList) {
             if (order.get_id().equals(id)) {
                 order.setStatus(newStatus);
                 found = true;

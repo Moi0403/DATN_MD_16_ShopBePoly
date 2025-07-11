@@ -17,7 +17,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.shopbepoly.DTO.Order;
 import com.example.shopbepoly.R;
-import com.google.gson.Gson;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -45,7 +44,6 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
         currentUserId = prefs.getString("userId", null);
     }
 
-    // Gọi hàm này để set dữ liệu cho adapter
     public void setData(List<Order> originalList) {
         ordList.clear();
         if (originalList != null && currentUserId != null) {
@@ -79,7 +77,7 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
             holder.tvthanhTien.setText("Tổng tiền: " + ord.getTotal() + " đ");
         }
 
-        // Tính tổng số lượng sản phẩm từ chuỗi nameproduct
+        // Tính tổng số lượng sản phẩm
         final int tongSoLuong;
         int tempSoLuong = 0;
         String nameProductStr = ord.getNameproduct();
@@ -93,13 +91,13 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
                 } catch (Exception ignored) {}
             }
         }
-        tongSoLuong = tempSoLuong; // gán giá trị cuối cùng
+        tongSoLuong = tempSoLuong;
 
         holder.tvSoLuongSP.setText("Số lượng sản phẩm: " + tongSoLuong);
         holder.tvngayMua.setText("Ngày mua: " + ord.getDate());
         holder.tvTT.setText("Trạng thái: " + ord.getStatus());
 
-        // Hiển thị hoặc ẩn nút hủy
+        // Hiển thị nút huỷ nếu trạng thái phù hợp
         String status = ord.getStatus();
         if ("Đã hủy".equalsIgnoreCase(status) || "Đã giao".equalsIgnoreCase(status) || "Hoàn thành".equalsIgnoreCase(status)) {
             holder.btnHuy.setVisibility(View.GONE);
@@ -112,7 +110,7 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
             });
         }
 
-        // Mở chi tiết đơn hàng khi click
+        // 👉 Truyền dữ liệu sang màn ChiTietDonHang
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(context, Chitietdonhang.class);
             intent.putExtra("order_id", ord.get_id());
@@ -122,8 +120,21 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
             intent.putExtra("order_date", ord.getDate());
             intent.putExtra("order_pay", ord.getPay());
             intent.putExtra("order_nameproduct", ord.getNameproduct());
-            intent.putExtra("order_image", new Gson().toJson(ord.getImg_oder()));
             intent.putExtra("order_quantity", String.valueOf(tongSoLuong));
+            intent.putExtra("order_idproduct", ord.getId_product()); // ✅ Truyền thêm id sản phẩm
+
+            // 👉 Tách ảnh thành danh sách
+            ArrayList<String> imageList = new ArrayList<>();
+            String rawImages = ord.getImg_oder();
+            if (rawImages != null && !rawImages.isEmpty()) {
+                String[] split = rawImages.split(",");
+                for (String img : split) {
+                    imageList.add(img.trim());
+                }
+            }
+
+            intent.putStringArrayListExtra("order_image_list", imageList);
+
             context.startActivity(intent);
         });
     }
