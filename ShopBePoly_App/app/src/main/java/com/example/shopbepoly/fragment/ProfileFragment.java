@@ -23,6 +23,7 @@ import com.bumptech.glide.signature.ObjectKey;
 import com.example.shopbepoly.ChinhSachvaQuyenRiengTu;
 import com.example.shopbepoly.DieuKhoanvaDieuKien;
 import com.example.shopbepoly.DoiMatKhau;
+import com.example.shopbepoly.DonMua;
 import com.example.shopbepoly.Donhang;
 import com.example.shopbepoly.Gioithieu;
 import com.example.shopbepoly.Lichsugiaodich;
@@ -76,7 +77,7 @@ public class ProfileFragment extends Fragment {
         txtDonmua.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startActivity(new Intent(getActivity(), Donhang.class));
+                startActivity(new Intent(getActivity(), DonMua.class));
             }
         });
 
