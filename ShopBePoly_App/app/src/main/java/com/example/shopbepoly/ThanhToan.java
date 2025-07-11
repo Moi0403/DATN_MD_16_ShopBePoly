@@ -361,16 +361,19 @@ public class ThanhToan extends AppCompatActivity {
                     int itemPrice = cart.getIdProduct().getPrice() * cart.getQuantity();
                     totalAmount += itemPrice;
 
-//                    if (productNames.length() > 0) productNames.append(", ");
-//                    productNames.append(cart.getIdProduct().getNameproduct()).append(" (x").append(cart.getQuantity()).append(")");
-                    if (productNames.length() > 50) {
-                        productNames = new StringBuilder(productNames.substring(0, 50) + "...");
-                    }
+                    productNames.append(cart.getIdProduct().getNameproduct())
+                            .append(" (x")
+                            .append(cart.getQuantity())
+                            .append("), ");
 
                     List<String> images = cart.getIdProduct().getList_imgproduct();
                     if (images != null && !images.isEmpty()) {
                         productImages.add(images.get(0));
                     }
+                }
+
+                if (productNames.length() > 50) {
+                    productNames = new StringBuilder(productNames.substring(0, 50) + "...");
                 }
             } else if (selectedProduct != null) {
                 int itemPrice = productPrice * quantity;

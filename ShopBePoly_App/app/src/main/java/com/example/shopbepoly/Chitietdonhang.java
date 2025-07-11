@@ -19,8 +19,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
-import org.json.JSONArray;
-
 import java.text.DecimalFormat;
 import java.util.List;
 
@@ -36,19 +34,22 @@ public class Chitietdonhang extends AppCompatActivity {
         setContentView(R.layout.activity_chitietdonhang);
 
         // Nhận dữ liệu từ Intent
-        orderId = getIntent().getStringExtra("order_id");
-        status = getIntent().getStringExtra("order_status");
-        String address = getIntent().getStringExtra("order_address");
-        String bill = getIntent().getStringExtra("order_bill");
-        String date = getIntent().getStringExtra("order_date");
-        String pay = getIntent().getStringExtra("order_pay");
-        String nameproduct = getIntent().getStringExtra("order_nameproduct");
-        String imageUrl = getIntent().getStringExtra("order_image");
+        Intent intent = getIntent();
+        orderId = intent.getStringExtra("order_id");
+        status = intent.getStringExtra("order_status");
+        String address = intent.getStringExtra("order_address");
+        double bill = intent.getDoubleExtra("order_bill", 0);
+        String date = intent.getStringExtra("order_date");
+        String pay = intent.getStringExtra("order_pay");
+        String nameproduct = intent.getStringExtra("order_nameproduct");
+        String imageJson = intent.getStringExtra("order_image");
+        String quantity = intent.getStringExtra("order_quantity");
 
         // Ánh xạ view
         TextView txtMaDH = findViewById(R.id.txtmaDH);
         txtTT = findViewById(R.id.txtTT);
         TextView txtDiaChi = findViewById(R.id.txtdiaChi);
+        TextView txtSoLuong = findViewById(R.id.txtsoLuong);
         TextView txtThanhTien = findViewById(R.id.txtthanhTien);
         TextView txtNgayMua = findViewById(R.id.txtngayMua);
         TextView txtPay = findViewById(R.id.txtPay);
@@ -58,39 +59,21 @@ public class Chitietdonhang extends AppCompatActivity {
         Button btnDaNhanHang = findViewById(R.id.btnXacNhan);
 
         // Set dữ liệu lên view
-        txtMaDH.setText(orderId);
-        txtTT.setText(status);
-        txtDiaChi.setText(address);
+        txtMaDH.setText(orderId != null ? orderId : "N/A");
+        txtTT.setText(status != null ? status : "N/A");
+        txtDiaChi.setText(address != null ? address : "N/A");
+        txtNgayMua.setText(date != null ? date : "N/A");
+        txtPay.setText(pay != null ? pay : "N/A");
+        txtTenSP.setText(nameproduct != null ? nameproduct : "N/A");
+        txtSoLuong.setText(quantity != null ? quantity : "N/A");
 
         // Format tiền
+        DecimalFormat formatter = new DecimalFormat("#,###");
+        txtThanhTien.setText(formatter.format(bill) + " đ");
+
+        // Load ảnh sản phẩm
         try {
-            DecimalFormat formatter = new DecimalFormat("#,###");
-            int billInt = Integer.parseInt(bill.replaceAll("[^\\d]", ""));
-            txtThanhTien.setText(formatter.format(billInt) + " đ");
-        } catch (Exception e) {
-            txtThanhTien.setText(bill);
-        }
-
-        txtNgayMua.setText(date);
-        txtPay.setText(pay);
-        txtTenSP.setText(nameproduct);
-
-        // Xử lý image
-//        if (imageUrl != null && !imageUrl.isEmpty()) {
-//            if (imageUrl.startsWith("[") && imageUrl.endsWith("]")) {
-//                // Tách lấy ảnh đầu tiên
-//                imageUrl = imageUrl.replace("[", "").replace("]", "").replace("\"", "").split(",")[0].trim();
-//            }
-//            Picasso.get().load(imageUrl).placeholder(R.drawable.avatar_default).into(imgSP);
-//        } else {
-//            imgSP.setImageResource(R.drawable.avatar_default);
-//        }
-        // Xử lý image
-        String imageJson = getIntent().getStringExtra("order_image");
-
-        try {
-            List<String> imageList = new Gson().fromJson(imageJson, new com.google.gson.reflect.TypeToken<List<String>>(){}.getType());
-
+            List<String> imageList = new Gson().fromJson(imageJson, new TypeToken<List<String>>(){}.getType());
             if (imageList != null && !imageList.isEmpty()) {
                 Picasso.get().load(imageList.get(0)).placeholder(R.drawable.avatar_default).into(imgSP);
             } else {
@@ -101,7 +84,7 @@ public class Chitietdonhang extends AppCompatActivity {
             imgSP.setImageResource(R.drawable.avatar_default);
         }
 
-        // Nút back
+        // Nút quay lại
         btnBack.setOnClickListener(v -> finish());
 
         // Xác nhận "Đã nhận hàng"
@@ -114,14 +97,11 @@ public class Chitietdonhang extends AppCompatActivity {
                 Toast.makeText(this, "Cập nhật trạng thái đơn hàng thành 'Đã nhận'", Toast.LENGTH_SHORT).show();
                 btnDaNhanHang.setEnabled(false);
 
-                //Chuyển sang màn đánh giá sau khi cập nhật trạng thái
-                Intent intent = new Intent(Chitietdonhang.this, DanhGia.class);
-
-                // Nếu muốn truyền thêm dữ liệu sang màn DanhGia (ví dụ: orderId, productName...)
-                intent.putExtra("order_id", orderId);
-                intent.putExtra("order_nameproduct", getIntent().getStringExtra("order_nameproduct"));
-
-                startActivity(intent);
+                // Chuyển sang màn đánh giá
+                Intent danhGiaIntent = new Intent(Chitietdonhang.this, DanhGia.class);
+                danhGiaIntent.putExtra("order_id", orderId);
+                danhGiaIntent.putExtra("order_nameproduct", nameproduct);
+                startActivity(danhGiaIntent);
             });
         } else {
             btnDaNhanHang.setVisibility(Button.GONE);

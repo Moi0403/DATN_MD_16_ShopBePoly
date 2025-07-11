@@ -22,6 +22,8 @@ import com.google.gson.Gson;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHolder> {
 
@@ -77,22 +79,21 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
             holder.tvthanhTien.setText("Tổng tiền: " + ord.getTotal() + " đ");
         }
 
-        // Tính tổng số lượng sản phẩm từ chuỗi nameProduct
-        int tongSoLuong = 0;
+        // Tính tổng số lượng sản phẩm từ chuỗi nameproduct
+        final int tongSoLuong;
+        int tempSoLuong = 0;
         String nameProductStr = ord.getNameproduct();
         if (nameProductStr != null) {
-            String[] parts = nameProductStr.split(",");
-            for (String part : parts) {
-                int start = part.indexOf("(x");
-                int end = part.indexOf(")");
-                if (start != -1 && end != -1 && end > start) {
-                    try {
-                        int sl = Integer.parseInt(part.substring(start + 2, end).trim());
-                        tongSoLuong += sl;
-                    } catch (Exception ignored) {}
-                }
+            Pattern pattern = Pattern.compile("x(\\d+)");
+            Matcher matcher = pattern.matcher(nameProductStr);
+            while (matcher.find()) {
+                try {
+                    int sl = Integer.parseInt(matcher.group(1));
+                    tempSoLuong += sl;
+                } catch (Exception ignored) {}
             }
         }
+        tongSoLuong = tempSoLuong; // gán giá trị cuối cùng
 
         holder.tvSoLuongSP.setText("Số lượng sản phẩm: " + tongSoLuong);
         holder.tvngayMua.setText("Ngày mua: " + ord.getDate());
@@ -122,6 +123,7 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
             intent.putExtra("order_pay", ord.getPay());
             intent.putExtra("order_nameproduct", ord.getNameproduct());
             intent.putExtra("order_image", new Gson().toJson(ord.getImg_oder()));
+            intent.putExtra("order_quantity", String.valueOf(tongSoLuong));
             context.startActivity(intent);
         });
     }
