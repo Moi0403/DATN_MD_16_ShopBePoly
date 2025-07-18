@@ -6,20 +6,28 @@ const orderSchema = new mongoose.Schema({
         ref: 'user',
         required: true
     },
-    id_product: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'product',
-        required: true,
-    },
-    img_oder:[String],
-    quantity: Number,
-    color: String,
+    products: [
+        {
+            id_product: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'product',
+                required: true
+            },
+            quantity: {
+                type: Number,
+                required: true
+            },
+            color: String,
+            size: String,
+            price: Number,
+            img: String
+        }
+    ],
+    quantity_order: Number,
     date: Date,
-    price: Number,
     total: String,
     status: String,
     address: String,
-    nameproduct: String,
     pay: String
 });
 

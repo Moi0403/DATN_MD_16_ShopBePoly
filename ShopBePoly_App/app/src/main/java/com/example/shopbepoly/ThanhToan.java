@@ -20,13 +20,16 @@ import com.example.shopbepoly.DTO.Address;
 import com.example.shopbepoly.DTO.Cart;
 import com.example.shopbepoly.DTO.Order;
 import com.example.shopbepoly.DTO.Product;
+import com.example.shopbepoly.DTO.ProductInOrder;
 import com.example.shopbepoly.DTO.User;
 import com.google.gson.Gson;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.PrimitiveIterator;
 
 import okhttp3.ResponseBody;
@@ -230,7 +233,7 @@ public class ThanhToan extends AppCompatActivity {
         return null;
     }
 
-        private void displayProductInfo() {
+    private void displayProductInfo() {
         txtProductName.setText(selectedProduct.getNameproduct());
         txtProductQuantity.setText("Số lượng: " + quantity);
         txtProductColor.setText(selectedColor);
@@ -338,69 +341,78 @@ public class ThanhToan extends AppCompatActivity {
         try {
             Order newOrder = new Order();
 
-            newOrder.setId_user(userId);
+            // Ensure id_user is set as a User object with only the ID,
+            // so UserTypeAdapter can handle it when serializing.
+            User user = new User();
+            user.setId(userId); // Assuming 'userId' is available in ThanhToan activity
+            newOrder.setId_user(user);
 
-            // Set thông tin cơ bản
             newOrder.setDate(getCurrentDate());
             newOrder.setStatus("Đang xử lý");
             newOrder.setAddress(address);
+            newOrder.setPay(getPaymentMethodText(paymentId, bankId));
 
-            // Set phương thức thanh toán
-            String paymentMethod = getPaymentMethodText(paymentId, bankId);
-            newOrder.setPay(paymentMethod);
-
-            // Xử lý sản phẩm
             String jsonCart = getIntent().getStringExtra("cart_list");
             int totalAmount = 0;
-            StringBuilder productNames = new StringBuilder();
-            List<String> productImages = new ArrayList<>();
+            // ✅ Direct list of ProductInOrder
+            List<ProductInOrder> productsInOrderList = new ArrayList<>();
 
             if (jsonCart != null && !jsonCart.isEmpty()) {
+                // Use the Gson instance that knows how to parse Cart objects (if Cart contains complex types)
+                // or a simple new Gson() if Cart is straightforward.
                 List<Cart> cartList = new Gson().fromJson(jsonCart, new com.google.gson.reflect.TypeToken<List<Cart>>() {}.getType());
+
                 for (Cart cart : cartList) {
-                    int itemPrice = cart.getIdProduct().getPrice() * cart.getQuantity();
-                    totalAmount += itemPrice;
+                    ProductInOrder productInOrder = new ProductInOrder();
 
-                    productNames.append(cart.getIdProduct().getNameproduct())
-                            .append(" (x")
-                            .append(cart.getQuantity())
-                            .append("), ");
+                    // ✅ Create a Product object and set its ID.
+                    // The ProductIdTypeAdapter's 'write' method will then take this Product object
+                    // and serialize only its ID as a String for the API request.
+                    Product productForOrder = new Product();
+                    productForOrder.set_id(cart.getIdProduct().get_id()); // Use getId() from your Product DTO
 
-                    List<String> images = cart.getIdProduct().getList_imgproduct();
-                    if (images != null && !images.isEmpty()) {
-                        productImages.add(images.get(0));
-                    }
-                }
+                    productInOrder.setId_product(productForOrder); // Set the Product object
 
-                if (productNames.length() > 50) {
-                    productNames = new StringBuilder(productNames.substring(0, 50) + "...");
+                    productInOrder.setQuantity(cart.getQuantity());
+                    productInOrder.setPrice(cart.getIdProduct().getPrice());
+                    productInOrder.setColor(cart.getColor());
+                    productInOrder.setSize(cart.getSize()+"");
+                    productInOrder.setImg(cart.getIdProduct().getAvt_imgproduct()); // Use getAvtImgproduct()
+
+                    totalAmount += cart.getIdProduct().getPrice() * cart.getQuantity();
+                    productsInOrderList.add(productInOrder);
                 }
             } else if (selectedProduct != null) {
-                int itemPrice = productPrice * quantity;
-                totalAmount += itemPrice;
+                ProductInOrder productInOrder = new ProductInOrder();
 
-                productNames.append(selectedProduct.getNameproduct()).append(" (x").append(quantity).append(")");
+                // ✅ Create a Product object and set its ID for selectedProduct case
+                Product productForOrder = new Product();
+                productForOrder.set_id(selectedProduct.get_id()); // Use getId() from your Product DTO
 
-                List<String> images = selectedProduct.getList_imgproduct();
-                if (images != null && !images.isEmpty()) {
-                    productImages.add(images.get(0));
-                }
+                productInOrder.setId_product(productForOrder); // Set the Product object
+
+                productInOrder.setQuantity(quantity);
+                productInOrder.setPrice(selectedProduct.getPrice());
+                productInOrder.setColor(selectedColor);
+                productInOrder.setSize(selectedSize);
+                productInOrder.setImg(selectedProduct.getAvt_imgproduct()); // Use getAvtImgproduct()
+
+                totalAmount += selectedProduct.getPrice() * quantity;
+                productsInOrderList.add(productInOrder);
             }
 
-            // Cộng thêm phí vận chuyển
             totalAmount += shippingFee;
-
-            // Set vào đối tượng Order
             newOrder.setTotal(String.valueOf(totalAmount));
-            // vì total là double
-            if (!productImages.isEmpty()) {
-                newOrder.setImg_oder(productImages.get(0)); // chỉ lấy 1 ảnh đại diện
-            }
-            newOrder.setNameproduct(productNames.toString());
-            //newOrder.setImg(productImages);
+            newOrder.setProducts(productsInOrderList); // ✅ Set the list of ProductInOrder objects
 
-            // Gửi lên API
-            createOrderViaAPI(newOrder);
+            // Calculate and set quantity_order
+            int totalQuantity = 0;
+            for (ProductInOrder pio : productsInOrderList) {
+                totalQuantity += pio.getQuantity();
+            }
+            newOrder.setQuantity_order(totalQuantity);
+
+            createOrderViaAPI(newOrder); // Call your API method
 
         } catch (Exception e) {
             Log.e(TAG, "Error creating order", e);
@@ -408,9 +420,14 @@ public class ThanhToan extends AppCompatActivity {
         }
     }
 
+
+
+
     private String getCurrentDate() {
-        return new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new java.util.Date());
+        // ISO 8601: yyyy-MM-dd'T'HH:mm:ss'Z' (hoặc không cần 'Z')
+        return new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).format(new java.util.Date());
     }
+
 
     private String getPaymentMethodText(int paymentId, int bankId){
         try {

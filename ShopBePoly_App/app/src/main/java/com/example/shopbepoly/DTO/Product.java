@@ -137,4 +137,13 @@ public class Product implements Serializable {
     public int hashCode() {
         return _id != null ? _id.hashCode() : 0;
     }
+
+    public String getCategoryId() {
+        return id_category != null ? id_category.get_id() : null;
+    }
+
+    public String getCategoryName() {
+        return id_category != null ? id_category.getTitle() : null;
+    }
+
 }

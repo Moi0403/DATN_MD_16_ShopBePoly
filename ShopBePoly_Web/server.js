@@ -680,73 +680,84 @@ router.delete('/del_category/:id', async (req, res) => {
 // lấy ds don hang 'http://localhost:3000/api/list_order'
 router.get('/list_order', async (req, res) => {
     await mongoose.connect(uri);
-    let order = await orderModel.find();
-    res.send(order);
+    try {
+        const orders = await orderModel.find().populate('id_user'); 
+        res.send(orders);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Lỗi lấy danh sách đơn hàng' });
+    }
+});
+
+router.get('/list_order/:userId', async (req, res) => {
+    try {
+        const orders = await orderModel.find({ id_user: req.params.userId })
+            .populate('id_user')
+            .populate({
+                path: 'products.id_product',
+                populate: {
+                    path: 'id_category',
+                    select: '_id name'  // chọn trường cần thiết để tránh quá nhiều dữ liệu
+                }
+            });
+
+        const enrichedOrders = orders.map(order => {
+            const totalQty = order.products.reduce((sum, item) => sum + item.quantity, 0);
+            return {
+                ...order.toObject(),
+                quantity_order: totalQty
+            };
+        });
+
+        res.json(enrichedOrders);
+    } catch (err) {
+        console.error('❌ Lỗi khi lấy đơn hàng theo user:', err);
+        res.status(500).json({ message: 'Lỗi server khi lấy đơn hàng' });
+    }
 });
 
 
+
+// thêm order 'http://localhost:3000/api/order'
 router.post('/add_order', async (req, res) => {
     try {
-        const {
-            id_user,
-            id_product,
-            img_oder,
-            quantity,
-            color,
-            date,
-            price,
-            status,
-            address,
-            nameproduct,
-            pay
-        } = req.body;
+        let data = req.body;
 
-        const total = quantity * price;
+        // Tính tổng số lượng sản phẩm trong đơn hàng
+        if (Array.isArray(data.products)) {
+            data.quantity_order = data.products.reduce((sum, item) => sum + item.quantity, 0);
+        } else {
+            return res.status(400).json({ message: 'Dữ liệu products không hợp lệ' });
+        }
 
-        const newOrderItem = new orderModel({
-            id_user,
-            id_product,
-            img_oder,
-            quantity,
-            color,
-            price,
-            total,
-            date,
-            status,
-            address,
-            nameproduct,
-            pay
-        });
+        // Lưu đơn hàng vào DB
+        const newOrder = await orderModel.create(data);
 
-        const savedOrder = await newOrderItem.save();
+        if (newOrder) {
+            console.log('✅ Thêm đơn hàng thành công:', newOrder._id);
+            // Populate để trả về chi tiết hơn, bao gồm cả id_category
+            const populatedOrder = await orderModel.findById(newOrder._id)
+                .populate('id_user')
+                .populate({
+                    path: 'products.id_product',
+                    populate: {
+                        path: 'id_category',
+                        select: '_id name'
+                    }
+                });
 
-        res.status(201).json({
-            message: 'Đặt hàng thành công',
-            data: savedOrder
-        });
+            res.status(201).json(populatedOrder);
+        } else {
+            res.status(500).json({ message: 'Không thể tạo đơn hàng' });
+        }
 
     } catch (error) {
-        res.status(500).json({
-            message: 'Lỗi đặt hàng',
-            error: error.message
-        });
+        console.error('❌ Lỗi khi thêm đơn hàng:', error);
+        res.status(500).json({ message: 'Lỗi server khi tạo đơn hàng' });
     }
 });
 
-//lay danh sach don hang theo user
-router.get('/list_order/userId', async (req, res) => {
-    try {
-        const oderItems = await orderModel.find({ id_user: req.params.userId })
-            .populate({
-                path: 'id_product',
-                populate: { path: 'id_category' }  // <- thêm dòng này để populate category bên trong product
-            });
-        res.json(oderItems);
-    } catch (error) {
-        console.error('Lỗi khi lấy danh sách đặt hàng:', error);
-        res.status(500).json({ error: 'Lỗi khi lấy danh sách đặt hàng:' });
-    }
-});
+
 
 
 // huy don hang 'http://localhost:3000/api/order/ id'
@@ -815,6 +826,65 @@ router.put('/up_comment/:id', async (req, res) => {
     }
 })
 
+
+
+router.get('/messages', async (req, res) => {
+    try {
+        const { from, to } = req.query;
+
+        if (!from || !to) {
+            return res.status(400).json({ message: 'Thiếu from hoặc to trong query' });
+        }
+
+        const messages = await messageModel.find({
+            $or: [
+                { from, to },
+                { from: to, to: from }
+            ]
+        }).sort({ timestamp: 1 });
+
+        res.json(messages);
+    } catch (err) {
+        console.error('Lỗi lấy tin nhắn:', err);
+        res.status(500).json({ message: 'Lỗi server khi lấy tin nhắn' });
+    }
+});
+
+
+router.post('/messages', async (req, res) => {
+    const { from, to, content } = req.body;
+
+    if (!from || !to || !content) {
+        return res.status(400).json({ message: 'Thiếu from, to hoặc content trong body' });
+    }
+
+    try {
+
+        const newMessage = new messageModel({ from, to, content, timestamp: new Date() });
+        await newMessage.save();
+
+
+        const hasAdminReplied = await messageModel.exists({
+            from: to,
+            to: from
+        });
+
+        if (!hasAdminReplied) {
+            const autoReply = new messageModel({
+                from: to,
+                to: from,
+                content: "Chào bạn! Bạn cần giúp đỡ gì không? ",
+                timestamp: new Date()
+            });
+            await autoReply.save();
+        }
+
+        res.status(201).json({ message: 'Gửi tin nhắn thành công', data: newMessage });
+    } catch (err) {
+        console.error('Lỗi khi gửi tin nhắn:', err);
+        res.status(500).json({ message: 'Lỗi server khi gửi tin nhắn' });
+    }
+});
 
 // Đổi mật khẩu user
 router.put('/up_password/:id', async (req, res) => {
@@ -896,81 +966,6 @@ router.get('/favorites/:userId', async (req, res) => {
             error: error.message || error
         });
     }
-});
-
-
-router.get('/messages', async (req, res) => {
-    try {
-        const { from, to } = req.query;
-
-        if (!from || !to) {
-            return res.status(400).json({ message: 'Thiếu from hoặc to trong query' });
-        }
-
-        const messages = await messageModel.find({
-            $or: [
-                { from, to },
-                { from: to, to: from }
-            ]
-        }).sort({ timestamp: 1 });
-
-        res.json(messages);
-    } catch (err) {
-        console.error('Lỗi lấy tin nhắn:', err);
-        res.status(500).json({ message: 'Lỗi server khi lấy tin nhắn' });
-    }
-});
-
-router.post('/messages', async (req, res) => {
-    const { from, to, content } = req.body;
-
-    if (!from || !to || !content) {
-        return res.status(400).json({ message: 'Thiếu from, to hoặc content trong body' });
-    }
-
-    try {
-        const sender = await userModel.findById(from);
-        const receiver = await userModel.findById(to);
-
-        if (!sender || !receiver) {
-            return res.status(404).json({ message: 'Người gửi hoặc người nhận không tồn tại' });
-        }
-
-        const newMessage = new messageModel({ from, to, content, timestamp: new Date() });
-        await newMessage.save();
-
-        // Tự động phản hồi nếu admin chưa trả lời lần nào và người nhận là admin
-        const hasAdminReplied = await messageModel.exists({ from: to, to: from });
-
-        if (!hasAdminReplied && sender.role !== 2 && receiver.role === 2) {
-            const autoReply = new messageModel({
-                from: to, // admin gửi lại
-                to: from,
-                content: "Chào bạn! Bạn cần hỗ trợ gì không?",
-                timestamp: new Date()
-            });
-            await autoReply.save();
-        }
-
-        res.status(201).json({ message: 'Gửi tin nhắn thành công', data: newMessage });
-    } catch (err) {
-        console.error('Lỗi khi gửi tin nhắn:', err);
-        res.status(500).json({ message: 'Lỗi server khi gửi tin nhắn' });
-    }
-});
-
-// Route: /api/users/get-admin
-router.get('/get-admin', async (req, res) => {
-  try {
-    const admin = await userModel.findOne({ role: 2 }); // dùng role = 2 như bạn thiết kế
-    if (!admin) {
-      return res.status(404).json({ message: 'Không tìm thấy tài khoản admin' });
-    }
-    res.json(admin);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Lỗi server' });
-  }
 });
 
 

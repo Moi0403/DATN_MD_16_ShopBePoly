@@ -3,147 +3,93 @@ package com.example.shopbepoly;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Button;
-import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.ImageView;
+import android.widget.ImageButton;
 import android.widget.Toast;
+
+import com.example.shopbepoly.Adapter.ProOrderAdapter;
+import com.example.shopbepoly.DTO.Order;
+import com.example.shopbepoly.Screen.DanhGia;
+import com.squareup.picasso.Picasso;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.shopbepoly.Adapter.OrderProductAdapter;
-import com.example.shopbepoly.DTO.Order;
-import com.example.shopbepoly.Screen.DanhGia;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
 import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 
 public class Chitietdonhang extends AppCompatActivity {
     private String orderId;
     private String status;
-    private TextView txtTT;
+    private TextView txtmaDH, txtTT, txtDC, txtSL, txtTTien, txtDay, txtPay;
+    private RecyclerView rc_orderpro;
+    private Order order;
+    private ProOrderAdapter orderAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_chitietdonhang);
-
-        // Nhận dữ liệu từ Intent
-        Intent intent = getIntent();
-        orderId = intent.getStringExtra("order_id");
-        status = intent.getStringExtra("order_status");
-        String address = intent.getStringExtra("order_address");
-        double bill = intent.getDoubleExtra("order_bill", 0);
-        String date = intent.getStringExtra("order_date");
-        String pay = intent.getStringExtra("order_pay");
-        String nameproduct = intent.getStringExtra("order_nameproduct");
-        String quantity = intent.getStringExtra("order_quantity");
-        ArrayList<String> imageList = intent.getStringArrayListExtra("order_image_list");
-
-        // Ánh xạ view
-        TextView txtMaDH = findViewById(R.id.txtmaDH);
+        txtmaDH = findViewById(R.id.txtMaDH);
         txtTT = findViewById(R.id.txtTT);
-        TextView txtDiaChi = findViewById(R.id.txtdiaChi);
-        TextView txtSoLuong = findViewById(R.id.txtsoLuong);
-        TextView txtThanhTien = findViewById(R.id.txtthanhTien);
-        TextView txtNgayMua = findViewById(R.id.txtngayMua);
-        TextView txtPay = findViewById(R.id.txtPay);
+        txtDC = findViewById(R.id.txtDC);
+        txtSL = findViewById(R.id.txtSL);
+        txtTTien = findViewById(R.id.txtTTien);
+        txtDay = findViewById(R.id.txtDay);
+        txtPay = findViewById(R.id.txtPay);
+        rc_orderpro = findViewById(R.id.rc_orderPro);
         ImageButton btnBack = findViewById(R.id.btnBack);
-        Button btnDaNhanHang = findViewById(R.id.btnXacNhan);
-
-        // Set dữ liệu đơn hàng
-        txtMaDH.setText(orderId != null ? orderId : "N/A");
-        txtTT.setText(status != null ? status : "N/A");
-        txtDiaChi.setText(address != null ? address : "N/A");
-        txtNgayMua.setText(date != null ? date : "N/A");
-        txtPay.setText(pay != null ? pay : "N/A");
-        txtSoLuong.setText(quantity != null ? quantity : "N/A");
-
-        // Format tiền
-        DecimalFormat formatter = new DecimalFormat("#,###");
-        txtThanhTien.setText(formatter.format(bill) + " đ");
-
-        // Parse danh sách tên sản phẩm
-        List<String> productNames = new ArrayList<>();
-        if (nameproduct != null && !nameproduct.isEmpty()) {
-            String[] parts = nameproduct.split(",");
-            for (String part : parts) {
-                String clean = part.trim();
-                if (!clean.isEmpty()) {
-                    productNames.add(clean);
-                }
-            }
-        }
-
-        // Đảm bảo ảnh và tên sản phẩm có cùng số lượng
-        List<String> safeImageList = imageList != null ? imageList : new ArrayList<>();
-
-        // Nếu thiếu ảnh => thêm ảnh rỗng để tránh crash
-        while (safeImageList.size() < productNames.size()) {
-            safeImageList.add("");
-        }
-
-        // Nếu thừa ảnh => cắt bớt
-        if (safeImageList.size() > productNames.size()) {
-            safeImageList = safeImageList.subList(0, productNames.size());
-        }
-
-        // RecyclerView hiển thị ảnh và tên từng sản phẩm
-        RecyclerView recyclerView = findViewById(R.id.rcv_order_products);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        OrderProductAdapter adapter = new OrderProductAdapter(this, productNames, safeImageList);
-        recyclerView.setAdapter(adapter);
-
-        // Nút quay lại
         btnBack.setOnClickListener(v -> finish());
 
-        // Nút xác nhận "Đã nhận"
-        if ("Đang xử lý".equalsIgnoreCase(status)) {
-            btnDaNhanHang.setVisibility(Button.VISIBLE);
-            btnDaNhanHang.setOnClickListener(v -> {
-                status = "Đã nhận";
-                txtTT.setText(status);
-                updateStatusInLocal(orderId, status);
-                Toast.makeText(this, "Cập nhật trạng thái đơn hàng thành 'Đã nhận'", Toast.LENGTH_SHORT).show();
-                btnDaNhanHang.setEnabled(false);
+        order = (Order) getIntent().getSerializableExtra("order");
 
-                // Chuyển sang màn đánh giá
-                Intent danhGiaIntent = new Intent(Chitietdonhang.this, DanhGia.class);
-                danhGiaIntent.putExtra("order_id", orderId);
-                danhGiaIntent.putExtra("order_nameproduct", nameproduct);
-                startActivity(danhGiaIntent);
-            });
+        if (order != null) {
+            txtmaDH.setText(order.get_id()+"");
+            txtTT.setText(order.getStatus()+"");
+            txtDC.setText(order.getAddress()+"");
+            txtSL.setText(order.getQuantity_order()+"");
+            txtTTien.setText(formatCurrency(Integer.parseInt(order.getTotal()))+"");
+            txtDay.setText(formatDate(order.getDate())+"");
+            txtPay.setText(order.getPay()+"");
         } else {
-            btnDaNhanHang.setVisibility(Button.GONE);
+            Toast.makeText(this, "Không nhận được đơn hàng", Toast.LENGTH_SHORT).show();
+        }
+
+        rc_orderpro.setLayoutManager(new LinearLayoutManager(this));
+        orderAdapter = new ProOrderAdapter(Chitietdonhang.this, order.getProducts());
+        rc_orderpro.setAdapter(orderAdapter);
+
+    }
+
+    private String formatCurrency(int amount) {
+        DecimalFormat formatter = new DecimalFormat("###,###,###");
+        return formatter.format(amount) + " đ";
+    }
+    private String formatDate(String dateStr) {
+        try {
+            SimpleDateFormat sdfInput = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+            sdfInput.setTimeZone(TimeZone.getTimeZone("UTC"));
+            Date date = sdfInput.parse(dateStr);
+
+            SimpleDateFormat sdfOutput = new SimpleDateFormat("dd/MM/yyyy - HH:mm");
+            sdfOutput.setTimeZone(TimeZone.getDefault());
+            return sdfOutput.format(date);
+        } catch (Exception e) {
+            return dateStr;
         }
     }
 
-    private void updateStatusInLocal(String id, String newStatus) {
-        SharedPreferences prefs = getSharedPreferences("OrderPrefs", MODE_PRIVATE);
-        String ordersJson = prefs.getString("orders_list", "[]");
 
-        List<Order> orderList = new Gson().fromJson(ordersJson, new TypeToken<List<Order>>() {}.getType());
-
-        boolean found = false;
-        for (Order order : orderList) {
-            if (order.get_id().equals(id)) {
-                order.setStatus(newStatus);
-                found = true;
-                break;
-            }
-        }
-
-        if (found) {
-            SharedPreferences.Editor editor = prefs.edit();
-            editor.putString("orders_list", new Gson().toJson(orderList));
-            editor.apply();
-        }
-    }
 }

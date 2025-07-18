@@ -19,3 +19,4 @@ const buttons = document.querySelectorAll('.tab-btn');
 
   // Tự động load tab đầu tiên khi vào
   if (buttons.length > 0) buttons[0].click();
+  

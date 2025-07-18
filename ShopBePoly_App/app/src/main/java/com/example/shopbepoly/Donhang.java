@@ -42,6 +42,7 @@ public class Donhang extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_donhang);
 
+
         SharedPreferences loginPrefs = getSharedPreferences("LoginPrefs", MODE_PRIVATE);
         userId = loginPrefs.getString("userId", "");
 
@@ -56,58 +57,58 @@ public class Donhang extends AppCompatActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         apiService = ApiClient.getApiService();
 
-        adapter = new OrderAdapter(this, new OrderAdapter.OrderListener() {
-            @Override
-            public void onDelete(String id) {
-                huyDH(id);
-            }
-        });
+//        adapter = new OrderAdapter(this, new OrderAdapter.OrderListener() {
+//            @Override
+//            public void onDelete(String id) {
+//                huyDH(id);
+//            }
+//        });
 
         recyclerView.setAdapter(adapter);
 
         btnBack.setOnClickListener(v -> finish());
 
         loadOrdersFromLocal(); // Hiển thị local trước
-        loadord();             // Gọi API cập nhật sau
+//        loadord();             // Gọi API cập nhật sau
     }
 
-    private void loadord() {
-        Call<List<Order>> call = apiService.getOrderListByUser(userId);
-
-        if (call == null) {
-            Log.e(TAG, "API call is null");
-            loadOrdersFromLocal();
-            return;
-        }
-
-        call.enqueue(new Callback<List<Order>>() {
-            @Override
-            public void onResponse(Call<List<Order>> call, Response<List<Order>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    List<Order> apiOrders = response.body();
-                    Log.d(TAG, "Đã lấy " + apiOrders.size() + " đơn hàng từ server");
-                    Log.d(TAG, "Order API JSON: " + new Gson().toJson(apiOrders));
-
-                    if (!apiOrders.isEmpty()) {
-                        adapter.setData(apiOrders);
-                        Toast.makeText(Donhang.this, "Đã tải " + apiOrders.size() + " đơn hàng từ server", Toast.LENGTH_SHORT).show();
-                    } else {
-                        Toast.makeText(Donhang.this, "Không có đơn hàng nào trên server", Toast.LENGTH_SHORT).show();
-                        loadOrdersFromLocal(); // fallback
-                    }
-                } else {
-                    Log.e(TAG, "API error: " + response.code());
-                    loadOrdersFromLocal();
-                }
-            }
-
-            @Override
-            public void onFailure(Call<List<Order>> call, Throwable t) {
-                Log.e(TAG, "Lỗi kết nối API: ", t);
-                loadOrdersFromLocal();
-            }
-        });
-    }
+//    private void loadord() {
+//        Call<List<Order>> call = apiService.getOrderListByUser(userId);
+//
+//        if (call == null) {
+//            Log.e(TAG, "API call is null");
+//            loadOrdersFromLocal();
+//            return;
+//        }
+//
+//        call.enqueue(new Callback<List<Order>>() {
+//            @Override
+//            public void onResponse(Call<List<Order>> call, Response<List<Order>> response) {
+//                if (response.isSuccessful() && response.body() != null) {
+//                    List<Order> apiOrders = response.body();
+//                    Log.d(TAG, "Đã lấy " + apiOrders.size() + " đơn hàng từ server");
+//                    Log.d(TAG, "Order API JSON: " + new Gson().toJson(apiOrders));
+//
+//                    if (!apiOrders.isEmpty()) {
+//                        adapter.setData(apiOrders);
+//                        Toast.makeText(Donhang.this, "Đã tải " + apiOrders.size() + " đơn hàng từ server", Toast.LENGTH_SHORT).show();
+//                    } else {
+//                        Toast.makeText(Donhang.this, "Không có đơn hàng nào trên server", Toast.LENGTH_SHORT).show();
+//                        loadOrdersFromLocal(); // fallback
+//                    }
+//                } else {
+//                    Log.e(TAG, "API error: " + response.code());
+//                    loadOrdersFromLocal();
+//                }
+//            }
+//
+//            @Override
+//            public void onFailure(Call<List<Order>> call, Throwable t) {
+//                Log.e(TAG, "Lỗi kết nối API: ", t);
+//                loadOrdersFromLocal();
+//            }
+//        });
+//    }
 
     private void loadOrdersFromLocal() {
         List<Order> localOrders = loadOrdersFromLocalAsList();
@@ -150,7 +151,7 @@ public class Donhang extends AppCompatActivity {
             public void onResponse(Call<Void> call, Response<Void> response) {
                 if (response.isSuccessful()) {
                     Toast.makeText(Donhang.this, "Đã hủy đơn hàng", Toast.LENGTH_SHORT).show();
-                    loadord();
+//                    loadord();
                 } else {
                     updateOrderStatusInLocal(id, "Đã hủy");
                 }
@@ -193,6 +194,6 @@ public class Donhang extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         loadOrdersFromLocal();
-        loadord();
+//        loadord();
     }
 }

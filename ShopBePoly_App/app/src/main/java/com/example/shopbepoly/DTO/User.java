@@ -7,7 +7,6 @@ import java.io.Serializable;
 public class User implements Serializable {
     @SerializedName("_id")
     private String id;
-
     private String username;
     private String email;
     private String phone_number;
@@ -17,7 +16,6 @@ public class User implements Serializable {
     private int role;
     @SerializedName("avt_user")
     private String avatar;
-
     private String gender;
     private String birthday;
 

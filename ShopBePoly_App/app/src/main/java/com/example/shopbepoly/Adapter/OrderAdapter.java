@@ -3,56 +3,43 @@ package com.example.shopbepoly.Adapter;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
 import com.example.shopbepoly.Chitietdonhang;
+import com.example.shopbepoly.DTO.Order;
+import com.example.shopbepoly.R;
+import com.example.shopbepoly.Screen.ChiTietSanPham;
 import com.google.android.material.button.MaterialButton;
+import com.google.gson.Gson;
+
+import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.shopbepoly.DTO.Order;
-import com.example.shopbepoly.R;
-
 import java.text.DecimalFormat;
-import java.util.ArrayList;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Locale;
+import java.util.Map;
+import java.util.TimeZone;
 
 public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHolder> {
 
     private Context context;
     private List<Order> ordList;
-    private OrderListener listener;
-    private String currentUserId;
 
-    public interface OrderListener {
-        void onDelete(String id);
-    }
-
-    public OrderAdapter(Context context, OrderListener listener) {
+    public OrderAdapter(Context context, List<Order> list) {
         this.context = context;
-        this.listener = listener;
-        this.ordList = new ArrayList<>();
-
-        SharedPreferences prefs = context.getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
-        currentUserId = prefs.getString("userId", null);
+        this.ordList = list;
     }
 
-    public void setData(List<Order> originalList) {
-        ordList.clear();
-        if (originalList != null && currentUserId != null) {
-            for (Order o : originalList) {
-                if (currentUserId.equals(o.getId_user())) {
-                    ordList.add(o);
-                }
-            }
-        }
+    public void setData(List<Order> list) {
+        this.ordList = list;
         notifyDataSetChanged();
     }
 
@@ -65,78 +52,33 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
 
     @Override
     public void onBindViewHolder(@NonNull OrderViewHolder holder, int position) {
-        Order ord = ordList.get(position);
+        Order order = ordList.get(position);
 
-        holder.tvmaDH.setText("Mã đơn hàng: " + ord.get_id());
-
+        holder.tvmaDH.setText("Mã đơn hàng: " +order.get_id());
+        String totalStr = order.getTotal();
+        int totalValue = 0;
         try {
-            double billAmount = ord.getTotal();
-            DecimalFormat formatter = new DecimalFormat("#,###.##");
-            holder.tvthanhTien.setText("Tổng tiền: " + formatter.format(billAmount) + " đ");
-        } catch (Exception e) {
-            holder.tvthanhTien.setText("Tổng tiền: " + ord.getTotal() + " đ");
-        }
-
-        // Tính tổng số lượng sản phẩm
-        final int tongSoLuong;
-        int tempSoLuong = 0;
-        String nameProductStr = ord.getNameproduct();
-        if (nameProductStr != null) {
-            Pattern pattern = Pattern.compile("x(\\d+)");
-            Matcher matcher = pattern.matcher(nameProductStr);
-            while (matcher.find()) {
-                try {
-                    int sl = Integer.parseInt(matcher.group(1));
-                    tempSoLuong += sl;
-                } catch (Exception ignored) {}
+            if (totalStr != null && !totalStr.isEmpty()) {
+                totalValue = Integer.parseInt(totalStr);
             }
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
         }
-        tongSoLuong = tempSoLuong;
+        holder.tvthanhTien.setText(String.format("Giá: %,d đ", totalValue));
+        holder.tvSoLuongSP.setText("Tổng số lượng sản phẩm: " +order.getQuantity_order());
+        holder.tvngayMua.setText("Ngày: " + formatDate(order.getDate()));
+        holder.tvTT.setText("Trạng thái: " +order.getStatus());
 
-        holder.tvSoLuongSP.setText("Số lượng sản phẩm: " + tongSoLuong);
-        holder.tvngayMua.setText("Ngày mua: " + ord.getDate());
-        holder.tvTT.setText("Trạng thái: " + ord.getStatus());
-
-        // Hiển thị nút huỷ nếu trạng thái phù hợp
-        String status = ord.getStatus();
-        if ("Đã hủy".equalsIgnoreCase(status) || "Đã giao".equalsIgnoreCase(status) || "Hoàn thành".equalsIgnoreCase(status)) {
-            holder.btnHuy.setVisibility(View.GONE);
-        } else {
-            holder.btnHuy.setVisibility(View.VISIBLE);
-            holder.btnHuy.setOnClickListener(v -> {
-                if (listener != null) {
-                    listener.onDelete(ord.get_id());
-                }
-            });
-        }
-
-        // 👉 Truyền dữ liệu sang màn ChiTietDonHang
-        holder.itemView.setOnClickListener(v -> {
-            Intent intent = new Intent(context, Chitietdonhang.class);
-            intent.putExtra("order_id", ord.get_id());
-            intent.putExtra("order_status", ord.getStatus());
-            intent.putExtra("order_address", ord.getAddress());
-            intent.putExtra("order_bill", ord.getTotal());
-            intent.putExtra("order_date", ord.getDate());
-            intent.putExtra("order_pay", ord.getPay());
-            intent.putExtra("order_nameproduct", ord.getNameproduct());
-            intent.putExtra("order_quantity", String.valueOf(tongSoLuong));
-            intent.putExtra("order_idproduct", ord.getId_product()); // ✅ Truyền thêm id sản phẩm
-
-            // 👉 Tách ảnh thành danh sách
-            ArrayList<String> imageList = new ArrayList<>();
-            String rawImages = ord.getImg_oder();
-            if (rawImages != null && !rawImages.isEmpty()) {
-                String[] split = rawImages.split(",");
-                for (String img : split) {
-                    imageList.add(img.trim());
-                }
+        holder.btnChiTiet.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(context, Chitietdonhang.class);
+                intent.putExtra("order", order);
+                context.startActivity(intent);
             }
-
-            intent.putStringArrayListExtra("order_image_list", imageList);
-
-            context.startActivity(intent);
         });
+
+
     }
 
     @Override
@@ -146,9 +88,8 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
 
     public static class OrderViewHolder extends RecyclerView.ViewHolder {
         TextView tvmaDH, tvthanhTien, tvngayMua, tvTT, tvSoLuongSP;
-        MaterialButton btnHuy;
+        Button btnHuy, btnChiTiet;
 
-        @SuppressLint("WrongViewCast")
         public OrderViewHolder(@NonNull View itemView) {
             super(itemView);
             tvmaDH = itemView.findViewById(R.id.tvmaDH);
@@ -157,6 +98,26 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
             tvngayMua = itemView.findViewById(R.id.tvngayMua);
             tvTT = itemView.findViewById(R.id.tvTT);
             btnHuy = itemView.findViewById(R.id.btnHuy);
+            btnChiTiet = itemView.findViewById(R.id.btnChitiet);
         }
     }
+
+    private String formatDate(String isoDate) {
+        try {
+            // Định dạng ban đầu: ISO 8601 (UTC)
+            SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault());
+            inputFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+            // Định dạng muốn hiển thị (giờ Việt Nam)
+            SimpleDateFormat outputFormat = new SimpleDateFormat("dd/MM/yyyy - HH:mm", Locale.getDefault());
+            outputFormat.setTimeZone(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
+
+            Date date = inputFormat.parse(isoDate);
+            return outputFormat.format(date);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return isoDate; // fallback nếu lỗi
+        }
+    }
+
 }

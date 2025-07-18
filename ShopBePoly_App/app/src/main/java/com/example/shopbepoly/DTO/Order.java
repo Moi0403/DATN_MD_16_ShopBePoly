@@ -1,37 +1,27 @@
 package com.example.shopbepoly.DTO;
 
-public class Order {
+import com.google.gson.annotations.SerializedName;
+
+import java.io.Serializable;
+import java.util.List;
+import java.util.Map;
+
+public class Order implements Serializable {
     private String _id;
-    private String id_user;
-    private String id_product;
-    private String img_oder;
-    private int quantity;
-    private String color;
-    private double price;
-    private String total;
+    @SerializedName("id_user")
+    private User id_user;
+    @SerializedName("products")
+    private List<ProductInOrder> products;
+//    @SerializedName("products")
+//    private List<Map<String, Object>> products;
+    private int quantity_order;
     private String date;
+    private String total;
     private String status;
     private String address;
-    private String nameproduct;
     private String pay;
 
-    public Order() {}
-
-    public Order(String id_user, String id_product, String img_oder, int quantity, String color,
-                 double price, String total, String date, String status,
-                 String address, String nameproduct, String pay) {
-        this.id_user = id_user;
-        this.id_product = id_product;
-        this.img_oder = img_oder;
-        this.quantity = quantity;
-        this.color = color;
-        this.price = price;
-        this.total = total;
-        this.date = date;
-        this.status = status;
-        this.address = address;
-        this.nameproduct = nameproduct;
-        this.pay = pay;
+    public Order() {
     }
 
     public String get_id() {
@@ -42,64 +32,28 @@ public class Order {
         this._id = _id;
     }
 
-    public String getId_user() {
+    public User getId_user() {
         return id_user;
     }
 
-    public void setId_user(String id_user) {
+    public void setId_user(User id_user) {
         this.id_user = id_user;
     }
 
-    public String getId_product() {
-        return id_product;
+    public List<ProductInOrder> getProducts() {
+        return products;
     }
 
-    public void setId_product(String id_product) {
-        this.id_product = id_product;
+    public void setProducts(List<ProductInOrder> products) {
+        this.products = products;
     }
 
-    public String getImg_oder() {
-        return img_oder;
+    public int getQuantity_order() {
+        return quantity_order;
     }
 
-    public void setImg_oder(String img_oder) {
-        this.img_oder = img_oder;
-    }
-
-    public int getQuantity() {
-        return quantity;
-    }
-
-    public void setQuantity(int quantity) {
-        this.quantity = quantity;
-    }
-
-    public String getColor() {
-        return color;
-    }
-
-    public void setColor(String color) {
-        this.color = color;
-    }
-
-    public double getPrice() {
-        return price;
-    }
-
-    public void setPrice(double price) {
-        this.price = price;
-    }
-
-    public double getTotal() {
-        try {
-            return Double.parseDouble(total);
-        } catch (Exception e) {
-            return 0.0;
-        }
-    }
-
-    public void setTotal(String total) {
-        this.total = total;
+    public void setQuantity_order(int quantity_order) {
+        this.quantity_order = quantity_order;
     }
 
     public String getDate() {
@@ -108,6 +62,14 @@ public class Order {
 
     public void setDate(String date) {
         this.date = date;
+    }
+
+    public String getTotal() {
+        return total;
+    }
+
+    public void setTotal(String total) {
+        this.total = total;
     }
 
     public String getStatus() {
@@ -126,25 +88,11 @@ public class Order {
         this.address = address;
     }
 
-    public String getNameproduct() {
-        return nameproduct;
-    }
-
-    public void setNameproduct(String nameproduct) {
-        this.nameproduct = nameproduct;
-    }
-
     public String getPay() {
         return pay;
     }
 
     public void setPay(String pay) {
         this.pay = pay;
-    }
-
-    public boolean isCancellable() {
-        if (status == null) return true;
-        String s = status.toLowerCase();
-        return !s.contains("đã hủy") && !s.contains("đã giao") && !s.contains("hoàn thành");
     }
 }

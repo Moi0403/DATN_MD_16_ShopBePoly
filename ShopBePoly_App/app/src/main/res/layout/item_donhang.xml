@@ -1,71 +1,100 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_height="wrap_content"
     android:layout_margin="10dp"
-    android:layout_height="150dp"
     android:orientation="vertical"
-    android:elevation="4dp"
-    android:background="@drawable/ic_backgrond">
+    app:cardCornerRadius="16dp"
+    app:cardElevation="8dp">
 
-    <RelativeLayout
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:padding="10dp"
+        android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/tvmaDH"
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:padding="5dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvmaDH"
+                android:text="id"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvSoLuongSP"
+                android:text="slg"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/tvthanhTien"
+                android:layout_marginStart="10dp"
+                android:layout_marginTop="4dp"
+                android:textSize="14sp"
+                android:textColor="#444444" />
+
+            <TextView
+                android:id="@+id/tvthanhTien"
+                android:text="tt"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/tvmaDH"
+                android:layout_marginStart="10dp" />
+
+            <TextView
+                android:id="@+id/tvngayMua"
+                android:text="day"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/tvSoLuongSP"
+                android:layout_marginStart="10dp" />
+
+            <TextView
+                android:id="@+id/tvTT"
+                android:text="tt"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="#88FB00"
+                android:layout_below="@id/tvngayMua"
+                android:layout_marginStart="10dp" />
+
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
-            android:textSize="18sp"
-            android:textStyle="bold" />
+            android:gravity="end"
+            android:layout_margin="10dp">
 
-        <TextView
-            android:id="@+id/tvthanhTien"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_below="@id/tvmaDH"
-            android:layout_marginStart="10dp" />
+            <Button
+                android:id="@+id/btnChitiet"
+                android:layout_width="130dp"
+                android:layout_height="40dp"
+                app:backgroundTint="@null"
+                android:background="@drawable/custom_vien"
+                android:text="Xem chi tiết"
+                android:textColor="#0D0000"
+                android:textSize="12sp"
+                android:textStyle="bold" />
 
-        <TextView
-            android:id="@+id/tvSoLuongSP"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_below="@+id/tvthanhTien"
-            android:layout_marginStart="10dp"
-            android:layout_marginTop="4dp"
-            android:textSize="14sp"
-            android:textColor="#444444" />
-
-        <TextView
-            android:id="@+id/tvngayMua"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_below="@+id/tvSoLuongSP"
-            android:layout_marginStart="10dp" />
-
-        <TextView
-            android:id="@+id/tvTT"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textColor="#88FB00"
-            android:layout_below="@id/tvngayMua"
-            android:layout_marginStart="10dp" />
-
-    </RelativeLayout>
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnHuy"
-        android:layout_width="150dp"
-        android:layout_height="48dp"
-        android:layout_gravity="end"
-        android:layout_marginTop="100dp"
-        android:layout_marginBottom="10dp"
-        android:backgroundTint="#FF5722"
-        android:text="Hủy đơn hàng"
-        android:textColor="#FFFFFF"
-        android:textSize="14sp"
-        android:textStyle="bold" />
+            <Button
+                android:id="@+id/btnHuy"
+                android:layout_width="130dp"
+                android:layout_height="40dp"
+                android:layout_marginLeft="20dp"
+                app:backgroundTint="@null"
+                android:background="@drawable/button_bg"
+                android:text="Hủy đơn hàng"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
 </androidx.cardview.widget.CardView>

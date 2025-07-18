@@ -86,11 +86,8 @@ public interface ApiService {
     @POST("add_order")
     Call<Order> createOrder(@Body Order order);
 
-    @GET("list_order")
-    Call<List<Order>> getOrderList(); // (Không cần dùng nếu đã có list_order/:userId)
-
     @GET("list_order/{userId}")
-    Call<List<Order>> getOrderListByUser(@Path("userId") String userId);
+    Call<List<Order>> getOrderList(@Path("userId") String userId);
 
     @DELETE("del_order/{id}")
     Call<Void> deleteOrder(@Path("id") String id);

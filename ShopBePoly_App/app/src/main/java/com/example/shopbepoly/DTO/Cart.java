@@ -8,7 +8,6 @@ public class Cart implements Serializable {
     private String _id;
     @SerializedName("id_user")
     private String idUser;
-
     @SerializedName("id_product")
     private Product idProduct;
     @SerializedName("img_cart")
