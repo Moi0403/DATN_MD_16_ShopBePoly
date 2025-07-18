@@ -39,7 +39,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class CartFragment extends Fragment {
+public class CartFragment extends Fragment implements CartBottomSheetDialog.CartUpdateListener {
     private RecyclerView rc_cart;
     private List<Cart> list_cart = new ArrayList<>();
     private CartAdapter cartAdapter;
@@ -47,6 +47,40 @@ public class CartFragment extends Fragment {
     public CheckBox checkbox_select_all;
     private ImageView imv_delAll;
     private Button btn_thanhtoan;
+    private boolean skipReloadOnResume = false;
+
+    @Override
+    public void onCartItemAdded(Cart newCartItem) {
+        addOrUpdateCartItem(newCartItem);
+    }
+
+    @Override
+    public void onCartUpdated() {
+        SharedPreferences sharedPreferences = getContext().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
+        String userId = sharedPreferences.getString("userId", null);
+        if (userId != null) {
+            ApiService apiService = ApiClient.getApiService();
+            apiService.getCart(userId).enqueue(new Callback<List<Cart>>() {
+                @Override
+                public void onResponse(Call<List<Cart>> call, Response<List<Cart>> response) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        list_cart.clear();
+                        list_cart.addAll(response.body());
+                        cartAdapter.notifyDataSetChanged();  // <-- Phải có dòng này để cập nhật lại RecyclerView
+                        checkbox_select_all.setChecked(false); // Bỏ chọn tất cả khi load lại
+                        tvTotal.setText(String.format("Giá: " + "%,d đ",0)); // Reset tổng giá
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<List<Cart>> call, Throwable t) {
+                    Toast.makeText(getContext(), "Lỗi khi load lại giỏ hàng", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+    }
+
+
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -68,7 +102,7 @@ public class CartFragment extends Fragment {
             String jsonCart = new Gson().toJson(selectedItems); // List<Cart>
             Intent intent = new Intent(getContext(), ThanhToan.class);
             intent.putExtra("cart_list", jsonCart);
-            getContext().startActivity(intent);
+            startActivityForResult(intent,100);
         });
 
         SharedPreferences prefs = requireContext().getSharedPreferences("CartPrefs", Context.MODE_PRIVATE);
@@ -120,32 +154,67 @@ public class CartFragment extends Fragment {
     }
 
 
-    public void LoadCart(String userId){
+    public void LoadCart(String userId) {
         ApiService apiService = ApiClient.getApiService();
-        Call<List<Cart>> call = apiService.getCart(userId);
-        call.enqueue(new Callback<List<Cart>>() {
+        apiService.getCart(userId).enqueue(new Callback<List<Cart>>() {
             @Override
             public void onResponse(Call<List<Cart>> call, Response<List<Cart>> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    Log.d("LoadCart", "Response JSON: " + new Gson().toJson(response.body()));
-                    Log.d("LoadCart", "Số lượng item: " + response.body().size());
                     list_cart.clear();
                     list_cart.addAll(response.body());
-                    cartAdapter.notifyDataSetChanged();
-                } else {
-                    Log.e("LoadCart", "Response không thành công: " + response.code() + ", Message: " + response.message());
-                    Log.e("LoadCart", "Raw response: " + response.raw().toString());
-                    Toast.makeText(getContext(), "Hiện thị GH ko thành công", Toast.LENGTH_SHORT).show();
+                    cartAdapter = new CartAdapter(getContext(), list_cart, CartFragment.this);
+                    rc_cart.setAdapter(cartAdapter);
+                    cartAdapter.notifyDataSetChanged();  // Cái này thêm cho chắc
+                    checkbox_select_all.setChecked(false);
+                    cartAdapter.updateTotalPrice();
                 }
             }
 
             @Override
             public void onFailure(Call<List<Cart>> call, Throwable t) {
-                Log.e("LoadCart", "Lỗi khi gọi API: " + t.getMessage(), t);
-                Toast.makeText(getContext(), "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_LONG).show();
+                Toast.makeText(getContext(), "Lỗi tải giỏ hàng", Toast.LENGTH_SHORT).show();
             }
         });
     }
+    public void updateCartItemInList(Cart updatedCart) {
+        for (int i = 0; i < list_cart.size(); i++) {
+            Cart item = list_cart.get(i);
+            if (item.get_id().equals(updatedCart.get_id())) {
+                list_cart.set(i, updatedCart);
+                cartAdapter.notifyItemChanged(i);
+                cartAdapter.updateTotalPrice();
+                return;
+            }
+        }
+        // Nếu không tìm thấy thì thêm vào
+        list_cart.add(updatedCart);
+        cartAdapter.notifyDataSetChanged();
+        cartAdapter.updateTotalPrice();
+    }
+
+    public void addOrUpdateCartItem(Cart newCartItem) {
+        boolean found = false;
+        for (Cart item : list_cart) {
+            if (item.getIdProduct().get_id().equals(newCartItem.getIdProduct().get_id())
+                    && item.getColor().equalsIgnoreCase(newCartItem.getColor())
+                    && item.getSize() == newCartItem.getSize()) {
+                int newQuantity = item.getQuantity() + newCartItem.getQuantity();
+                item.setQuantity(newQuantity);
+                item.setTotal(item.getIdProduct().getPrice() * newQuantity);
+                cartAdapter.updateCartOnServer(item);
+                cartAdapter.notifyDataSetChanged();
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            list_cart.add(newCartItem);
+            cartAdapter.addCartOnServer(newCartItem);
+            cartAdapter.notifyDataSetChanged();
+        }
+        cartAdapter.selectAll(false); // Bỏ check all sau khi thêm
+    }
+
 
     private void ShowDelAll(String userId){
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
@@ -179,5 +248,51 @@ public class CartFragment extends Fragment {
         builder.setNegativeButton("Hủy", null);
         builder.show();
     }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 100 && resultCode == getActivity().RESULT_OK && data != null) {
+            boolean deleteSelected = data.getBooleanExtra("delete_selected", false);
+            boolean reload = data.getBooleanExtra("reload_cart", false);
+
+            if (deleteSelected && cartAdapter != null) {
+                cartAdapter.deleteSelectedCarts();
+                skipReloadOnResume = true;  // Đánh dấu không reload nữa
+                return;  // Quan trọng!
+            }
+
+            if (reload) {
+                SharedPreferences sharedPreferences = getContext().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
+                String userId = sharedPreferences.getString("userId", null);
+                if (userId != null) {
+                    LoadCart(userId);
+                }
+            }
+        }
+    }
+
+
+
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        if (skipReloadOnResume) {
+            skipReloadOnResume = false;
+            return;
+        }
+
+        String userId = getContext().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE).getString("userId", null);
+        if (userId != null) {
+            LoadCart(userId);
+        }
+    }
+
+
+
+
+
 
 }
