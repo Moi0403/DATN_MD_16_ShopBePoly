@@ -47,7 +47,7 @@ import retrofit2.Response;
 
 public class ChiTietSanPham extends AppCompatActivity {
     private ImageView btnBack, btnFavorite, btnDecrease, btnIncrease, imgProduct, btnCart;
-    private TextView tvQuantity, tvProductName, tvPrice, tvDescription, tvKho;
+    private TextView tvQuantity, tvProductName, tvPrice, tvDescription, tvKho,tvCateProductName;
     private AppCompatButton btnAddToCart;
     private TextView size37, size38, size39, size40, size41;
     private int quantity = 1;
@@ -206,6 +206,7 @@ public class ChiTietSanPham extends AppCompatActivity {
         btnIncrease = findViewById(R.id.btnIncrease);
         tvQuantity = findViewById(R.id.tvQuantity);
         tvProductName = findViewById(R.id.tvProductName);
+        tvCateProductName = findViewById(R.id.tvCateProductName);
         tvPrice = findViewById(R.id.tvPrice);
         tvKho = findViewById(R.id.tvKho);
         tvDescription = findViewById(R.id.tvDescription);
@@ -448,6 +449,7 @@ public class ChiTietSanPham extends AppCompatActivity {
         if (product != null) {
             tvProductName.setText(product.getNameproduct());
             tvDescription.setText(product.getDescription());
+            tvCateProductName.setText("("+ product.getCategoryName()+")");
             tvPrice.setText(String.format("%,d đ", product.getPrice()));
         }
     }
