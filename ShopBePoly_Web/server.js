@@ -681,13 +681,21 @@ router.delete('/del_category/:id', async (req, res) => {
 router.get('/list_order', async (req, res) => {
     await mongoose.connect(uri);
     try {
-        const orders = await orderModel.find().populate('id_user'); 
+        const orders = await orderModel.find()
+            .sort({ date: -1 })
+            .populate('id_user', 'name')
+            .populate({
+                path: 'products.id_product',
+                select: 'nameproduct avt_imgproduct variations'
+            });
+
         res.send(orders);
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Lỗi lấy danh sách đơn hàng' });
     }
 });
+
 
 router.get('/list_order/:userId', async (req, res) => {
     try {
@@ -777,6 +785,17 @@ router.delete('/del_order/:id', async (req, res) => {
         res.status(500).json({ error: 'Lỗi server khi xóa sản phẩm' });
     }
 })
+
+router.delete('/delete_all_orders', async (req, res) => {
+  try {
+    await orderModel.deleteMany({});
+    res.status(200).json({ message: 'Đã xóa tất cả đơn hàng thành công' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Lỗi khi xóa đơn hàng' });
+  }
+});
+
 
 //Comment
 // ds comment 'http://localhost:3000/api/list_comment'

@@ -15,10 +15,22 @@ const role = localStorage.getItem('userRole');
       }
 }
 
-document.getElementById('dangxuat').addEventListener('click', () => {
-  const confirmLogout = confirm('Bạn có chắc chắn muốn đăng xuất không?');
-    if (confirmLogout) {
+document.addEventListener('DOMContentLoaded', () => {
+  const dangxuat = document.getElementById('dangxuat');
+  if (dangxuat) {
+    dangxuat.addEventListener('click', () => {
+      const confirmLogout = confirm('Bạn có chắc chắn muốn đăng xuất không?');
+      if (confirmLogout) {
         window.location.href = '../Web_TrangChu/TrangChu.html';
-    } else {
-    }
-})
+      }
+    });
+  }
+});
+
+
+function toggleDropdown(event) {
+  event.preventDefault();
+  const parent = event.currentTarget.parentElement;
+  parent.classList.toggle('open');
+}
+

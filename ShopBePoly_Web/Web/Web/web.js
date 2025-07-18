@@ -17,10 +17,18 @@ const hienthi_DSXN = async () => {
 
         const tdImg = document.createElement('td');
         const img = document.createElement('img');
-        img.src = `../../uploads/${product.img || product.id_product?.avt_imgproduct}`;
+
+        const imageName =
+          product.image ||
+          product.img ||
+          product.id_product?.variations?.find(v => v.color.name === product.color)?.image ||
+          product.id_product?.avt_imgproduct;
+
+        img.src = `http://${config.host}:${config.port}/uploads/${imageName}`;
         img.alt = 'Ảnh SP';
         img.style.width = '50px';
         tdImg.appendChild(img);
+
 
         const tdName_pro = document.createElement('td');
         tdName_pro.textContent = product.id_product?.nameproduct || '---';

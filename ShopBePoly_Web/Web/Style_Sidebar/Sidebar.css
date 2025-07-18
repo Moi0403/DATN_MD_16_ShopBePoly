@@ -141,6 +141,57 @@ body {
   padding: 20px;
   margin-top: 50px;
 }
+a:hover {
+  background-color: #1a2738; /* hiệu ứng hover */
+  color: #f0f0f0;
+}
+
+
+.dropdown {
+  position: relative;
+}
+
+.dropdown-menu {
+  display: none;
+  flex-direction: column;
+  padding-left: 15px;
+  margin-top: 5px;
+  border-radius: 4px;
+}
+
+.dropdown-menu a {
+  color: black; /* Hoặc màu nào dễ nhìn trên nền sidebar */
+  text-decoration: none;
+  padding: 8px 15px;
+  display: block;
+  border-bottom: 1px solid #2c3e50; /* đường phân cách */
+}
+
+.dropdown-menu a:hover {
+  background-color: #1a2738; /* hiệu ứng hover */
+  color: #f0f0f0;
+}
+
+
+.dropdown.open .dropdown-menu {
+  display: flex;
+}
+
+.dropdown-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  color: white; /* hoặc màu bạn muốn */
+  text-decoration: none;
+  user-select: none;
+}
+
+/* Thêm hover cho dropdown-toggle nếu muốn */
+.dropdown-toggle:hover {
+  color: #f0f0f0;
+}
+
 
 
     

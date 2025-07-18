@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -142,27 +141,7 @@
             </div>
         </div>
 
-        <div>
-            <!-- Nút mở menu -->
-            <button onclick="toggleSidebar()" class="menu-button">☰</button>
-
-            <!-- Overlay mờ nền -->
-            <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
-
-            <!-- Sidebar -->
-            <div class="sidebar" id="sidebar">
-                <div class="header_menu">
-                    <h2>Quản trị</h2>
-                    <button type="button" class="btn-close" aria-label="Close" onclick="toggleSidebar()"></button>
-                </div>
-                <a href="../Web_QL_Product/Ql_Product.html">Quản lý sản phẩm</a>
-                <a href="../Web_QL_Category/QL_Category.html">Quản lý thể loại giày</a>
-                <a href="../Web_QL_User/QL_User.html" id="menu-ql-tk">Quản lý tài khoản</a>
-                <a href="../Web_QL_Cart/QL_Cart.html">Quản lý đơn hàng</a>
-                <a href="#" id="dangxuat">Đăng xuất</a>
-            </div>
-
-        </div>
+        <div id="sidebar-container"></div>
     </div>
 
     <script src="../Style_Sidebar/Sidebar.js"></script>

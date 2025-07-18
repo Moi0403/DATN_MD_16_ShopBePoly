@@ -1,5 +1,11 @@
+fetch('../Style_Sidebar/Sidebar.html')
+  .then(res => res.text())
+  .then(data => {
+    document.getElementById('sidebar-container').innerHTML = data;
+  });
+
 const buttons = document.querySelectorAll('.tab-btn');
-  const content = document.getElementById('content');
+const content = document.getElementById('content');
 
   buttons.forEach(btn => {
     btn.addEventListener('click', async (e) => {

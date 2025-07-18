@@ -1,5 +1,11 @@
 const host = window.config;
 
+fetch('../Style_Sidebar/Sidebar.html')
+  .then(res => res.text())
+  .then(data => {
+    document.getElementById('sidebar-container').innerHTML = data;
+  });
+
 window.addEventListener('DOMContentLoaded', async () => {
     const cate_selet = document.getElementById('category_pro');
     const plSelect = document.getElementById('pl_pro');
