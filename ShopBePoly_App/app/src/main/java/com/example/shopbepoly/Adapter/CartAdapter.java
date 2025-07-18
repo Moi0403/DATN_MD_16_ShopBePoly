@@ -37,7 +37,9 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder> {
     private Context context;
@@ -159,10 +161,19 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
         holder.item_mausize.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                CartBottomSheetDialog dialog = new CartBottomSheetDialog(context, product);
+                CartBottomSheetDialog dialog = new CartBottomSheetDialog(
+                        context,
+                        product,
+                        frag_total,  // Truyền thẳng fragment implement listener
+                        cart.get_id()
+                );
+
                 dialog.show(((AppCompatActivity) context).getSupportFragmentManager(), "CartBottomSheetDialog");
             }
         });
+
+
+
 
     }
 
@@ -193,10 +204,10 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
     }
     private void update_quantity(Cart cart){
         ApiService apiService = ApiClient.getApiService();
-        Call<List<Cart>> call = apiService.upCart(cart.get_id(), cart);
-        call.enqueue(new Callback<List<Cart>>() {
+        Call<Cart> call = apiService.upCart(cart.get_id(), cart);
+        call.enqueue(new Callback<Cart>() {
             @Override
-            public void onResponse(Call<List<Cart>> call, Response<List<Cart>> response) {
+            public void onResponse(Call<Cart> call, Response<Cart> response) {
                 if (response.isSuccessful()) {
                     Toast.makeText(context, "Cập nhật thành công", Toast.LENGTH_SHORT).show();
                 } else {
@@ -206,7 +217,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
             }
 
             @Override
-            public void onFailure(Call<List<Cart>> call, Throwable t) {
+            public void onFailure(Call<Cart> call, Throwable t) {
 
             }
         });
@@ -252,8 +263,45 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
         builder.setNegativeButton("Hủy", null);
         builder.show();
     }
+    public void deleteSelectedCarts() {
+        List<String> idsToDelete = new ArrayList<>();
+        for (Cart cart : list_cart) {
+            if (cart.getStatus() == 1) {
+                idsToDelete.add(cart.get_id());
+            }
+        }
 
-    private void updateTotalPrice() {
+        if (idsToDelete.isEmpty()) {
+            Toast.makeText(context, "Không có sản phẩm nào được chọn để xóa", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        ApiService apiService = ApiClient.getApiService();
+        Map<String, List<String>> body = new HashMap<>();
+        body.put("cartIds", idsToDelete);
+
+        apiService.deleteCartItems(body).enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                if (response.isSuccessful()) {
+                    Toast.makeText(context, "Xóa các sản phẩm đã đặt thành công", Toast.LENGTH_SHORT).show();
+                    list_cart.removeIf(cart -> cart.getStatus() == 1);
+                    notifyDataSetChanged();
+                    updateTotalPrice();
+                    frag_total.checkbox_select_all.setChecked(false);
+                } else {
+                    Toast.makeText(context, "Xóa thất bại", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+                Toast.makeText(context, "Lỗi kết nối khi xóa", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    public void updateTotalPrice() {
         int total = 0;
         for (Cart item : list_cart) {
             if (item.getStatus() == 1) {
@@ -285,6 +333,45 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
             }
         }
         return selected;
+    }
+    public void addCartOnServer(Cart cart) {
+        ApiService apiService = ApiClient.getApiService();
+        Call<Cart> call = apiService.addCart(cart);
+        call.enqueue(new Callback<Cart>() {
+            @Override
+            public void onResponse(Call<Cart> call, Response<Cart> response) {
+                if (response.isSuccessful()) {
+                    Toast.makeText(context, "Thêm vào giỏ hàng thành công", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(context, "Thêm giỏ hàng thất bại", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Cart>call, Throwable t) {
+                Toast.makeText(context, "Lỗi kết nối khi thêm giỏ hàng", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    public void updateCartOnServer(Cart cart) {
+        ApiService apiService = ApiClient.getApiService();
+        Call<Cart> call = apiService.upCart(cart.get_id(), cart);
+        call.enqueue(new Callback<Cart>() {
+            @Override
+            public void onResponse(Call<Cart> call, Response<Cart> response) {
+                if (response.isSuccessful()) {
+                    Toast.makeText(context, "Cập nhật số lượng thành công", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(context, "Cập nhật thất bại", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Cart> call, Throwable t) {
+                Toast.makeText(context, "Lỗi kết nối khi cập nhật", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
 }

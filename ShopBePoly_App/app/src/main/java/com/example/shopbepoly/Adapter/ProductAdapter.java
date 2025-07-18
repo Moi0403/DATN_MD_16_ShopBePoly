@@ -47,6 +47,7 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
     public ProductAdapter(Context context, List<Product> productList) {
         this.context = context;
         this.productList = productList;
+        setHasStableIds(true);
     }
 
     @NonNull
@@ -222,7 +223,7 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
 
     }
     {   // khối init
-        setHasStableIds(true);
+
     }
 
     @Override

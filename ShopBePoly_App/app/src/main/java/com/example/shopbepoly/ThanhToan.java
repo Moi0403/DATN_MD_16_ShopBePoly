@@ -47,6 +47,8 @@ public class ThanhToan extends AppCompatActivity {
     private int productPrice = 0;
     private int shippingFee = 30000;
     private String selectedSize = "", selectedColor = "", userId;
+    private List<String> selectedCartIds = new ArrayList<>();
+
 
     private TextView txtProductName, txtProductColor, txtProductQuantity, txtProductSize, txtProductPrice,
             txtProductTotal, txtShippingFee, txtTotalPayment, txtCustomerName, txtCustomerAddress, txtCustomerPhone, txtShippingNote;
@@ -381,6 +383,7 @@ public class ThanhToan extends AppCompatActivity {
 
                     totalAmount += cart.getIdProduct().getPrice() * cart.getQuantity();
                     productsInOrderList.add(productInOrder);
+                    selectedCartIds.add(cart.get_id());
                 }
             } else if (selectedProduct != null) {
                 ProductInOrder productInOrder = new ProductInOrder();
@@ -461,15 +464,18 @@ public class ThanhToan extends AppCompatActivity {
                 btnDatHang.setText("Đặt hàng");
 
                 if (response.isSuccessful() && response.body() != null){
-                    Toast.makeText(ThanhToan.this, "Đặt hàng thaành công", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(ThanhToan.this, "Đặt hàng thành công", Toast.LENGTH_SHORT).show();
 
                     //xóa cart nếu đặt hàng từ cart
                     String jsonCart = getIntent().getStringExtra("cart_list");
-                    if (jsonCart != null && !jsonCart.isEmpty()){
-                        clearCartAfterOrder();
+                    if (!selectedCartIds.isEmpty()) {
+                        clearSelectedCartAfterOrder(selectedCartIds);
                     }
 
-                    startActivity(new Intent(ThanhToan.this, Dathangthanhcong.class));
+                    startActivity(new Intent(ThanhToan.this, DonMua.class));
+                    Intent resultIntent = new Intent();
+                    resultIntent.putExtra("reload_cart", true);
+                    setResult(RESULT_OK, resultIntent);
                     finish();
                 } else {
                     //nếu Api fail, lưu vào local
@@ -521,12 +527,17 @@ public class ThanhToan extends AppCompatActivity {
 
             //xóa cart nếu đặt hàng từ cart
             String jsonCart = getIntent().getStringExtra("cart_list");
-            if (jsonCart != null && !jsonCart.isEmpty()){
-                clearCartAfterOrder();
+            if (!selectedCartIds.isEmpty()) {
+                clearSelectedCartAfterOrder(selectedCartIds);
             }
 
-            startActivity(new Intent(ThanhToan.this, Dathangthanhcong.class));
+            Intent resultIntent = new Intent();
+            resultIntent.putExtra("delete_selected", true);
+            setResult(RESULT_OK, resultIntent);
             finish();
+
+
+
 
         } catch (Exception e) {
             Log.e(TAG, "Error saving order locally", e);
@@ -534,24 +545,28 @@ public class ThanhToan extends AppCompatActivity {
         }
     }
 
-    private void clearCartAfterOrder(){
+    private void clearSelectedCartAfterOrder(List<String> selectedCartIds){
         try {
             ApiService apiService = ApiClient.getApiService();
-            apiService.deleteAllCart(userId).enqueue(new Callback<ResponseBody>() {
+            Map<String, List<String>> body = new HashMap<>();
+            body.put("cartIds", selectedCartIds);
+
+            apiService.deleteCartItems(body).enqueue(new Callback<ResponseBody>() {
                 @Override
                 public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                     if (response.isSuccessful()){
-                        Log.d(TAG, "Cart cleared successfully");
+                        Log.d(TAG, "Selected cart items cleared successfully");
                     }
                 }
 
                 @Override
                 public void onFailure(Call<ResponseBody> call, Throwable t) {
-                    Log.e(TAG, "Failed to clear cart", t);
+                    Log.e(TAG, "Failed to clear selected cart items", t);
                 }
             });
         } catch (Exception e) {
-            Log.e(TAG, "Error clearing cart", e);
+            Log.e(TAG, "Error clearing selected cart items", e);
         }
     }
+
 }

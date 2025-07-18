@@ -3,6 +3,7 @@ package com.example.shopbepoly.API;
 import com.example.shopbepoly.DTO.*;
 
 import java.util.List;
+import java.util.Map;
 
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
@@ -74,13 +75,18 @@ public interface ApiService {
     Call<List<Cart>> getCart(@Path("userId") String userId);
 
     @PUT("up_cart/{cartId}")
-    Call<List<Cart>> upCart(@Path("cartId") String cartId, @Body Cart cart);
+    Call<Cart> upCart(@Path("cartId") String cartId, @Body Cart cart);
+
 
     @DELETE("del_cart/{cartId}")
     Call<ResponseBody> delCart(@Path("cartId") String cartId);
 
+
     @DELETE("delete_all_cart/{userId}")
     Call<ResponseBody> deleteAllCart(@Path("userId") String userId);
+    @POST("delete_cart_items")
+    Call<ResponseBody> deleteCartItems(@Body Map<String, List<String>> cartIds);
+
 
 
     @POST("add_order")
