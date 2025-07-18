@@ -83,6 +83,7 @@ public class CartBottomSheetDialog extends BottomSheetDialogFragment {
         TextView tvGia = view.findViewById(R.id.tv_gia_cart);
         TextView tvKho = view.findViewById(R.id.tv_kho_cart);
         TextView tvTen = view.findViewById(R.id.tv_ten_cart);
+        TextView tv_cate_product = view.findViewById(R.id.tv_cate_cart);
         ImageView btnDecrease = view.findViewById(R.id.btn_giamSL);
         ImageView btnIncrease = view.findViewById(R.id.btn_tangSL);
         img = view.findViewById(R.id.img_btm_cart);
@@ -93,6 +94,7 @@ public class CartBottomSheetDialog extends BottomSheetDialogFragment {
         tvGia.setText("Giá: " + String.format("%,d", product.getPrice()) + " đ");
         tvTen.setText(product.getNameproduct());
         tvQuantity.setText(String.valueOf(quantity));
+        tv_cate_product.setText("("+product.getCategoryName()+")");
         // Tính tổng kho từ các variations
                 int totalStock = 0;
                 for (Variation v : product.getVariations()) {
