@@ -590,7 +590,26 @@ router.delete('/delete_all_cart/:userId', async (req, res) => {
     }
 });
 
+// Xoá nhiều sản phẩm trong giỏ hàng (sau khi đặt hàng)
+router.post('/delete_cart_items', async (req, res) => {
+    try {
+        const { cartIds } = req.body;  // [{...}, {...}] hoặc ["id1", "id2"]
 
+        if (!Array.isArray(cartIds) || cartIds.length === 0) {
+            return res.status(400).json({ message: 'Danh sách cartIds không hợp lệ' });
+        }
+
+        const result = await cartModel.deleteMany({ _id: { $in: cartIds } });
+
+        res.status(200).json({
+            message: 'Xóa các sản phẩm trong giỏ thành công',
+            deletedCount: result.deletedCount
+        });
+    } catch (error) {
+        console.error('Lỗi xóa nhiều sản phẩm trong giỏ:', error);
+        res.status(500).json({ message: 'Lỗi server khi xóa giỏ hàng' });
+    }
+});
 
 // category
 // lấy ds product theo thể loại
