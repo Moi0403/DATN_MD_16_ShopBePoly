@@ -43,9 +43,10 @@ public class DonMua extends AppCompatActivity {
                     switch (position) {
                         case 0: tab.setText("Chờ xác nhận"); break;
                         case 1: tab.setText("Đang lấy hàng"); break;
-                        case 2: tab.setText("Đang giao"); break;
-                        case 3: tab.setText("Đã giao"); break;
-                        case 4: tab.setText("Đã hủy"); break;
+                        case 2: tab.setText("Lấy hàng thành công"); break;
+                        case 3: tab.setText("Đang giao"); break;
+                        case 4: tab.setText("Đã giao"); break;
+                        case 5: tab.setText("Đã hủy"); break;
                     }
                 }).attach();
         btn_back.setOnClickListener(new View.OnClickListener() {

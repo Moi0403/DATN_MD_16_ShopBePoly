@@ -134,16 +134,12 @@ public class CartBottomSheetDialog extends BottomSheetDialogFragment {
             }
         });
 
-
-        // Hiển thị màu
-        // Trong onCreateView, sau phần ánh xạ view:
-
-
-// Nếu đang chỉnh sửa thì load thông tin cũ và hiển thị
         if (editingCartId != null) {
             // Đang chỉnh sửa giỏ hàng
             SharedPreferences sharedPreferences = context.getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
             String userId = sharedPreferences.getString("userId", null);
+
+            btnAdd.setText("Cập nhật đơn hàng");
 
             if (userId != null) {
                 ApiService apiService = ApiClient.getApiService();
@@ -194,153 +190,193 @@ public class CartBottomSheetDialog extends BottomSheetDialogFragment {
                 });
             }
         } else {
-            // Thêm mới
+
             showColors(layoutColorContainer, layoutSizeContainer, tvKho, true);
             showSizes(layoutSizeContainer, tvKho, true);
         }
 
 
-        btnAdd.setOnClickListener(v -> {
-            if (selectedColorCode.isEmpty() || selectedSize.isEmpty()) {
-                Toast.makeText(context, "Vui lòng chọn đầy đủ thông tin", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            if (selectedColorCode.isEmpty()) {
-                Toast.makeText(context, "Vui lòng chọn màu sản phẩm", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            if (selectedSize.isEmpty()) {
-                Toast.makeText(context, "Vui lòng chọn size sản phẩm", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            SharedPreferences sharedPreferences = context.getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
-            String userId = sharedPreferences.getString("userId", null);
-            if (userId == null) {
-                Toast.makeText(context, "Không tìm thấy người dùng", Toast.LENGTH_SHORT).show();
-                return;
-            }
+        btnAdd.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (selectedColorName == null || selectedSize == null || quantity <= 0 || selectedColorName.isEmpty() || selectedSize.isEmpty()) {
+                    Toast.makeText(context, "Vui lòng chọn màu, size và số lượng hợp lệ", Toast.LENGTH_SHORT).show();
+                    return;
+                }
 
-            ApiService apiService = ApiClient.getApiService();
-            apiService.getCart(userId).enqueue(new Callback<List<Cart>>() {
-                @Override
-                public void onResponse(Call<List<Cart>> call, Response<List<Cart>> response) {
-                    if (response.isSuccessful() && response.body() != null) {
-                        boolean merged = false;
-                        for (Cart c : response.body()) {
-                            if (c.getIdProduct().get_id().equals(product.get_id())
-                                    && c.getColor().equals(selectedColorName)
-                                    && c.getSize() == Integer.parseInt(selectedSize)) {
-                                if (editingCartId == null) {
-                                    // Thêm mới nhưng trùng -> cộng dồn
-                                    int newQty = c.getQuantity() + quantity;
-                                    c.setQuantity(newQty);
-                                    c.setTotal(product.getPrice() * newQty);
-                                    apiService.upCart(c.get_id(), c).enqueue(new Callback<Cart>() {
-                                        @Override
-                                        public void onResponse(Call<Cart> call, Response<Cart> response) {
-                                            if (updateListener != null) updateListener.onCartUpdated();
-                                            dismiss();
-                                        }
+                SharedPreferences sharedPreferences = context.getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
+                String userId = sharedPreferences.getString("userId", null);
+                if (userId == null) {
+                    Toast.makeText(context, "Không tìm thấy người dùng", Toast.LENGTH_SHORT).show();
+                    return;
+                }
 
-                                        @Override
-                                        public void onFailure(Call<Cart> call, Throwable t) {
-                                            dismiss();
-                                        }
-                                    });
-                                    merged = true;
-                                    break;
-                                } else if (!c.get_id().equals(editingCartId)) {
-                                    // Đang sửa, nhưng trùng item khác -> cộng dồn + xóa cái đang sửa
-                                    int newQty = c.getQuantity() + quantity;
-                                    c.setQuantity(newQty);
-                                    c.setTotal(product.getPrice() * newQty);
-                                    apiService.upCart(c.get_id(), c).enqueue(new Callback<Cart>() {
-                                        @Override
-                                        public void onResponse(Call<Cart> call, Response<Cart> response) {
-                                            apiService.delCart(editingCartId).enqueue(new Callback<ResponseBody>() {
-                                                @Override
-                                                public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                                                    Toast.makeText(context, "Đã cập nhật giỏ hàng", Toast.LENGTH_SHORT).show();  // THÊM VÀO ĐÂY
-                                                    if (updateListener != null) updateListener.onCartUpdated();
-                                                    dismiss();
-                                                }
+                // 👉 Tìm biến thể chính xác để lấy ảnh và giá
+                String selectedImageUrl = product.getAvt_imgproduct();
+                int selectedPrice = product.getPrice();
 
-                                                @Override
-                                                public void onFailure(Call<ResponseBody> call, Throwable t) {
-                                                    if (updateListener != null) updateListener.onCartUpdated();
-                                                    dismiss();
-                                                }
-                                            });
-                                        }
+                for (Variation variant : product.getVariations()) {
+                    if (variant.getColor() != null &&
+                            variant.getColor().getName().equals(selectedColorName) &&
+                            String.valueOf(variant.getSize()).equals(selectedSize)) {
 
-                                        @Override
-                                        public void onFailure(Call<Cart> call, Throwable t) {
-                                            dismiss();
-                                        }
-                                    });
-                                    merged = true;
-                                    break;
-                                }
-                            }
+                        if (variant.getList_imgproduct() != null && !variant.getList_imgproduct().isEmpty()) {
+                            selectedImageUrl = ApiClient.IMAGE_URL + variant.getList_imgproduct().get(0);
                         }
-
-                        if (!merged) {
-                            Cart cart = new Cart();
-                            cart.setIdUser(userId);
-                            cart.setIdProduct(product);
-                            cart.setImg_cart(selectedImageUrl);
-                            cart.setPrice(product.getPrice());
-                            cart.setQuantity(quantity);
-                            cart.setTotal(product.getPrice() * quantity);
-                            cart.setSize(Integer.parseInt(selectedSize));
-                            cart.setColor(selectedColorName);
-                            cart.setStatus(0);
-
-                            if (editingCartId != null) {
-                                apiService.upCart(editingCartId, cart).enqueue(new Callback<Cart>() {
-                                    @Override
-                                    public void onResponse(Call<Cart> call, Response<Cart> response) {
-                                        Toast.makeText(context, "Cập nhật giỏ hàng thành công", Toast.LENGTH_SHORT).show();  // THÊM VÀO ĐÂY
-                                        if (updateListener != null) updateListener.onCartUpdated();
-                                        dismiss();
-                                    }
-
-                                    @Override
-                                    public void onFailure(Call<Cart> call, Throwable t) {
-                                        Toast.makeText(context, "Lỗi kết nối khi cập nhật", Toast.LENGTH_SHORT).show();
-                                    }
-                                });
-                            } else {
-                                apiService.addCart(cart).enqueue(new Callback<Cart>() {
-                                    @Override
-                                    public void onResponse(Call<Cart> call, Response<Cart> response) {
-                                        Toast.makeText(context, "Đã thêm vào giỏ hàng", Toast.LENGTH_SHORT).show();  // ĐÃ CÓ SẴN Ở ĐÂY
-                                        if (updateListener != null){
-                                            updateListener.onCartItemAdded(cart);
-                                        }
-                                        dismiss();
-                                    }
-
-                                    @Override
-                                    public void onFailure(Call<Cart> call, Throwable t) {
-                                        Toast.makeText(context, "Lỗi kết nối khi thêm mới", Toast.LENGTH_SHORT).show();
-                                    }
-                                });
-                            }
-                        }
+                        break;
                     }
                 }
 
-                @Override
-                public void onFailure(Call<List<Cart>> call, Throwable t) {
-                    Toast.makeText(context, "Lỗi kết nối", Toast.LENGTH_SHORT).show();
-                }
-            });
+                ApiService apiService = ApiClient.getApiService();
+
+                String finalSelectedImageUrl = selectedImageUrl;
+                apiService.getCart(userId).enqueue(new Callback<List<Cart>>() {
+                    @Override
+                    public void onResponse(Call<List<Cart>> call, Response<List<Cart>> response) {
+                        if (response.isSuccessful()) {
+                            List<Cart> cartList = response.body();
+                            Cart matchingCart = null;
+                            for (Cart cartItem : cartList) {
+                                if (cartItem.getIdProduct().get_id().equals(product.get_id())
+                                        && cartItem.getColor().equals(selectedColorName)
+                                        && cartItem.getSize() == Integer.parseInt(selectedSize)
+                                        && (editingCartId == null || !cartItem.get_id().equals(editingCartId))) {
+                                    matchingCart = cartItem;
+                                    break;
+                                }
+                            }
+
+                            if (editingCartId != null) {
+                                if (matchingCart != null) {
+                                    int newQuantity = matchingCart.getQuantity() + quantity;
+                                    matchingCart.setQuantity(newQuantity);
+                                    matchingCart.setTotal(selectedPrice * newQuantity);
+                                    apiService.upCart(matchingCart.get_id(), matchingCart).enqueue(new Callback<Cart>() {
+                                        @Override
+                                        public void onResponse(Call<Cart> call, Response<Cart> response) {
+                                            if (response.isSuccessful()) {
+                                                apiService.delCart(editingCartId).enqueue(new Callback<ResponseBody>() {
+                                                    @Override
+                                                    public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                                                        if (response.isSuccessful()) {
+                                                            Toast.makeText(context, "Đã gộp và xóa đơn hàng", Toast.LENGTH_SHORT).show();
+                                                            dismiss();
+                                                            if (updateListener != null) updateListener.onCartUpdated();
+                                                        } else {
+                                                            Toast.makeText(context, "Lỗi khi xóa đơn hàng", Toast.LENGTH_SHORT).show();
+                                                        }
+                                                    }
+
+                                                    @Override
+                                                    public void onFailure(Call<ResponseBody> call, Throwable t) {
+
+                                                    }
+                                                });
+                                            } else {
+                                                Toast.makeText(context, "Lỗi khi cập nhật giỏ hàng", Toast.LENGTH_SHORT).show();
+                                            }
+                                        }
+
+                                        @Override
+                                        public void onFailure(Call<Cart> call, Throwable t) {
+                                            Toast.makeText(context, "Lỗi mạng: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                                        }
+                                    });
+                                } else {
+                                    Cart updatedCart = new Cart();
+                                    updatedCart.setIdUser(userId);
+                                    updatedCart.setIdProduct(product);
+                                    updatedCart.setColor(selectedColorName);
+                                    updatedCart.setSize(Integer.parseInt(selectedSize));
+                                    updatedCart.setQuantity(quantity);
+                                    updatedCart.setImg_cart(finalSelectedImageUrl);
+                                    updatedCart.setPrice(selectedPrice);
+                                    updatedCart.setTotal(selectedPrice * quantity);
+
+                                    apiService.upCart(editingCartId, updatedCart).enqueue(new Callback<Cart>() {
+                                        @Override
+                                        public void onResponse(Call<Cart> call, Response<Cart> response) {
+                                            if (response.isSuccessful()) {
+                                                Toast.makeText(context, "Đã cập nhật đơn hàng", Toast.LENGTH_SHORT).show();
+                                                dismiss();
+                                                if (updateListener != null) updateListener.onCartUpdated();
+                                            } else {
+                                                Toast.makeText(context, "Lỗi khi cập nhật đơn hàng", Toast.LENGTH_SHORT).show();
+                                            }
+                                        }
+
+                                        @Override
+                                        public void onFailure(Call<Cart> call, Throwable t) {
+                                            Toast.makeText(context, "Lỗi mạng: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                                        }
+                                    });
+                                }
+                            } else {
+                                // Trường hợp thêm mới
+                                if (matchingCart != null) {
+                                    int newQuantity = matchingCart.getQuantity() + quantity;
+                                    matchingCart.setQuantity(newQuantity);
+                                    matchingCart.setTotal(selectedPrice * newQuantity);
+
+                                    apiService.upCart(matchingCart.get_id(), matchingCart).enqueue(new Callback<Cart>() {
+                                        @Override
+                                        public void onResponse(Call<Cart> call, Response<Cart> response) {
+                                            if (response.isSuccessful()) {
+                                                Toast.makeText(context, "Đã cập nhật số lượng", Toast.LENGTH_SHORT).show();
+                                                dismiss();
+                                                if (updateListener != null) updateListener.onCartUpdated();
+                                            } else {
+                                                Toast.makeText(context, "Lỗi khi cập nhật giỏ hàng", Toast.LENGTH_SHORT).show();
+                                            }
+                                        }
+
+                                        @Override
+                                        public void onFailure(Call<Cart> call, Throwable t) {
+                                            Toast.makeText(context, "Lỗi mạng: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                                        }
+                                    });
+                                } else {
+                                    Cart newCart = new Cart();
+                                    newCart.setIdUser(userId);
+                                    newCart.setIdProduct(product);
+                                    newCart.setColor(selectedColorName);
+                                    newCart.setSize(Integer.parseInt(selectedSize));
+                                    newCart.setQuantity(quantity);
+                                    newCart.setImg_cart(finalSelectedImageUrl);
+                                    newCart.setPrice(selectedPrice);
+                                    newCart.setTotal(selectedPrice * quantity);
+
+                                    apiService.addCart(newCart).enqueue(new Callback<Cart>() {
+                                        @Override
+                                        public void onResponse(Call<Cart> call, Response<Cart> response) {
+                                            if (response.isSuccessful()) {
+                                                Toast.makeText(context, "Đã thêm vào giỏ hàng", Toast.LENGTH_SHORT).show();
+                                                dismiss();
+                                                if (updateListener != null) updateListener.onCartUpdated();
+                                            } else {
+                                                Toast.makeText(context, "Lỗi khi thêm giỏ hàng", Toast.LENGTH_SHORT).show();
+                                            }
+                                        }
+
+                                        @Override
+                                        public void onFailure(Call<Cart> call, Throwable t) {
+                                            Toast.makeText(context, "Lỗi mạng: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                                        }
+                                    });
+                                }
+                            }
+                        } else {
+                            Toast.makeText(context, "Không lấy được giỏ hàng", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<List<Cart>> call, Throwable t) {
+                        Toast.makeText(context, "Lỗi mạng: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
         });
-
-
-
-
         return view;
     }
 
@@ -541,8 +577,6 @@ public class CartBottomSheetDialog extends BottomSheetDialogFragment {
         }
         return 0;
     }
-
-
 
 
 }

@@ -9,7 +9,7 @@ const hienthiOrder = async () => {
     const data = await res.json();
 
     // Lọc các đơn hàng có status là "Đang xử lý"
-    const filteredOrders = data.filter(order => order.status === "Đã giao");
+    const filteredOrders = data.filter(order => order.status === "Lấy hàng thành công");
 
     filteredOrders.forEach(order => {
       const { _id, id_user, products, total, address, date, pay, status } = order;
@@ -18,7 +18,7 @@ const hienthiOrder = async () => {
       const productInfo = products.map(product => {
         const productData = product.id_product || {};
         const color = product.color || '';
-       const category = productData.id_category?.title || 'Không có thể loại';
+        const category = productData.id_category?.title || 'Không có thể loại';
         let imageUrl = '';
 
         // Tìm variation theo tên màu
@@ -65,6 +65,7 @@ const hienthiOrder = async () => {
         <td>${formattedDate}</td>
         <td>${pay}</td>
         <td>${statusColor}</td>
+        <td><button class="btn btn-primary btn-add-size mt-2" onclick="confirmOrder('${_id}')">Xác nhận</button></td>
       `;
       tbody.appendChild(tr);
     });
@@ -76,6 +77,40 @@ const hienthiOrder = async () => {
 
 hienthiOrder();
 
+// Hàm xác nhận và cập nhật trạng thái
+async function confirmOrder(orderId) {
+  try {
+    const res = await fetch(`http://${config.host}:${config.port}/api/list_order`);
+    const data = await res.json();
+    const order = data.find(o => o._id === orderId);
+
+    if (!order) {
+      alert('Không tìm thấy đơn hàng');
+      return;
+    }
+    const response = await fetch(`http://${config.host}:${config.port}/api/updateOrderStatus/${orderId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        status: "Đang giao"
+      })
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      alert(result.message);
+      hienthiOrder(); // Tải lại danh sách để cập nhật giao diện
+    } else {
+      alert('Lỗi: ' + result.message);
+    }
+  } catch (error) {
+    console.error('Lỗi khi xác nhận đơn hàng:', error);
+    alert('Lỗi khi xác nhận đơn hàng');
+  }
+}
 
 fetch('../Style_Sidebar/Sidebar.html')
   .then(res => res.text())

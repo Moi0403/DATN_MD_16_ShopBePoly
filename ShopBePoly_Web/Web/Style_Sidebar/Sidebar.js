@@ -14,20 +14,6 @@ const role = localStorage.getItem('userRole');
         menuQLTK.style.display = 'none';
       }
 }
-
-document.addEventListener('DOMContentLoaded', () => {
-  const dangxuat = document.getElementById('dangxuat');
-  if (dangxuat) {
-    dangxuat.addEventListener('click', () => {
-      const confirmLogout = confirm('Bạn có chắc chắn muốn đăng xuất không?');
-      if (confirmLogout) {
-        window.location.href = '../Web_TrangChu/TrangChu.html';
-      }
-    });
-  }
-});
-
-
 function toggleDropdown(event) {
   event.preventDefault();
   const parent = event.currentTarget.parentElement;

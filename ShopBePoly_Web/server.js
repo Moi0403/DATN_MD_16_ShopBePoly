@@ -529,16 +529,20 @@ router.put('/up_cart/:idCart', async (req, res) => {
             cartId,
             {
                 $set: {
-                    id_user: data.id_user,
-                    id_product: data.id_product,
-                    quantity: data.quantity,
-                    price: data.price,
-                    total: data.total,
-                    status: data.status,
+                id_user: data.id_user,
+                id_product: data.id_product,
+                quantity: data.quantity,
+                price: data.price,
+                total: data.total,
+                status: data.status,
+                color: data.color,
+                size: data.size,
+                img_cart: data.img_cart
                 }
             },
             { new: true }
         );
+
 
         if (upCart) {
             res.json({
@@ -705,9 +709,12 @@ router.get('/list_order', async (req, res) => {
             .populate('id_user', 'name')
             .populate({
                 path: 'products.id_product',
-                select: 'nameproduct avt_imgproduct variations'
+                select: 'nameproduct avt_imgproduct variations id_category',
+                populate: {
+                    path: 'id_category',
+                    select: 'title' // Lấy đúng title của thể loại
+                }
             });
-
         res.send(orders);
     } catch (err) {
         console.error(err);
@@ -813,6 +820,36 @@ router.delete('/delete_all_orders', async (req, res) => {
     console.error(err);
     res.status(500).json({ message: 'Lỗi khi xóa đơn hàng' });
   }
+});
+
+
+router.put('/updateOrderStatus/:orderId', async (req, res) => {
+    try {
+        const orderId = req.params.orderId;
+        const { status } = req.body;
+
+        // Kiểm tra xem status có được cung cấp không
+        if (!status) {
+            return res.status(400).json({ message: 'Trạng thái không được để trống' });
+        }
+
+        // Tìm và cập nhật đơn hàng
+        const order = await orderModel.findByIdAndUpdate(
+            orderId,
+            { status: status },
+            { new: true, runValidators: true } // Trả về tài liệu đã cập nhật và chạy validator
+        );
+
+        // Kiểm tra xem đơn hàng có tồn tại không
+        if (!order) {
+            return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+        }
+
+        res.status(200).json({ message: 'Cập nhật trạng thái thành công', order });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Lỗi máy chủ nội bộ', error: error.message });
+    }
 });
 
 

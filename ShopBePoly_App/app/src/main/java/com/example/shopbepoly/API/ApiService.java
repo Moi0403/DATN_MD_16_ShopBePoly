@@ -98,6 +98,9 @@ public interface ApiService {
     @DELETE("del_order/{id}")
     Call<Void> deleteOrder(@Path("id") String id);
 
+    @PUT("updateOrderStatus/{orderId}")
+    Call<Order> upStatus(@Path("orderId") String id, @Body Order order);
+
 
     @POST("add_favorite")
     Call<Favorite> addFavorite(@Body Favorite favorite);

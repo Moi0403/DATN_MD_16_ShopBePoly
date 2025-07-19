@@ -95,6 +95,19 @@
                 android:textColor="#FFFFFF"
                 android:textSize="12sp"
                 android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/btnNhan"
+                android:layout_width="130dp"
+                android:layout_height="40dp"
+                android:layout_marginLeft="20dp"
+                app:backgroundTint="@null"
+                android:background="@drawable/button_bg"
+                android:text="Đã nhận hàng"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
         </LinearLayout>
     </LinearLayout>
 </androidx.cardview.widget.CardView>

@@ -7,6 +7,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.example.shopbepoly.API.ApiClient;
+import com.example.shopbepoly.API.ApiService;
 import com.example.shopbepoly.Chitietdonhang;
 import com.example.shopbepoly.DTO.Order;
 import com.example.shopbepoly.R;
@@ -16,8 +18,10 @@ import com.google.gson.Gson;
 
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.text.DecimalFormat;
@@ -27,6 +31,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHolder> {
 
@@ -78,6 +86,35 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
             }
         });
 
+        if ("Đang xử lý".equalsIgnoreCase(order.getStatus())) {
+            holder.btnHuy.setVisibility(View.VISIBLE);
+            holder.btnNhan.setVisibility(View.GONE);
+        } else if ("Đang giao".equalsIgnoreCase(order.getStatus())){
+            holder.btnNhan.setVisibility(View.VISIBLE);
+            holder.btnHuy.setVisibility(View.GONE);
+        }else {
+            holder.btnHuy.setVisibility(View.GONE);
+            holder.btnNhan.setVisibility(View.GONE);
+        }
+
+        holder.btnNhan.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                builder.setIcon(R.drawable.thongbao);
+                builder.setTitle("Thông báo");
+                builder.setMessage("Bạn chắc chắn đã nhận được hàng ?");
+                builder.setPositiveButton("Đúng", (dialog, which) -> {
+                    Order order1 = new Order();
+                    order1.set_id(order.get_id());
+                    order1.setStatus("Đã giao");
+                    UpdateOrder(order1);
+                });
+
+                builder.setNegativeButton("Hủy", null);
+                builder.show();
+            }
+        });
 
     }
 
@@ -88,7 +125,7 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
 
     public static class OrderViewHolder extends RecyclerView.ViewHolder {
         TextView tvmaDH, tvthanhTien, tvngayMua, tvTT, tvSoLuongSP;
-        Button btnHuy, btnChiTiet;
+        Button btnHuy, btnChiTiet, btnNhan;
 
         public OrderViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -99,6 +136,7 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
             tvTT = itemView.findViewById(R.id.tvTT);
             btnHuy = itemView.findViewById(R.id.btnHuy);
             btnChiTiet = itemView.findViewById(R.id.btnChitiet);
+            btnNhan = itemView.findViewById(R.id.btnNhan);
         }
     }
 
@@ -118,6 +156,28 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
             e.printStackTrace();
             return isoDate; // fallback nếu lỗi
         }
+    }
+
+    private void UpdateOrder(Order order){
+        ApiService apiService = ApiClient.getApiService();
+        Call<Order> call = apiService.upStatus(order.get_id(), order);
+        call.enqueue(new Callback<Order>() {
+            @Override
+            public void onResponse(Call<Order> call, Response<Order> response) {
+                if (response.isSuccessful()) {
+                    Toast.makeText(context, "Cập nhật thành công", Toast.LENGTH_SHORT).show();
+                    // Cập nhật lại danh sách hoặc giao diện nếu cần
+                    notifyDataSetChanged(); // Làm mới adapter
+                } else {
+                    Toast.makeText(context, "Cập nhật thất bại: " + response.message(), Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Order> call, Throwable t) {
+
+            }
+        });
     }
 
 }

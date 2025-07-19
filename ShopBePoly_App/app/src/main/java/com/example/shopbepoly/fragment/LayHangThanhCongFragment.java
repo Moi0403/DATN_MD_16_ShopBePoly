@@ -28,15 +28,14 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class DaGiaoFragment extends Fragment {
-
+public class LayHangThanhCongFragment extends Fragment {
     private RecyclerView rc_choXN;
     private OrderAdapter orderAdapter;
     private List<Order> list_order = new ArrayList<>();
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_da_giao, container, false);
+        View view = inflater.inflate(R.layout.fragment_dang_lay_hang, container, false);
         rc_choXN = view.findViewById(R.id.rc_choXN);
 
         Context context = getContext();
@@ -70,7 +69,7 @@ public class DaGiaoFragment extends Fragment {
                 if (response.isSuccessful() && response.body() != null) {
                     list_order.clear();
                     for (Order order : response.body()) {
-                        if ("Đã giao".equalsIgnoreCase(order.getStatus())) {
+                        if ("lấy hàng thành công".equalsIgnoreCase(order.getStatus())) {
                             list_order.add(order);
                         }
                     }
