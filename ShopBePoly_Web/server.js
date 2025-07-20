@@ -821,6 +821,28 @@ router.delete('/delete_all_orders', async (req, res) => {
     res.status(500).json({ message: 'Lỗi khi xóa đơn hàng' });
   }
 });
+router.put('/cancel_order/:id', async (req, res) => {
+    try {
+        const id = req.params.id;
+        const updatedOrder = await orderModel.findByIdAndUpdate(
+            id,
+            { status: 'Đã hủy' },
+            { new: true }
+        );
+
+        if (!updatedOrder) {
+            return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+        }
+
+        res.status(200).json({
+            message: 'Đã hủy đơn hàng thành công',
+            order: updatedOrder
+        });
+    } catch (error) {
+        console.error('❌ Lỗi khi hủy đơn hàng:', error);
+        res.status(500).json({ message: 'Lỗi server khi hủy đơn hàng' });
+    }
+});
 
 
 router.put('/updateOrderStatus/:orderId', async (req, res) => {
