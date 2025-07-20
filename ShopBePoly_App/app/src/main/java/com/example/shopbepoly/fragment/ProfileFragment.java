@@ -81,12 +81,13 @@ public class ProfileFragment extends Fragment {
             }
         });
 
-        txtLichsugiaodich.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startActivity(new Intent(getActivity(), Lichsugiaodich.class));
-            }
+        txtLichsugiaodich.setOnClickListener(v -> {
+            Intent intent = new Intent(getActivity(), DonMua.class);
+            intent.putExtra("selectedTab", "dagiao"); // Truyền key để mở tab Đã Giao
+            startActivity(intent);
         });
+
+
         txtDoimatkhau.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

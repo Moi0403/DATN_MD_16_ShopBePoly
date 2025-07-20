@@ -49,6 +49,12 @@ public class DonMua extends AppCompatActivity {
                         case 5: tab.setText("Đã hủy"); break;
                     }
                 }).attach();
+        String selectedTab = getIntent().getStringExtra("selectedTab");
+        if (selectedTab != null) {
+            if (selectedTab.equals("dagiao")) {
+                viewPager.setCurrentItem(4, false); // 1 = Tab "Đã Giao", index bạn tự kiểm tra
+            }
+        }
         btn_back.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

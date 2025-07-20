@@ -14,6 +14,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.shopbepoly.API.ApiClient;
 import com.example.shopbepoly.API.ApiService;
@@ -34,11 +35,14 @@ public class DaGiaoFragment extends Fragment {
     private OrderAdapter orderAdapter;
     private List<Order> list_order = new ArrayList<>();
     private String userId;
+    private SwipeRefreshLayout swipeRefreshLayout;
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_da_giao, container, false);
         rc_choXN = view.findViewById(R.id.rc_choXN);
+        swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout);
+
 
         Context context = getContext();
         if (context == null) {
@@ -47,7 +51,7 @@ public class DaGiaoFragment extends Fragment {
         }
 
         SharedPreferences sharedPreferences = context.getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
-        String userId = sharedPreferences.getString("userId", null);
+        userId = sharedPreferences.getString("userId", null);
 
         if (userId == null) {
             Toast.makeText(context, "Vui lòng đăng nhập để xem đơn hàng", Toast.LENGTH_SHORT).show();
@@ -57,7 +61,11 @@ public class DaGiaoFragment extends Fragment {
         rc_choXN.setLayoutManager(new LinearLayoutManager(context));
         orderAdapter = new OrderAdapter(context, list_order,this::onOrderUpdated);
         rc_choXN.setAdapter(orderAdapter);
-
+        swipeRefreshLayout.setOnRefreshListener(() -> {
+            if (userId != null) {
+                LoadOrderUser(userId);
+            }
+        });
         LoadOrderUser(userId);
 
         return view;
@@ -68,6 +76,7 @@ public class DaGiaoFragment extends Fragment {
         call.enqueue(new Callback<List<Order>>() {
             @Override
             public void onResponse(Call<List<Order>> call, Response<List<Order>> response) {
+                swipeRefreshLayout.setRefreshing(false);
                 if (response.isSuccessful() && response.body() != null) {
                     list_order.clear();
                     for (Order order : response.body()) {
@@ -84,6 +93,7 @@ public class DaGiaoFragment extends Fragment {
 
             @Override
             public void onFailure(Call<List<Order>> call, Throwable t) {
+                swipeRefreshLayout.setRefreshing(false);
                 Log.e("API_FAILURE", "Lỗi API: " + t.getMessage());
             }
         });
@@ -94,4 +104,12 @@ public class DaGiaoFragment extends Fragment {
             LoadOrderUser(userId);
         }
     }
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (userId != null) {
+            LoadOrderUser(userId);
+        }
+    }
+
 }
