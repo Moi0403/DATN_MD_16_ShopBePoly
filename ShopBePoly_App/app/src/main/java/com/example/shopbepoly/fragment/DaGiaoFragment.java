@@ -33,6 +33,7 @@ public class DaGiaoFragment extends Fragment {
     private RecyclerView rc_choXN;
     private OrderAdapter orderAdapter;
     private List<Order> list_order = new ArrayList<>();
+    private String userId;
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -54,7 +55,7 @@ public class DaGiaoFragment extends Fragment {
         }
 
         rc_choXN.setLayoutManager(new LinearLayoutManager(context));
-        orderAdapter = new OrderAdapter(context, list_order);
+        orderAdapter = new OrderAdapter(context, list_order,this::onOrderUpdated);
         rc_choXN.setAdapter(orderAdapter);
 
         LoadOrderUser(userId);
@@ -86,5 +87,11 @@ public class DaGiaoFragment extends Fragment {
                 Log.e("API_FAILURE", "Lỗi API: " + t.getMessage());
             }
         });
+
+    }
+    private void onOrderUpdated() {
+        if (userId != null) {
+            LoadOrderUser(userId);
+        }
     }
 }

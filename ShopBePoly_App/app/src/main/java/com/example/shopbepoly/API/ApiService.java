@@ -87,6 +87,8 @@ public interface ApiService {
     @POST("delete_cart_items")
     Call<ResponseBody> deleteCartItems(@Body Map<String, List<String>> cartIds);
 
+    @PUT("cancel_order/{id}")
+    Call<Order> cancelOrder(@Path("id") String orderId);
 
 
     @POST("add_order")

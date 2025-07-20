@@ -41,10 +41,14 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
     private Context context;
     private List<Order> ordList;
 
-    public OrderAdapter(Context context, List<Order> list) {
+    private Runnable onOrderCancelled;
+
+    public OrderAdapter(Context context, List<Order> list, Runnable onOrderCancelled) {
         this.context = context;
         this.ordList = list;
+        this.onOrderCancelled = onOrderCancelled;
     }
+
 
     public void setData(List<Order> list) {
         this.ordList = list;
@@ -85,6 +89,23 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
                 context.startActivity(intent);
             }
         });
+        holder.btnHuy.setOnClickListener(v -> {
+            new AlertDialog.Builder(context)
+                    .setIcon(R.drawable.thongbao)
+                    .setTitle("Thông báo")
+                    .setMessage("Bạn chắc chắn muốn hủy đơn hàng này?")
+                    .setPositiveButton("Hủy đơn", (dialog, which) -> {
+                        Order updateOrder = new Order();
+                        updateOrder.set_id(order.get_id());
+                        updateOrder.setStatus("Đã hủy");
+                        cancelOrder(updateOrder, holder.getAdapterPosition());
+                    })
+                    .setNegativeButton("Không", null)
+                    .show();
+        });
+
+
+
 
         if ("Đang xử lý".equalsIgnoreCase(order.getStatus())) {
             holder.btnHuy.setVisibility(View.VISIBLE);
@@ -179,5 +200,29 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
             }
         });
     }
+    private void cancelOrder(Order order, int position) {
+        ApiService apiService = ApiClient.getApiService();
+        apiService.upStatus(order.get_id(), order).enqueue(new Callback<Order>() {
+            @Override
+            public void onResponse(Call<Order> call, Response<Order> response) {
+                if (response.isSuccessful()) {
+                    Toast.makeText(context, "Hủy đơn hàng thành công", Toast.LENGTH_SHORT).show();
+                    ordList.remove(position);
+                    notifyItemRemoved(position);
+                    if (onOrderCancelled != null) {
+                        onOrderCancelled.run(); // Fragment reload lại list nếu cần
+                    }
+                } else {
+                    Toast.makeText(context, "Hủy đơn thất bại", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Order> call, Throwable t) {
+                Toast.makeText(context, "Lỗi kết nối", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
 
 }
