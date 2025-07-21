@@ -6,6 +6,7 @@ import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 
 import androidx.fragment.app.Fragment;
@@ -22,6 +23,7 @@ import com.example.shopbepoly.Adapter.ProductAdapter;
 import com.example.shopbepoly.DTO.Category;
 import com.example.shopbepoly.DTO.Product;
 import com.example.shopbepoly.R;
+import com.example.shopbepoly.Screen.ThongBao;
 import com.example.shopbepoly.Screen.TimKiem;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
@@ -48,12 +50,14 @@ public class HomeFragment extends Fragment {
     private Runnable runnable;
     private int currentPage = 0;
     private static final long DELAY_MS = 3000; // Delay in milliseconds between slides
+    private ImageView img_notify;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_home, container, false);
         FavoriteFragment.loadFavoritesFromPrefs(requireContext());
+        img_notify = view.findViewById(R.id.imgNotification);
         recyclerViewProducts = view.findViewById(R.id.recyclerViewProducts);
         recyclerViewProducts.setLayoutManager(new GridLayoutManager(getContext(), 2));
         productAdapter = new ProductAdapter(getContext(),productList);
@@ -69,8 +73,12 @@ public class HomeFragment extends Fragment {
         categoryAdapter.setOnCategoryClickListener(category -> {
             loadProductsByCategory(category.get_id());
         });
-
-        // Setup search box click event
+        img_notify.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(getActivity(), ThongBao.class));
+            }
+        });
         searchBox = view.findViewById(R.id.searchBox);
         searchBox.setOnClickListener(v -> {
             Intent intent = new Intent(getActivity(), TimKiem.class);

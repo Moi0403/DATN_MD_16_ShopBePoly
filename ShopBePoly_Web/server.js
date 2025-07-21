@@ -1064,6 +1064,17 @@ router.get('/favorites/:userId', async (req, res) => {
         });
     }
 });
-
+router.get('/get-admin', async (req, res) => {
+    try {
+        const admin = await userModel.findOne({ role: 2 }); // hoặc 2 nếu bạn dùng 2 là admin
+        if (!admin) {
+            return res.status(404).json({ message: 'Admin not found' });
+        }
+        res.json(admin);
+    } catch (error) {
+        console.error('Lỗi khi lấy admin:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
 
 app.use(express.json());
