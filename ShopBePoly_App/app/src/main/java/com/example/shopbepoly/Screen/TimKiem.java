@@ -11,6 +11,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -53,11 +54,14 @@ public class TimKiem extends AppCompatActivity {
     private static final String PREF_NAME = "SearchHistory";
     private static final String KEY_HISTORY = "history";
     private static final int MAX_HISTORY_ITEMS = 10;
-    
+    private ProductAdapter productAdapterSearch;
+    private ProductAdapter productAdapterSuggested;
+
     // Add debouncing for search
     private Handler searchHandler = new Handler(Looper.getMainLooper());
     private Runnable searchRunnable;
     private static final long SEARCH_DELAY = 500; // 500ms delay
+    private ImageView img_search;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,6 +70,7 @@ public class TimKiem extends AppCompatActivity {
 
         // Initialize views
         etSearch = findViewById(R.id.et_search);
+        img_search = findViewById(R.id.iv_search);
         btnBack = findViewById(R.id.btn_back);
         btnClearHistory = findViewById(R.id.btn_clear_history);
         rvSearchResults = findViewById(R.id.rv_search_results);
@@ -80,8 +85,8 @@ public class TimKiem extends AppCompatActivity {
 
         // Setup RecyclerViews
         rvSearchResults.setLayoutManager(new GridLayoutManager(this, 2));
-        productAdapter = new ProductAdapter(TimKiem.this,new ArrayList<>());
-        rvSearchResults.setAdapter(productAdapter);
+        productAdapterSearch = new ProductAdapter(TimKiem.this, new ArrayList<>());
+        rvSearchResults.setAdapter(productAdapterSearch);
         
         rvSearchHistory.setLayoutManager(new LinearLayoutManager(this));
         historyAdapter = new SearchHistoryAdapter(query -> {
@@ -94,7 +99,8 @@ public class TimKiem extends AppCompatActivity {
         rvSearchHistory.setAdapter(historyAdapter);
         
         rvSuggestedProducts.setLayoutManager(new GridLayoutManager(this, 2));
-        rvSuggestedProducts.setAdapter(productAdapter);
+        productAdapterSuggested = new ProductAdapter(TimKiem.this, new ArrayList<>());
+        rvSuggestedProducts.setAdapter(productAdapterSuggested);
         
         // Initialize API service
         apiService = ApiClient.getApiService();
@@ -110,6 +116,13 @@ public class TimKiem extends AppCompatActivity {
         
         // Show search history and suggested products initially
         showSearchHistory();
+        img_search.setOnClickListener(v -> {
+            String query = etSearch.getText().toString().trim();
+            if (!query.isEmpty()) {
+                saveToSearchHistory(query);
+                showSearchResults(query);
+            }
+        });
 
     }
 
@@ -175,7 +188,7 @@ public class TimKiem extends AppCompatActivity {
 
     private void showSearchResults(String query) {
         // Save to search history
-        saveToSearchHistory(query);
+//        saveToSearchHistory(query);
 
         // Show search results container
         searchHistoryContainer.setVisibility(View.GONE);
@@ -187,8 +200,9 @@ public class TimKiem extends AppCompatActivity {
             public void onResponse(Call<List<Product>> call, Response<List<Product>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     List<Product> searchResults = response.body();
-                    productAdapter.setData(searchResults);
-                    
+                    productAdapterSearch.setData(searchResults);
+
+
                     // Show message if no results found
                     if (searchResults.isEmpty()) {
                         Toast.makeText(TimKiem.this, "Không tìm thấy sản phẩm phù hợp", Toast.LENGTH_SHORT).show();
@@ -304,7 +318,8 @@ public class TimKiem extends AppCompatActivity {
                 if (response.isSuccessful() && response.body() != null) {
                     List<Product> allProducts = response.body();
                     List<Product> suggestedProducts = getRandomProducts(allProducts, 4);
-                    productAdapter.setData(suggestedProducts);
+                    productAdapterSuggested.setData(suggestedProducts);
+
                 }
             }
 

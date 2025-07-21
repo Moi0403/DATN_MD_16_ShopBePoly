@@ -30,7 +30,16 @@
 
         <!-- App Name -->
         <TextView
-            android:id="@+id/txtAppName"
+            android:id="@+id/txttitle_notifi"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="ZapHealth: Adidas | "
+            android:textSize="14sp"
+            android:textColor="#666666"
+            android:layout_marginBottom="2dp" />
+
+        <TextView
+            android:id="@+id/txtName_product_notifi"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="ZapHealth: Adidas | "
@@ -40,7 +49,7 @@
 
         <!-- Notification Title -->
         <TextView
-            android:id="@+id/txtNotificationTitle"
+            android:id="@+id/txtQuantiti_Notyfi"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="1 bày phần"
@@ -55,9 +64,9 @@
         android:id="@+id/txtTime"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_gravity="top"
         android:text="Sáng 21"
-        android:textSize="12sp"
         android:textColor="#999999"
-        android:layout_gravity="top" />
+        android:textSize="12sp" />
 
 </LinearLayout>
