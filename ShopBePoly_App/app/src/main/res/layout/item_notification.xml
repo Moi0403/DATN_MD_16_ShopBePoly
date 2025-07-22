@@ -2,6 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="horizontal"
     android:background="@android:color/white"
     android:padding="16dp"
@@ -11,15 +12,22 @@
     android:clickable="true"
     android:focusable="true">
 
-    <!-- App Icon -->
-    <ImageView
-        android:id="@+id/imgAppIcon"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:src="@drawable/niker"
-        android:background="@drawable/brackground_edit"
-        android:padding="8dp"
-        android:layout_marginEnd="12dp" />
+
+    <androidx.cardview.widget.CardView
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:backgroundTint="#000000"
+        android:layout_marginEnd="12dp"
+        app:cardCornerRadius="10dp">
+
+        <ImageView
+            android:id="@+id/imgNofi"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:src="@drawable/niker"/>
+
+    </androidx.cardview.widget.CardView>
+
 
     <!-- Content -->
     <LinearLayout
@@ -35,8 +43,17 @@
             android:layout_height="wrap_content"
             android:text="ZapHealth: Adidas | "
             android:textSize="14sp"
+            android:textStyle="bold"
             android:textColor="#666666"
             android:layout_marginBottom="2dp" />
+        <TextView
+            android:id="@+id/txtContent_notifi"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="ZapHealth: Adidas | "
+            android:textSize="14sp"
+            android:textColor="#666666"
+            android:layout_marginBottom="2dp"/>
 
         <TextView
             android:id="@+id/txtName_product_notifi"
@@ -47,15 +64,7 @@
             android:textColor="#666666"
             android:layout_marginBottom="2dp" />
 
-        <!-- Notification Title -->
-        <TextView
-            android:id="@+id/txtQuantiti_Notyfi"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="1 bày phần"
-            android:textSize="16sp"
-            android:textColor="#333333"
-            android:textStyle="bold" />
+
 
     </LinearLayout>
 

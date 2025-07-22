@@ -27,7 +27,7 @@ const orderModel = require('./Database/orderModel');
 const favoriteModel = require('./Database/favoriteModel');
 const Favorite = favoriteModel;
 const messageModel = require('./Database/messageModel');
-
+const notificationModel = require('./Database/notificationModel');
 
 const uri = COMOMJS.uri;
 
@@ -80,6 +80,17 @@ const storageProduct = multer.diskStorage({
 const uploadProduct = multer({ storage: storageProduct });
 
 const upload = multer({ storage });
+
+router.get('/notifications/:userId', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const notifications = await notificationModel.find({ userId }).sort({ createdAt: -1 });
+    res.json(notifications);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Lỗi khi lấy thông báo' });
+  }
+});
 
 // API cập nhật avatar
 router.post('/upload-avatar/:id', upload.single('avt_user'), async (req, res) => {
@@ -757,39 +768,54 @@ router.post('/add_order', async (req, res) => {
     try {
         let data = req.body;
 
-        // Tính tổng số lượng sản phẩm trong đơn hàng
-        if (Array.isArray(data.products)) {
-            data.quantity_order = data.products.reduce((sum, item) => sum + item.quantity, 0);
-        } else {
+        if (!Array.isArray(data.products)) {
             return res.status(400).json({ message: 'Dữ liệu products không hợp lệ' });
         }
 
-        // Lưu đơn hàng vào DB
+        data.quantity_order = data.products.reduce((sum, item) => sum + item.quantity, 0);
+
         const newOrder = await orderModel.create(data);
 
-        if (newOrder) {
-            console.log('✅ Thêm đơn hàng thành công:', newOrder._id);
-            // Populate để trả về chi tiết hơn, bao gồm cả id_category
-            const populatedOrder = await orderModel.findById(newOrder._id)
-                .populate('id_user')
-                .populate({
-                    path: 'products.id_product',
-                    populate: {
-                        path: 'id_category',
-                        select: '_id name'
-                    }
-                });
-
-            res.status(201).json(populatedOrder);
-        } else {
-            res.status(500).json({ message: 'Không thể tạo đơn hàng' });
+        if (!newOrder) {
+            return res.status(500).json({ message: 'Không thể tạo đơn hàng' });
         }
 
+        // 🔔 Tạo thông báo có danh sách sản phẩm
+        const newNotification = new notificationModel({
+            userId: data.id_user,
+            title: 'Đặt hàng thành công',
+            content: 'Đơn hàng của bạn đã được đặt thành công và đang được xử lý.',
+            type: 'order',
+            isRead: false,
+            createdAt: new Date(),
+            products: data.products.map((item) => ({
+                id_product: item.id_product,
+                productName: item.productName || '',
+                img: item.img || '',
+               
+            }))
+        });
+
+        await newNotification.save();
+
+        const populatedOrder = await orderModel.findById(newOrder._id)
+            .populate('id_user')
+            .populate({
+                path: 'products.id_product',
+                populate: {
+                    path: 'id_category',
+                    select: '_id name'
+                }
+            });
+
+        console.log('✅ Thêm đơn hàng và tạo thông báo thành công:', newOrder._id);
+        res.status(201).json(populatedOrder);
     } catch (error) {
         console.error('❌ Lỗi khi thêm đơn hàng:', error);
         res.status(500).json({ message: 'Lỗi server khi tạo đơn hàng' });
     }
 });
+
 
 
 

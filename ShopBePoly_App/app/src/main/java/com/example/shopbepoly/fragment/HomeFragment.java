@@ -1,6 +1,13 @@
 package com.example.shopbepoly.fragment;
 
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.LayoutInflater;
@@ -9,6 +16,8 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -21,6 +30,7 @@ import com.example.shopbepoly.Adapter.BannerAdapter;
 import com.example.shopbepoly.Adapter.CategoryAdapter;
 import com.example.shopbepoly.Adapter.ProductAdapter;
 import com.example.shopbepoly.DTO.Category;
+import com.example.shopbepoly.DTO.Notification;
 import com.example.shopbepoly.DTO.Product;
 import com.example.shopbepoly.R;
 import com.example.shopbepoly.Screen.ThongBao;
@@ -51,7 +61,8 @@ public class HomeFragment extends Fragment {
     private int currentPage = 0;
     private static final long DELAY_MS = 3000; // Delay in milliseconds between slides
     private ImageView img_notify;
-
+    private static final String CHANNEL_ID = "shopbepoly_channel";
+    private static final int NOTIFICATION_ID = 1;
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -73,12 +84,30 @@ public class HomeFragment extends Fragment {
         categoryAdapter.setOnCategoryClickListener(category -> {
             loadProductsByCategory(category.get_id());
         });
-        img_notify.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startActivity(new Intent(getActivity(), ThongBao.class));
-            }
+        createNotificationChannel();
+        img_notify.setOnClickListener(v -> {
+            ApiService apiService = ApiClient.getApiService();
+            SharedPreferences prefs = requireContext().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
+            String userId = prefs.getString("userId", null);
+
+            apiService.getNotifications(userId).enqueue(new Callback<List<Notification>>() {
+                @Override
+                public void onResponse(Call<List<Notification>> call, Response<List<Notification>> response) {
+                    if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
+                        sendLocalNotification();
+                    }
+                    startActivity(new Intent(getActivity(), ThongBao.class));
+                }
+
+                @Override
+                public void onFailure(Call<List<Notification>> call, Throwable t) {
+                    t.printStackTrace();
+
+                    startActivity(new Intent(getActivity(), ThongBao.class));
+                }
+            });
         });
+
         searchBox = view.findViewById(R.id.searchBox);
         searchBox.setOnClickListener(v -> {
             Intent intent = new Intent(getActivity(), TimKiem.class);
@@ -87,7 +116,7 @@ public class HomeFragment extends Fragment {
 
         // Initialize banner views
         viewPagerBanner = view.findViewById(R.id.viewPagerBanner);
-        
+
         // Setup banner
         setupBanner();
 
@@ -197,5 +226,40 @@ public class HomeFragment extends Fragment {
                 t.printStackTrace();
             }
         });
+    }
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name = "ShopBePoly Notification Channel";
+            String description = "Kênh thông báo cho ShopBePoly";
+            int importance = NotificationManager.IMPORTANCE_DEFAULT;
+
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
+            channel.setDescription(description);
+            channel.enableLights(true);
+            channel.setLightColor(Color.BLUE);
+
+            NotificationManager notificationManager = requireContext().getSystemService(NotificationManager.class);
+            if (notificationManager != null) {
+                notificationManager.createNotificationChannel(channel);
+            }
+        }
+    }
+
+    private void sendLocalNotification() {
+        Intent intent = new Intent(getActivity(), ThongBao.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                getActivity(), 0, intent, PendingIntent.FLAG_IMMUTABLE);
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(requireContext(), CHANNEL_ID)
+                .setSmallIcon(R.drawable.bell) // ảnh nhỏ (icon)
+                .setContentTitle("Bạn có thông báo mới")
+                .setContentText("Hãy kiểm tra thông báo của bạn ngay bây giờ.")
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent);
+
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(requireContext());
+        notificationManager.notify(NOTIFICATION_ID, builder.build());
     }
 }
