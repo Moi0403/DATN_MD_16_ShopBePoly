@@ -761,36 +761,26 @@ router.get('/list_order/:userId', async (req, res) => {
     }
 });
 
+
+
 // thêm order 'http://localhost:3000/api/order'
 router.post('/add_order', async (req, res) => {
     try {
         let data = req.body;
 
-        // Kiểm tra danh sách sản phẩm
         if (!Array.isArray(data.products)) {
             return res.status(400).json({ message: 'Dữ liệu products không hợp lệ' });
         }
 
-        // Tính tổng số lượng sản phẩm
         data.quantity_order = data.products.reduce((sum, item) => sum + item.quantity, 0);
 
-        // Tạo đơn hàng
         const newOrder = await orderModel.create(data);
+
         if (!newOrder) {
             return res.status(500).json({ message: 'Không thể tạo đơn hàng' });
         }
 
-        // 🔔 Lấy danh sách id_product để truy vấn DB
-        const productIds = data.products.map(p => p.id_product.toString());
-        const productDocs = await productModel.find({ _id: { $in: productIds } }).lean();
-
-        // Tạo map id => product
-        const productMap = {};
-        productDocs.forEach(p => {
-            productMap[p._id.toString()] = p;
-        });
-
-        // 🔔 Tạo thông báo đặt hàng
+        // 🔔 Tạo thông báo có danh sách sản phẩm
         const newNotification = new notificationModel({
             userId: data.id_user,
             title: 'Đặt hàng thành công',
@@ -798,23 +788,16 @@ router.post('/add_order', async (req, res) => {
             type: 'order',
             isRead: false,
             createdAt: new Date(),
-            products: data.products.map((item) => {
-                const product = productMap[item.id_product.toString()] || {};
-                return {
-                    id_product: item.id_product,
-                    productName: product.nameproduct || '',
-                    quantity: item.quantity,
-                    size: item.size,
-                    color: item.color,
-                    img: item.img || product.avt_imgproduct || '',
-                    price: item.price || product.price || 0
-                };
-            })
+            products: data.products.map((item) => ({
+                id_product: item.id_product,
+                productName: item.productName || '',
+                img: item.img || '',
+               
+            }))
         });
 
         await newNotification.save();
 
-        // Trả về đơn hàng đã populate user và sản phẩm
         const populatedOrder = await orderModel.findById(newOrder._id)
             .populate('id_user')
             .populate({
@@ -827,12 +810,13 @@ router.post('/add_order', async (req, res) => {
 
         console.log('✅ Thêm đơn hàng và tạo thông báo thành công:', newOrder._id);
         res.status(201).json(populatedOrder);
-
     } catch (error) {
         console.error('❌ Lỗi khi thêm đơn hàng:', error);
         res.status(500).json({ message: 'Lỗi server khi tạo đơn hàng' });
     }
 });
+
+
 
 
 
