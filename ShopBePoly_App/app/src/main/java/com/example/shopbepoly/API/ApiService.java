@@ -17,6 +17,9 @@ public interface ApiService {
     @GET("users/get-admin")
     Call<AdminResponse> getAdminId();
 
+        @GET("notifications/{userId}")
+        Call<List<Notification>> getNotifications(@Path("userId") String userId);
+
 
     @POST("register")
     Call<Void> register(@Body User user);
@@ -84,6 +87,7 @@ public interface ApiService {
 
     @DELETE("delete_all_cart/{userId}")
     Call<ResponseBody> deleteAllCart(@Path("userId") String userId);
+
     @POST("delete_cart_items")
     Call<ResponseBody> deleteCartItems(@Body Map<String, List<String>> cartIds);
 
