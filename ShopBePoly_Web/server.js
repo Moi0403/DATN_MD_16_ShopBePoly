@@ -764,23 +764,44 @@ router.get('/list_order/:userId', async (req, res) => {
 
 
 // thêm order 'http://localhost:3000/api/order'
+// Thêm đơn hàng: http://localhost:3000/api/order/add_order
 router.post('/add_order', async (req, res) => {
     try {
-        let data = req.body;
+        const data = req.body;
 
         if (!Array.isArray(data.products)) {
             return res.status(400).json({ message: 'Dữ liệu products không hợp lệ' });
         }
 
+        // Tính tổng số lượng sản phẩm trong đơn
         data.quantity_order = data.products.reduce((sum, item) => sum + item.quantity, 0);
 
+        // Tạo đơn hàng mới
         const newOrder = await orderModel.create(data);
-
         if (!newOrder) {
             return res.status(500).json({ message: 'Không thể tạo đơn hàng' });
         }
 
-        // 🔔 Tạo thông báo có danh sách sản phẩm
+        // 🔍 Truy vấn thông tin sản phẩm để tạo thông báo
+        const productDetails = await Promise.all(data.products.map(async item => {
+            try {
+                const product = await productModel.findById(item.id_product);
+                return {
+                    id_product: item.id_product,
+                    productName: product?.nameproduct || '',
+                    img: product?.avt_imgproduct || ''
+                };
+            } catch (error) {
+                console.error('❌ Không tìm thấy sản phẩm:', item.id_product);
+                return {
+                    id_product: item.id_product,
+                    productName: '',
+                    img: ''
+                };
+            }
+        }));
+
+        // 🔔 Tạo thông báo
         const newNotification = new notificationModel({
             userId: data.id_user,
             title: 'Đặt hàng thành công',
@@ -788,16 +809,13 @@ router.post('/add_order', async (req, res) => {
             type: 'order',
             isRead: false,
             createdAt: new Date(),
-            products: data.products.map((item) => ({
-                id_product: item.id_product,
-                productName: item.productName || '',
-                img: item.img || '',
-               
-            }))
+            orderId: newOrder._id,
+            products: productDetails
         });
 
         await newNotification.save();
 
+        // Populate lại đơn hàng để trả về chi tiết đầy đủ
         const populatedOrder = await orderModel.findById(newOrder._id)
             .populate('id_user')
             .populate({
@@ -813,6 +831,22 @@ router.post('/add_order', async (req, res) => {
     } catch (error) {
         console.error('❌ Lỗi khi thêm đơn hàng:', error);
         res.status(500).json({ message: 'Lỗi server khi tạo đơn hàng' });
+    }
+});
+
+// Xóa 1 thông báo theo ID
+// DELETE http://localhost:3000/api/notification/:id
+router.delete('/notification/:id', async (req, res) => {
+    try {
+        const id = req.params.id;
+        const result = await notificationModel.findByIdAndDelete(id);
+        if (!result) {
+            return res.status(404).json({ message: 'Không tìm thấy thông báo để xóa' });
+        }
+        res.status(200).json({ message: 'Đã xóa thông báo thành công' });
+    } catch (error) {
+        console.error('❌ Lỗi khi xóa thông báo:', error);
+        res.status(500).json({ message: 'Lỗi server khi xóa thông báo' });
     }
 });
 
