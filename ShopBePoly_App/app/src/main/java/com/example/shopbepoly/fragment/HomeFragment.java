@@ -1,5 +1,6 @@
 package com.example.shopbepoly.fragment;
 
+import android.app.Activity;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -15,7 +16,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.fragment.app.Fragment;
@@ -63,12 +67,23 @@ public class HomeFragment extends Fragment {
     private ImageView img_notify;
     private static final String CHANNEL_ID = "shopbepoly_channel";
     private static final int NOTIFICATION_ID = 1;
+    private TextView tvNotificationCount;
+    private final ActivityResultLauncher<Intent> thongBaoLauncher =
+            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
+                    result -> {
+                        if (result.getResultCode() == Activity.RESULT_OK) {
+                            updateNotificationCount(); // Load lại số thông báo
+                        }
+                    });
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_home, container, false);
         FavoriteFragment.loadFavoritesFromPrefs(requireContext());
         img_notify = view.findViewById(R.id.imgNotification);
+        tvNotificationCount = view.findViewById(R.id.tvNotificationCount);
+
         recyclerViewProducts = view.findViewById(R.id.recyclerViewProducts);
         recyclerViewProducts.setLayoutManager(new GridLayoutManager(getContext(), 2));
         productAdapter = new ProductAdapter(getContext(),productList);
@@ -96,7 +111,8 @@ public class HomeFragment extends Fragment {
                     if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
                         sendLocalNotification();
                     }
-                    startActivity(new Intent(getActivity(), ThongBao.class));
+                    Intent intent = new Intent(getActivity(), ThongBao.class);
+                    thongBaoLauncher.launch(intent);
                 }
 
                 @Override
@@ -149,7 +165,32 @@ public class HomeFragment extends Fragment {
             }
         };
     }
+    private void updateNotificationCount() {
+        SharedPreferences prefs = requireContext().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
+        String userId = prefs.getString("userId", null);
 
+        if (userId == null) return;
+
+        apiService.getNotifications(userId).enqueue(new Callback<List<Notification>>() {
+            @Override
+            public void onResponse(Call<List<Notification>> call, Response<List<Notification>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    int count = response.body().size();
+                    if (count > 0) {
+                        tvNotificationCount.setText(String.valueOf(count));
+                        tvNotificationCount.setVisibility(View.VISIBLE);
+                    } else {
+                        tvNotificationCount.setVisibility(View.GONE);
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<Notification>> call, Throwable t) {
+                t.printStackTrace();
+            }
+        });
+    }
     @Override
     public void onResume() {
         super.onResume();
@@ -162,6 +203,7 @@ public class HomeFragment extends Fragment {
         if (productAdapter != null) {
             productAdapter.notifyDataSetChanged();
         }
+        updateNotificationCount();
     }
 
 
