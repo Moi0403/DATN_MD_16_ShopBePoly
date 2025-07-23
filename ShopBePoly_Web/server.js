@@ -805,7 +805,7 @@ router.post('/add_order', async (req, res) => {
         const newNotification = new notificationModel({
             userId: data.id_user,
             title: 'Đặt hàng thành công',
-            content: 'Đơn hàng của bạn đã được đặt thành công và đang được xử lý.',
+            content: `Đơn hàng <font color='#2196F3'> ${newOrder._id}</font> của bạn  đã được đặt thành công và đang được xử lý.`,
             type: 'order',
             isRead: false,
             createdAt: new Date(),

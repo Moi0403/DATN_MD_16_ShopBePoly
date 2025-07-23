@@ -3,6 +3,8 @@ package com.example.shopbepoly.Adapter;
 import static com.example.shopbepoly.API.ApiClient.IMAGE_URL;
 
 import android.content.Context;
+import android.os.Build;
+import android.text.Html;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -29,7 +31,6 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
     private List<Notification> notificationList;
 
 
-
     public NotificationAdapter(Context context, List<Notification> notificationList) {
         this.context = context;
         this.notificationList = notificationList;
@@ -48,11 +49,15 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
         if (n == null) return;
 
         holder.txtTitle.setText(n.getTitle() != null ? n.getTitle() : "");
-        holder.txtContent.setText(n.getContent() != null ? n.getContent() : "");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            holder.txtContent.setText(Html.fromHtml(n.getContent(), Html.FROM_HTML_MODE_LEGACY));
+        } else {
+            holder.txtContent.setText(Html.fromHtml(n.getContent()));
+        }
 
         if (n.getProducts() != null && !n.getProducts().isEmpty()) {
             Notification.ProductInfo p = n.getProducts().get(0);
-            holder.txtProductName.setText("Sản phẩm: " + (p.getProductName() != null ? p.getProductName() : ""));
+//            holder.txtProductName.setText("Sản phẩm: " + (p.getProductName() != null ? p.getProductName() : ""));
 
             // Load ảnh sản phẩm nếu có
             if (p.getImg() != null && !p.getImg().isEmpty()) {
@@ -65,7 +70,7 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                 holder.imgNofi.setImageResource(R.drawable.niker);
             }
         } else {
-            holder.txtProductName.setText("");
+//            holder.txtProductName.setText("");
             holder.imgNofi.setImageResource(R.drawable.niker);
         }
 
@@ -82,14 +87,14 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
     }
 
     public class NotificationViewHolder extends RecyclerView.ViewHolder {
-        TextView txtTitle, txtContent, txtProductName, txtTime;
+        TextView txtTitle, txtContent, txtTime;
         ImageView imgNofi;
 
         public NotificationViewHolder(@NonNull View itemView) {
             super(itemView);
             txtTitle = itemView.findViewById(R.id.txttitle_notifi);
             txtContent = itemView.findViewById(R.id.txtContent_notifi);
-            txtProductName = itemView.findViewById(R.id.txtName_product_notifi);
+//            txtProductName = itemView.findViewById(R.id.txtName_product_notifi);
             txtTime = itemView.findViewById(R.id.txtTime);
             imgNofi = itemView.findViewById(R.id.imgNofi);
         }
