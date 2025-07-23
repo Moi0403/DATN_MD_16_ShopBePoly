@@ -17,8 +17,10 @@ public interface ApiService {
     @GET("users/get-admin")
     Call<AdminResponse> getAdminId();
 
-        @GET("notifications/{userId}")
-        Call<List<Notification>> getNotifications(@Path("userId") String userId);
+    @GET("notifications/{userId}")
+    Call<List<Notification>> getNotifications(@Path("userId") String userId);
+    @DELETE("notification/{id}")
+    Call<ResponseBody> deleteNotification(@Path("id") String id);
 
 
     @POST("register")

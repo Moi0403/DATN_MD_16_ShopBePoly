@@ -1,4 +1,4 @@
-package com.example.shopbepoly.adapter;
+package com.example.shopbepoly.Adapter;
 
 import static com.example.shopbepoly.API.ApiClient.IMAGE_URL;
 
@@ -27,6 +27,7 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
 
     private Context context;
     private List<Notification> notificationList;
+
 
 
     public NotificationAdapter(Context context, List<Notification> notificationList) {
