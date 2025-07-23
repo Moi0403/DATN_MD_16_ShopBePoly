@@ -6,8 +6,9 @@ const notificationSchema = new mongoose.Schema({
   content: String,
   type: String,
   isRead: { type: Boolean, default: false },
-  createdAt: { type: Date, default: Date.now }, 
-   products: [
+  createdAt: { type: Date, default: Date.now },
+  orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' }, // 👈 thêm dòng này
+  products: [
     {
       id_product: {
         type: mongoose.Schema.Types.ObjectId,
@@ -19,5 +20,5 @@ const notificationSchema = new mongoose.Schema({
   ]
 });
 
+
 module.exports = mongoose.model('Notification', notificationSchema);
- 

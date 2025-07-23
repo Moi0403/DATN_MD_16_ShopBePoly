@@ -79,6 +79,7 @@ public class ThongBao extends AppCompatActivity {
                                 if (response.isSuccessful()) {
                                     list.remove(position);
                                     adapter.notifyItemRemoved(position);
+                                    setResult(RESULT_OK);
                                 } else {
                                     adapter.notifyItemRemoved(position);
                                 }
@@ -86,7 +87,7 @@ public class ThongBao extends AppCompatActivity {
 
                             @Override
                             public void onFailure(Call<ResponseBody> call, Throwable t) {
-                                adapter.notifyItemRemoved(position);
+                                adapter.notifyItemChanged(position);
                             }
                         });
 
