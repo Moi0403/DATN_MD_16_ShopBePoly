@@ -28,7 +28,13 @@ const orderSchema = new mongoose.Schema({
     total: String,
     status: String,
     address: String,
-    pay: String
+    pay: String,
+
+    // ✅ Thêm trường lý do hủy
+    cancelReason: {
+        type: String,
+        default: ""
+    }
 });
 
 const orderModel = mongoose.model('order', orderSchema);

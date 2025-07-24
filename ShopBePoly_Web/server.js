@@ -908,31 +908,53 @@ router.put('/cancel_order/:id', async (req, res) => {
 router.put('/updateOrderStatus/:orderId', async (req, res) => {
     try {
         const orderId = req.params.orderId;
-        const { status } = req.body;
+        const { status, cancelReason } = req.body;
 
-        // Kiểm tra xem status có được cung cấp không
         if (!status) {
             return res.status(400).json({ message: 'Trạng thái không được để trống' });
         }
 
-        // Tìm và cập nhật đơn hàng
+        const updateData = { status };
+
+        // Nếu có lý do hủy thì thêm vào updateData
+        if (cancelReason) {
+            updateData.cancelReason = cancelReason;
+        }
+
         const order = await orderModel.findByIdAndUpdate(
             orderId,
-            { status: status },
-            { new: true, runValidators: true } // Trả về tài liệu đã cập nhật và chạy validator
+            updateData,
+            { new: true, runValidators: true }
         );
 
-        // Kiểm tra xem đơn hàng có tồn tại không
         if (!order) {
             return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
         }
+// 🔔 Tạo thông báo nếu trạng thái là "Đã giao"
+        if (status === 'Đã giao') {
+            const newNotification = new notificationModel({
+                userId: order.id_user._id,
+                title: 'Giao hàng thành công',
+                content: 'Đơn hàng của bạn đã được giao thành công. Cảm ơn bạn đã mua sắm!',
+                type: 'delivery',
+                isRead: false,
+                createdAt: new Date(),
+                products: order.products.map(item => ({
+                    id_product: item.id_product?._id,
+                    productName: item.id_product?.nameproduct || '',
+                    img: item.id_product?.avt_imgproduct || ''
+                }))
+            });
 
+            await newNotification.save();
+        }
         res.status(200).json({ message: 'Cập nhật trạng thái thành công', order });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Lỗi máy chủ nội bộ', error: error.message });
     }
 });
+
 
 
 //Comment
