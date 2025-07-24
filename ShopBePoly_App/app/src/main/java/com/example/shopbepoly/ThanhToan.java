@@ -1,8 +1,11 @@
 package com.example.shopbepoly;
 
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -10,6 +13,7 @@ import android.widget.*;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.NotificationCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -465,7 +469,7 @@ public class ThanhToan extends AppCompatActivity {
 
                 if (response.isSuccessful() && response.body() != null){
                     Toast.makeText(ThanhToan.this, "Đặt hàng thành công", Toast.LENGTH_SHORT).show();
-
+                    sendLocalNotification();
                     //xóa cart nếu đặt hàng từ cart
                     String jsonCart = getIntent().getStringExtra("cart_list");
                     if (!selectedCartIds.isEmpty()) {
@@ -496,6 +500,30 @@ public class ThanhToan extends AppCompatActivity {
             }
         });
 
+    }
+    private void sendLocalNotification() {
+        String channelId = "order_channel_id";
+        String channelName = "Đơn hàng";
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    channelId, channelName, NotificationManager.IMPORTANCE_HIGH
+            );
+            channel.enableLights(true);
+            channel.enableVibration(true);
+            channel.setDescription("Thông báo đơn hàng mới");
+            notificationManager.createNotificationChannel(channel);
+        }
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, channelId)
+                .setSmallIcon(R.drawable.ic_bell)
+                .setContentTitle("Đặt hàng thành công")
+                .setContentText("Cảm ơn bạn đã đặt hàng tại ShopBePoly!")
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true);
+
+        notificationManager.notify((int) System.currentTimeMillis(), builder.build());
     }
 
     private void saveOrderToLocal(Order order){

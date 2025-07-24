@@ -12,12 +12,16 @@ public class Order implements Serializable {
     private User id_user;
     @SerializedName("products")
     private List<ProductInOrder> products;
-//    @SerializedName("products")
+
+
+    //    @SerializedName("products")
 //    private List<Map<String, Object>> products;
     private int quantity_order;
     private String date;
     private String total;
     private String status;
+    @SerializedName("cancelReason")
+    private String cancelReason;
     private String address;
     private String pay;
 
@@ -79,6 +83,14 @@ public class Order implements Serializable {
     public void setStatus(String status) {
         this.status = status;
     }
+    public String getCancelReason() {
+        return cancelReason;
+    }
+
+    public void setCancelReason(String cancelReason) {
+        this.cancelReason = cancelReason;
+    }
+
 
     public String getAddress() {
         return address;

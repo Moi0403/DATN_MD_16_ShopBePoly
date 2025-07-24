@@ -17,6 +17,8 @@ import com.google.android.material.button.MaterialButton;
 import com.google.gson.Gson;
 
 import android.widget.Button;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -80,6 +82,13 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
         holder.tvSoLuongSP.setText("Tổng số lượng sản phẩm: " +order.getQuantity_order());
         holder.tvngayMua.setText("Ngày: " + formatDate(order.getDate()));
         holder.tvTT.setText("Trạng thái: " +order.getStatus());
+        if ("Đã hủy".equalsIgnoreCase(order.getStatus())) {
+            holder.tvLydo.setVisibility(View.VISIBLE);
+            holder.tvLydo.setText("Lý do hủy: " + order.getCancelReason());
+        } else {
+            holder.tvLydo.setVisibility(View.GONE);
+        }
+
 
         holder.btnChiTiet.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -89,20 +98,36 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
                 context.startActivity(intent);
             }
         });
+        // Hủy đơn hàng
         holder.btnHuy.setOnClickListener(v -> {
-            new AlertDialog.Builder(context)
-                    .setIcon(R.drawable.thongbao)
-                    .setTitle("Thông báo")
-                    .setMessage("Bạn chắc chắn muốn hủy đơn hàng này?")
-                    .setPositiveButton("Hủy đơn", (dialog, which) -> {
-                        Order updateOrder = new Order();
-                        updateOrder.set_id(order.get_id());
-                        updateOrder.setStatus("Đã hủy");
-                        cancelOrder(updateOrder, holder.getAdapterPosition());
-                    })
-                    .setNegativeButton("Không", null)
-                    .show();
+            View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_cancel_order, null);
+            AlertDialog.Builder builder = new AlertDialog.Builder(context);
+            builder.setView(dialogView);
+
+            builder.setPositiveButton("Xác nhận hủy", (dialog, which) -> {
+                RadioGroup radioGroup = dialogView.findViewById(R.id.radioGroupReasons);
+                int selectedId = radioGroup.getCheckedRadioButtonId();
+
+                if (selectedId != -1) {
+                    RadioButton selectedRadio = dialogView.findViewById(selectedId);
+                    String reason = selectedRadio.getText().toString();
+
+                    Order updateOrder = new Order();
+                    updateOrder.set_id(order.get_id());
+                    updateOrder.setStatus("Đã hủy");
+                    updateOrder.setCancelReason(reason); // 👈 Gửi lý do lên server
+
+                    cancelOrder(updateOrder, holder.getAdapterPosition());
+                    Toast.makeText(context, "Lý do hủy: " + reason, Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(context, "Vui lòng chọn lý do hủy", Toast.LENGTH_SHORT).show();
+                }
+            });
+
+            builder.setNegativeButton("Hủy bỏ", null);
+            builder.show();
         });
+
 
 
 
@@ -145,7 +170,7 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
     }
 
     public static class OrderViewHolder extends RecyclerView.ViewHolder {
-        TextView tvmaDH, tvthanhTien, tvngayMua, tvTT, tvSoLuongSP;
+        TextView tvmaDH, tvthanhTien, tvngayMua, tvTT,tvLydo, tvSoLuongSP;
         Button btnHuy, btnChiTiet, btnNhan;
 
         public OrderViewHolder(@NonNull View itemView) {
@@ -155,6 +180,7 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
             tvSoLuongSP = itemView.findViewById(R.id.tvSoLuongSP);
             tvngayMua = itemView.findViewById(R.id.tvngayMua);
             tvTT = itemView.findViewById(R.id.tvTT);
+            tvLydo = itemView.findViewById(R.id.tvLydo);
             btnHuy = itemView.findViewById(R.id.btnHuy);
             btnChiTiet = itemView.findViewById(R.id.btnChitiet);
             btnNhan = itemView.findViewById(R.id.btnNhan);
