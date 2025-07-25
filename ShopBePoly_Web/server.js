@@ -915,30 +915,36 @@ router.put('/updateOrderStatus/:orderId', async (req, res) => {
         }
 
         const updateData = { status };
-
-        // Nếu có lý do hủy thì thêm vào updateData
         if (cancelReason) {
             updateData.cancelReason = cancelReason;
         }
 
-        const order = await orderModel.findByIdAndUpdate(
+        // Cập nhật trạng thái đơn hàng
+        await orderModel.findByIdAndUpdate(
             orderId,
             updateData,
             { new: true, runValidators: true }
         );
 
+        // 🔁 Lấy lại đơn hàng đã cập nhật và populate
+        const order = await orderModel.findById(orderId)
+            .populate('id_user')
+            .populate('products.id_product'); // populate sản phẩm trong đơn hàng
+
         if (!order) {
             return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
         }
-// 🔔 Tạo thông báo nếu trạng thái là "Đã giao"
-        if (status === 'Đã giao') {
+
+        // 🔔 Nếu trạng thái là "Đang giao", tạo thông báo giao hàng thành công
+        if (status === 'Đang giao') {
             const newNotification = new notificationModel({
                 userId: order.id_user._id,
                 title: 'Giao hàng thành công',
-                content: 'Đơn hàng của bạn đã được giao thành công. Cảm ơn bạn đã mua sắm!',
+                content: `Đơn hàng <font color='#2196F3'>${order._id}</font> của bạn đã được giao thành công. Cảm ơn bạn đã mua sắm tại ShopBePoly!`,
                 type: 'delivery',
                 isRead: false,
                 createdAt: new Date(),
+                orderId: order._id,
                 products: order.products.map(item => ({
                     id_product: item.id_product?._id,
                     productName: item.id_product?.nameproduct || '',
@@ -948,12 +954,14 @@ router.put('/updateOrderStatus/:orderId', async (req, res) => {
 
             await newNotification.save();
         }
-        res.status(200).json({ message: 'Cập nhật trạng thái thành công', order });
+
+        return res.status(200).json({ message: 'Cập nhật trạng thái thành công', order });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Lỗi máy chủ nội bộ', error: error.message });
+        return res.status(500).json({ message: 'Lỗi máy chủ nội bộ', error: error.message });
     }
 });
+
 
 
 
