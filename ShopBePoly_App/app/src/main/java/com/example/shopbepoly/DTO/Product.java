@@ -16,6 +16,7 @@ public class Product implements Serializable {
     private String description;
     private String avt_imgproduct;
     private List<String> list_imgproduct;
+    @SerializedName("sold")
     private int sold;
     private List<Variation> variations;
 

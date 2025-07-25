@@ -108,6 +108,8 @@ public interface ApiService {
 
     @PUT("updateOrderStatus/{orderId}")
     Call<Order> upStatus(@Path("orderId") String id, @Body Order order);
+    @GET("order/{id}")
+    Call<Order> getOrderDetail(@Path("id") String orderId);
 
 
     @POST("add_favorite")
@@ -139,4 +141,5 @@ public interface ApiService {
             @Query("page") int page,
             @Query("limit") int limit
     );
+
 }

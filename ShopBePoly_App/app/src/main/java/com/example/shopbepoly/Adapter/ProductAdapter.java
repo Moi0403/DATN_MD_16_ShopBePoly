@@ -23,6 +23,7 @@ import com.example.shopbepoly.API.ApiService;
 import com.example.shopbepoly.DTO.Cart;
 import com.example.shopbepoly.DTO.Favorite;
 import com.example.shopbepoly.DTO.Product;
+import com.example.shopbepoly.DTO.Variation;
 import com.example.shopbepoly.R;
 import com.example.shopbepoly.Screen.ChiTietSanPham;
 import com.example.shopbepoly.fragment.CartBottomSheetDialog;
@@ -66,9 +67,14 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
         // Sử dụng method getFormattedPrice() đã có sẵn trong model
         holder.tvProductPrice.setText(product.getFormattedPrice());
 
-        holder.tvProductSold.setText("Đã bán: " + product.getSold() + " sp");
+        int totalSold = 0;
+        for (Variation v : product.getVariations()) {
+            totalSold += v.getSold();
+        }
+        holder.tvProductSold.setText("Đã bán: " + totalSold + " sp");
 
-            Glide.with(context)
+
+        Glide.with(context)
                 .load(ApiClient.IMAGE_URL + product.getAvt_imgproduct())
                 .placeholder(R.drawable.ic_launcher_background) // thêm ảnh chờ
                 .error(R.drawable.ic_launcher_foreground) // thêm ảnh lỗi
@@ -182,8 +188,6 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
                 });
             }
         });
-
-
         holder.ivCart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {

@@ -3,29 +3,33 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".fragment.FavoriteFragment">
+    tools:context=".fragment.FavoriteFragment"
+    android:padding="10dp">
 
     <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:layout_marginTop="8dp"
+        >
 
         <TextView
+            android:layout_marginBottom="24dp"
             android:id="@+id/tv_title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Yêu thích"
-            android:textColor="#1A1A1A"
-            android:textSize="18sp"
+            android:layout_weight="1"
+            android:textColor="#000000"
             android:textStyle="bold"
-            android:textAlignment="center"
-            />
+            android:textSize="20sp"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:text="Yêu thích" />
         <!-- TODO: Update blank fragment layout -->
         <androidx.recyclerview.widget.RecyclerView
             android:layout_below="@id/tv_title"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:id="@+id/rvFavorites"
-            android:layout_margin="20dp"
             />
     </RelativeLayout>
 

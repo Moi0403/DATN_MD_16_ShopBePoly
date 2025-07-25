@@ -109,7 +109,7 @@ public class HomeFragment extends Fragment {
                 @Override
                 public void onResponse(Call<List<Notification>> call, Response<List<Notification>> response) {
                     if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
-                        sendLocalNotification();
+//                        sendLocalNotification();
                     }
                     Intent intent = new Intent(getActivity(), ThongBao.class);
                     thongBaoLauncher.launch(intent);
