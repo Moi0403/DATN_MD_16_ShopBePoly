@@ -28,6 +28,8 @@ const favoriteModel = require('./Database/favoriteModel');
 const Favorite = favoriteModel;
 const messageModel = require('./Database/messageModel');
 const notificationModel = require('./Database/notificationModel');
+const sendEmail = require('./Database/sendEmail');
+const VerifyCode = require('./Database/VerifyCode')
 
 const uri = COMOMJS.uri;
 
@@ -82,14 +84,14 @@ const uploadProduct = multer({ storage: storageProduct });
 const upload = multer({ storage });
 
 router.get('/notifications/:userId', async (req, res) => {
-  const { userId } = req.params;
-  try {
-    const notifications = await notificationModel.find({ userId }).sort({ createdAt: -1 });
-    res.json(notifications);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Lỗi khi lấy thông báo' });
-  }
+    const { userId } = req.params;
+    try {
+        const notifications = await notificationModel.find({ userId }).sort({ createdAt: -1 });
+        res.json(notifications);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Lỗi khi lấy thông báo' });
+    }
 });
 
 // API cập nhật avatar
@@ -540,15 +542,15 @@ router.put('/up_cart/:idCart', async (req, res) => {
             cartId,
             {
                 $set: {
-                id_user: data.id_user,
-                id_product: data.id_product,
-                quantity: data.quantity,
-                price: data.price,
-                total: data.total,
-                status: data.status,
-                color: data.color,
-                size: data.size,
-                img_cart: data.img_cart
+                    id_user: data.id_user,
+                    id_product: data.id_product,
+                    quantity: data.quantity,
+                    price: data.price,
+                    total: data.total,
+                    status: data.status,
+                    color: data.color,
+                    size: data.size,
+                    img_cart: data.img_cart
                 }
             },
             { new: true }
@@ -873,13 +875,13 @@ router.delete('/del_order/:id', async (req, res) => {
 })
 
 router.delete('/delete_all_orders', async (req, res) => {
-  try {
-    await orderModel.deleteMany({});
-    res.status(200).json({ message: 'Đã xóa tất cả đơn hàng thành công' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Lỗi khi xóa đơn hàng' });
-  }
+    try {
+        await orderModel.deleteMany({});
+        res.status(200).json({ message: 'Đã xóa tất cả đơn hàng thành công' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Lỗi khi xóa đơn hàng' });
+    }
 });
 router.put('/cancel_order/:id', async (req, res) => {
     try {
@@ -1100,6 +1102,26 @@ router.put('/up_password/:id', async (req, res) => {
         res.status(500).json({ message: 'Lỗi server khi đổi mật khẩu' });
     }
 });
+// POST /auth/reset-password-by-email
+router.post('/auth/reset-password-by-email', async (req, res) => {
+    const { email, newPassword } = req.body;
+
+    try {
+        const user = await userModel.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ message: 'Không tìm thấy người dùng' });
+        }
+
+        user.password = newPassword;
+        await user.save();
+
+        res.json({ message: 'Đặt lại mật khẩu thành công' });
+    } catch (error) {
+        console.error('Lỗi đặt lại mật khẩu:', error);
+        res.status(500).json({ message: 'Lỗi server' });
+    }
+});
+
 router.post("/add_favorite", async (req, res) => {
     try {
         const { id_user, id_product } = req.body;
@@ -1166,5 +1188,49 @@ router.get('/get-admin', async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 });
+
+// Gửi mã xác minh
+router.post('/send-verification-code', async (req, res) => {
+  const { email } = req.body;
+
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+  try {
+    await VerifyCode.create({ email: email.trim().toLowerCase(), code });
+
+    await sendEmail(email, 'Mã xác nhận', `Mã xác nhận của bạn là: ${code}`);
+
+    return res.sendStatus(200);
+  } catch (err) {
+    console.error('Lỗi gửi mã xác minh:', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ' });
+  }
+});
+
+// Xác minh mã
+router.post('/verify-code', async (req, res) => {
+  const { email, code } = req.body;
+
+  try {
+    const record = await VerifyCode.findOne({
+      email: email.trim().toLowerCase(),
+      code: code.trim()
+    });
+
+    if (!record) {
+      return res.status(400).json({ message: 'Không tìm thấy mã xác minh' });
+    }
+
+    await VerifyCode.deleteOne({ _id: record._id });
+
+    return res.status(200).json({ message: 'Xác minh thành công' });
+  } catch (err) {
+    console.error('Lỗi xác minh mã:', err);
+    return res.status(500).json({ message: 'Lỗi máy chủ' });
+  }
+});
+
+
+
 
 app.use(express.json());

@@ -3,6 +3,7 @@ package com.example.shopbepoly.Screen;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.text.InputType;
 import android.util.Log;
 import android.widget.*;
 
@@ -29,6 +30,7 @@ public class LoginScreen extends AppCompatActivity {
     private SharedPreferences sharedPreferences;
 
     private static final String PREF_NAME = "LoginPrefs";
+    private ImageView btnTogglePassword;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,9 +43,23 @@ public class LoginScreen extends AppCompatActivity {
         btnLogin = findViewById(R.id.btnLogin);
         txtRegister = findViewById(R.id.txtRegister);
         txtForgot = findViewById(R.id.txtForgotPassword);
+        btnTogglePassword = findViewById(R.id.btnTogglePassword);
 
         sharedPreferences = getSharedPreferences(PREF_NAME, MODE_PRIVATE);
         loadSavedCredentials();
+        final boolean[] isPasswordVisible = {false};
+
+        btnTogglePassword.setOnClickListener(v -> {
+            if (isPasswordVisible[0]) {
+                edtPassword.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+                btnTogglePassword.setImageResource(R.drawable.ic_eye_on);
+            } else {
+                edtPassword.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+                btnTogglePassword.setImageResource(R.drawable.ic_eye_off);
+            }
+            edtPassword.setSelection(edtPassword.length());
+            isPasswordVisible[0] = !isPasswordVisible[0];
+        });
 
         btnLogin.setOnClickListener(view -> {
             String username = edtUsername.getText().toString().trim();
