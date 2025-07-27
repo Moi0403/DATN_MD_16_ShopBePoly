@@ -5,7 +5,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:allowBackup="true"
@@ -19,6 +19,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ShopBePoly"
         tools:targetApi="31">
+        <activity
+            android:name=".VerifyCodeScreen"
+            android:exported="false" />
         <activity
             android:name=".DonMua"
             android:exported="false" />

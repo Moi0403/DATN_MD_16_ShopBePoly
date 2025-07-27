@@ -54,6 +54,8 @@ public interface ApiService {
 
     @PUT("up_user/{userId}")
     Call<List<User>> updateUser(@Path("userId") String userId, @Body User user);
+    @POST("auth/reset-password-by-email")
+    Call<ResponseBody> resetPasswordByEmail(@Body RequestBody body);
 
 
     @GET("list_product")
@@ -141,5 +143,11 @@ public interface ApiService {
             @Query("page") int page,
             @Query("limit") int limit
     );
+    // Gửi mã xác thực đến email người dùng
+    @POST("send-verification-code")
+    Call<Void> sendVerificationCode(@Body Map<String, String> body);
 
+    // Xác minh mã đã gửi
+    @POST("verify-code")
+    Call<Void> verifyCode(@Body Map<String, String> body);
 }

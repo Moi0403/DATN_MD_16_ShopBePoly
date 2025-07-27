@@ -132,16 +132,29 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
 
 
 
+        // Xử lý hiển thị các nút tùy theo trạng thái đơn hàng
         if ("Đang xử lý".equalsIgnoreCase(order.getStatus())) {
             holder.btnHuy.setVisibility(View.VISIBLE);
             holder.btnNhan.setVisibility(View.GONE);
-        } else if ("Đang giao".equalsIgnoreCase(order.getStatus())){
+            holder.btnMuaLai.setVisibility(View.GONE);
+        } else if ("Đang giao".equalsIgnoreCase(order.getStatus())) {
             holder.btnNhan.setVisibility(View.VISIBLE);
             holder.btnHuy.setVisibility(View.GONE);
-        }else {
+            holder.btnMuaLai.setVisibility(View.GONE);
+        } else if ("Đã hủy".equalsIgnoreCase(order.getStatus())) {
+            holder.btnMuaLai.setVisibility(View.VISIBLE);
             holder.btnHuy.setVisibility(View.GONE);
             holder.btnNhan.setVisibility(View.GONE);
+        } else if ("Đã giao".equalsIgnoreCase(order.getStatus())) {
+            holder.btnMuaLai.setVisibility(View.VISIBLE);
+            holder.btnHuy.setVisibility(View.GONE);
+            holder.btnNhan.setVisibility(View.GONE);
+        } else {
+            holder.btnHuy.setVisibility(View.GONE);
+            holder.btnNhan.setVisibility(View.GONE);
+            holder.btnMuaLai.setVisibility(View.GONE);
         }
+
 
         holder.btnNhan.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -171,7 +184,7 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
 
     public static class OrderViewHolder extends RecyclerView.ViewHolder {
         TextView tvmaDH, tvthanhTien, tvngayMua, tvTT,tvLydo, tvSoLuongSP;
-        Button btnHuy, btnChiTiet, btnNhan;
+        Button btnHuy, btnChiTiet, btnNhan,btnMuaLai;
 
         public OrderViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -184,6 +197,7 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
             btnHuy = itemView.findViewById(R.id.btnHuy);
             btnChiTiet = itemView.findViewById(R.id.btnChitiet);
             btnNhan = itemView.findViewById(R.id.btnNhan);
+            btnMuaLai = itemView.findViewById(R.id.btnMuaLai);
         }
     }
 
