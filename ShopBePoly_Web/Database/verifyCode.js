@@ -8,3 +8,4 @@ const verifyCodeSchema = new mongoose.Schema({
 
 const VerifyCode = mongoose.model('VerifyCode', verifyCodeSchema);
 module.exports = VerifyCode;
+//abc
