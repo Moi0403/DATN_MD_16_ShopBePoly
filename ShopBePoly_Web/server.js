@@ -1191,45 +1191,212 @@ router.get('/get-admin', async (req, res) => {
 
 // Gửi mã xác minh
 router.post('/send-verification-code', async (req, res) => {
-  const { email } = req.body;
+    const { email } = req.body;
 
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
 
-  try {
-    await VerifyCode.create({ email: email.trim().toLowerCase(), code });
+    try {
+        await VerifyCode.create({ email: email.trim().toLowerCase(), code });
 
-    await sendEmail(email, 'Mã xác nhận', `Mã xác nhận của bạn là: ${code}`);
+        await sendEmail(email, 'Mã xác nhận', `Mã xác nhận của bạn là: ${code}`);
 
-    return res.sendStatus(200);
-  } catch (err) {
-    console.error('Lỗi gửi mã xác minh:', err);
-    return res.status(500).json({ message: 'Lỗi máy chủ' });
-  }
+        return res.sendStatus(200);
+    } catch (err) {
+        console.error('Lỗi gửi mã xác minh:', err);
+        return res.status(500).json({ message: 'Lỗi máy chủ' });
+    }
 });
 
 // Xác minh mã
 router.post('/verify-code', async (req, res) => {
-  const { email, code } = req.body;
+    const { email, code } = req.body;
 
-  try {
-    const record = await VerifyCode.findOne({
-      email: email.trim().toLowerCase(),
-      code: code.trim()
-    });
+    try {
+        const record = await VerifyCode.findOne({
+            email: email.trim().toLowerCase(),
+            code: code.trim()
+        });
 
-    if (!record) {
-      return res.status(400).json({ message: 'Không tìm thấy mã xác minh' });
+        if (!record) {
+            return res.status(400).json({ message: 'Không tìm thấy mã xác minh' });
+        }
+
+        await VerifyCode.deleteOne({ _id: record._id });
+
+        return res.status(200).json({ message: 'Xác minh thành công' });
+    } catch (err) {
+        console.error('Lỗi xác minh mã:', err);
+        return res.status(500).json({ message: 'Lỗi máy chủ' });
     }
+});
 
-    await VerifyCode.deleteOne({ _id: record._id });
+// Thống kê doanh thu theo ngày / tháng / năm 
+router.get('/statistics', async (req, res) => {
+    try {
+        const { type, year, month, day } = req.query;
 
-    return res.status(200).json({ message: 'Xác minh thành công' });
-  } catch (err) {
-    console.error('Lỗi xác minh mã:', err);
-    return res.status(500).json({ message: 'Lỗi máy chủ' });
+        const matchStage = {
+            status: { $ne: 'Đã hủy' } 
+        };
+
+        const dateFilter = {};
+
+        if (type === 'day' && year && month && day) {
+            const paddedMonth = month.padStart(2, '0');
+            const paddedDay = day.padStart(2, '0');
+            const start = new Date(`${year}-${paddedMonth}-${paddedDay}T00:00:00+07:00`);
+            const end = new Date(start);
+            end.setDate(start.getDate() + 1);
+            dateFilter.$gte = start;
+            dateFilter.$lt = end;
+
+        } else if (type === 'month' && year && month) {
+            const paddedMonth = month.padStart(2, '0');
+            const start = new Date(`${year}-${paddedMonth}-01T00:00:00+07:00`);
+            const nextMonth = new Date(start);
+            nextMonth.setMonth(start.getMonth() + 1);
+            dateFilter.$gte = start;
+            dateFilter.$lt = nextMonth;
+
+        } else if (type === 'year' && year) {
+            const start = new Date(`${year}-01-01T00:00:00+07:00`);
+            const end = new Date(`${+year + 1}-01-01T00:00:00+07:00`);
+            dateFilter.$gte = start;
+            dateFilter.$lt = end;
+        }
+
+        if (Object.keys(dateFilter).length > 0) {
+            matchStage.date = dateFilter;
+        }
+
+        const result = await orderModel.aggregate([
+            { $match: matchStage },
+            {
+                $group: {
+                    _id: null,
+                    totalRevenue: {
+                        $sum: {
+                            $toDouble: "$total"
+                        }
+                    },
+                    totalOrders: { $sum: 1 }
+                }
+            }
+        ]);
+
+        if (result.length === 0) {
+            return res.json({
+                totalRevenue: 0,
+                totalOrders: 0
+            });
+        }
+
+        const { totalRevenue, totalOrders } = result[0];
+        res.json({ totalRevenue, totalOrders });
+
+    } catch (error) {
+        console.error('Lỗi thống kê doanh thu:', error);
+        res.status(500).json({ message: 'Lỗi server khi thống kê doanh thu' });
+    }
+});
+
+
+// Top 5 sản phẩm bán chạy
+router.get('/top-products', async (req, res) => {
+  try {
+    const topProducts = await orderModel.aggregate([
+      { $match: { status: { $ne: "Đã hủy" } } }, // Bỏ đơn đã hủy
+      { $unwind: "$products" },
+      {
+        $group: {
+          _id: "$products.id_product",
+          totalQuantity: { $sum: "$products.quantity" }
+        }
+      },
+      {
+        $lookup: {
+          from: "products",
+          localField: "_id",
+          foreignField: "_id",
+          as: "productInfo"
+        }
+      },
+      { $unwind: "$productInfo" },
+      {
+        $project: {
+          _id: 0,
+          id: "$_id",
+          name: "$productInfo.nameproduct",
+          image: "$productInfo.avt_imgproduct",
+          totalQuantity: 1
+        }
+      },
+      { $sort: { totalQuantity: -1 } },
+      { $limit: 5 }
+    ]);
+
+    res.json(topProducts);
+  } catch (error) {
+    console.error("Lỗi khi thống kê top sản phẩm:", error);
+    res.status(500).json({ message: "Lỗi server", error });
   }
 });
 
+router.get('/statistics/overview', async (req, res) => {
+  try {
+    const { start, end } = req.query;
+
+    let startDate = start ? new Date(start + "T00:00:00+07:00") : null;
+    let endDate = end ? new Date(end + "T23:59:59.999+07:00") : null;
+
+    const dateFilter = {};
+    if (startDate) dateFilter.$gte = startDate;
+    if (endDate) dateFilter.$lte = endDate;
+
+    const orderFilter = Object.keys(dateFilter).length ? { date: dateFilter } : {};
+
+    // Đếm tổng sản phẩm, người dùng (không lọc theo ngày vì user không có trường createdAt)
+    const totalProducts = await productModel.countDocuments();
+    const totalUsers = await userModel.countDocuments();
+
+    // Đếm đơn hàng theo khoảng thời gian lọc
+    const totalOrders = await orderModel.countDocuments(orderFilter);
+
+    // Lấy tất cả đơn hàng theo filter để tính tổng doanh thu và trạng thái
+    const allOrders = await orderModel.find(orderFilter);
+
+    let totalRevenue = 0;
+    let countDelivered = 0;
+    let countProcessing = 0;
+    let countCancelled = 0;
+
+    allOrders.forEach(order => {
+      const status = order.status || '';
+      const orderTotal = Number(order.total) || 0;
+
+      if (status !== 'Đã hủy') {
+        totalRevenue += orderTotal;
+      }
+
+      if (status === 'Đã giao') countDelivered++;
+      else if (status === 'Đang xử lý') countProcessing++;
+      else if (status === 'Đã hủy') countCancelled++;
+    });
+
+    res.json({
+      totalProducts,
+      totalUsers,
+      totalOrders,
+      totalRevenue,
+      countDelivered,
+      countProcessing,
+      countCancelled
+    });
+  } catch (error) {
+    console.error('Lỗi thống kê tổng quan:', error);
+    res.status(500).json({ message: 'Lỗi server khi lấy thống kê tổng quan' });
+  }
+});
 
 
 
