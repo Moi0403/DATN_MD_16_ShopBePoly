@@ -201,7 +201,6 @@ router.post('/add_product', uploadProduct.any(), async (req, res) => {
 
         });
 
-        // Gộp thêm ảnh từ field list_imgproduct (ảnh phụ không theo màu)
         const additionalImgs = files.filter(f => f.fieldname === 'list_imgproduct');
         additionalImgs.forEach(f => {
             if (!mergedImages.includes(f.filename)) {
@@ -212,10 +211,12 @@ router.post('/add_product', uploadProduct.any(), async (req, res) => {
         const newProduct = new productModel({
             nameproduct: body.name_pro,
             id_category: body.category_pro,
+            price_enter: body.price_enter,
             price: body.price_pro,
             description: body.mota_pro,
             avt_imgproduct: avt_imgpro?.filename || '',
             list_imgproduct: mergedImages,
+            discount: "",
             variations: variations
         });
 
@@ -229,27 +230,152 @@ router.post('/add_product', uploadProduct.any(), async (req, res) => {
     }
 });
 
-
-
 // sửa product 'http://localhost:3000/api/up_product/ id'
-router.put('/up_product/:id', async (req, res) => {
+router.put('/update_product/:id', uploadProduct.any(), async (req, res) => {
     try {
-        const id = req.params.id;
-        const data = req.body;
+        const productId = req.params.id;
+        const files = req.files || [];
+        const body = req.body;
 
-        const kq = await productModel.findByIdAndUpdate(id, data, { new: true });
-
-        if (kq) {
-            console.log('Sửa thành công');
-            let pro = await productModel.find();
-            res.send(pro);
-        } else {
-            res.send('Không tìm thấy sản phẩm để sửa');
+        let variations = [];
+        if (body.variations) {
+            try {
+                variations = JSON.parse(body.variations);
+            } catch (err) {
+                return res.status(400).json({ message: 'Lỗi định dạng variations' });
+            }
         }
+
+        const oldProduct = await productModel.findById(productId);
+        if (!oldProduct) {
+            return res.status(404).json({ message: 'Không tìm thấy sản phẩm để cập nhật' });
+        }
+
+        // Debug: Log dữ liệu cũ và mới
+        console.log('Old variations:', oldProduct.variations);
+        console.log('Received variations:', variations);
+
+        // Chuẩn hóa dữ liệu và giữ sold từ bản ghi cũ
+        const updatedVariations = variations.map(variation => {
+            const size = Number(variation.size);
+            const oldVar = oldProduct.variations.find(v =>
+                v.color?.name === (variation.color?.name || '').trim() &&
+                v.size === size
+            );
+            return {
+                ...variation,
+                size: size,
+                sold: oldVar ? oldVar.sold : 0
+            };
+        });
+
+        // Xử lý ảnh đại diện
+        const avt_imgpro = files.find(f => f.fieldname === 'avt_imgpro');
+
+        updatedVariations.forEach((variation, index) => {
+            const fieldName = `variationImages-${index}`;
+            const matchedFiles = files.filter(f => f.fieldname === fieldName);
+
+            if (matchedFiles.length > 0) {
+                variation.list_imgproduct = matchedFiles.map(f => f.filename);
+                variation.image = matchedFiles[0]?.filename || '';
+            } else {
+                const oldVar = oldProduct.variations.find(v =>
+                    v.color?.name === (variation.color?.name || '').trim() &&
+                    v.size === Number(variation.size)
+                );
+                variation.list_imgproduct = oldVar?.list_imgproduct || [];
+                variation.image = oldVar?.image || (oldVar?.list_imgproduct[0] || '');
+            }
+        });
+
+        // Gộp ảnh từ variations vào danh sách ảnh chính
+        const mergedImages = [];
+        updatedVariations.forEach(variation => {
+            if (Array.isArray(variation.list_imgproduct)) {
+                variation.list_imgproduct.forEach(img => {
+                    if (img && !mergedImages.includes(img)) {
+                        mergedImages.push(img);
+                    }
+                });
+            }
+            if (!variation.list_imgproduct || variation.list_imgproduct.length === 0) {
+                variation.list_imgproduct = [];
+            }
+        });
+
+        const additionalImgs = files.filter(f => f.fieldname === 'list_imgproduct');
+        additionalImgs.forEach(f => {
+            if (!mergedImages.includes(f.filename)) {
+                mergedImages.push(f.filename);
+            }
+        });
+
+        // Tạo dữ liệu cập nhật
+        const updateData = {
+            nameproduct: body.name_pro,
+            id_category: body.category_pro,
+            price_enter: body.price_enter,
+            price: body.price_pro,
+            description: body.mota_pro,
+            discount: body.discount || "",
+            variations: updatedVariations,
+            list_imgproduct: mergedImages
+        };
+
+        if (avt_imgpro?.filename) {
+            updateData.avt_imgproduct = avt_imgpro.filename;
+        } else if (req.body.avt_imgpro_old) {
+            updateData.avt_imgpro_old = req.body.avt_imgpro_old;
+        } else {
+            updateData.avt_imgpro_old = oldProduct.avt_imgproduct;
+        }
+
+        const updatedProduct = await productModel.findByIdAndUpdate(
+            productId,
+            updateData,
+            { new: true }
+        );
+
+        if (!updatedProduct) {
+            return res.status(404).json({ message: 'Không tìm thấy sản phẩm để cập nhật' });
+        }
+
+        res.status(200).json(updatedProduct);
     } catch (error) {
-        res.send('Lỗi khi sửa')
+        console.error('❌ Lỗi cập nhật sản phẩm:', error);
+        res.status(500).json({ message: 'Lỗi server khi cập nhật sản phẩm', error: error.message });
     }
-})
+});
+
+router.put('/update_stock', async (req, res) => {
+    const { productId, color, size, stock } = req.body;
+
+    try {
+        const product = await productModel.findById(productId);
+        if (!product) return res.status(404).json({ message: 'Không tìm thấy sản phẩm' });
+
+        let updated = false;
+        product.variations.forEach(variation => {
+            console.log(`👉 So sánh: [${variation.color?.name}] === [${color}], [${variation.size}] === [${size}]`);
+
+            if (
+                variation.color?.name?.toString().trim().toLowerCase() === color?.toString().trim().toLowerCase() &&
+                variation.size?.toString().trim() === size?.toString().trim()
+            ) {
+                variation.stock = stock;
+                updated = true;
+            }
+        });
+
+        if (!updated) return res.status(404).json({ message: 'Không tìm thấy biến thể' });
+
+        await product.save();
+        res.json({ message: 'Cập nhật thành công' });
+    } catch (err) {
+        res.status(500).json({ message: 'Lỗi server', error: err.message });
+    }
+});
 
 // xóa sản phẩm 'http://localhost:3000/api/del_product/ id'
 router.delete('/del_product/:id', async (req, res) => {

@@ -9,11 +9,30 @@
 </head>
 <body>
     <div class="container">
-        <h1>Đơn hủy</h1>
+        <div class="header">
+            <h1>Đơn hủy</h1>
+            
+            <table id="order-table" class="table table-bordered table-striped mt-3">
+            <thead class="table-dark">
+                <tr>
+                    <th>Người đặt</th>
+                    <th>Sản phẩm</th>
+                    <th>Số lượng</th>
+                    <th>Tổng tiền</th>
+                    <th>Địa chỉ</th>
+                    <th>Ngày đặt</th>
+                    <th>Thanh toán</th>
+                    <th>Trạng thái</th>
+                </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+            </table>
+        </div>
     </div>
     
     <div id="sidebar-container"></div>
 
+    <script src="../../Database/config.js"></script>
     <script src="./Web_DH.js"></script>
     <script src="../Style_Sidebar/Sidebar.js"></script>
 </body>

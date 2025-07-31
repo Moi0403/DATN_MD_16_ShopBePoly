@@ -35,6 +35,7 @@
             background-color: #fafafa;
             border-radius: 4px;
             }
+        
 
     </style>
 </head>
@@ -49,25 +50,35 @@
                 <form id="themPro" enctype="multipart/form-data" method="POST">
                     <div class="row mb-3">
                         <div class="col-md-6">
+                            <input type="hidden" id="product_id">
                             <label for="avt_imgpro" class="form-label">Ảnh đại diện giày:</label>
-                            <input type="file" class="form-control" id="avt_imgpro" name="avt_imgpro" required>
+                            <input type="file" class="form-control" id="avt_imgpro" name="avt_imgpro" multiple>
+                        </div>
+                        <div class="col-md-6">
+                            <img id="preview-image" src="" alt="Preview Image" style="max-width: 150px; max-height: 150px; margin-top: 10px; display: none;">
                         </div>
                     </div>
 
                     <div class="row mb-3">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label for="category_pro" class="form-label">Hãng giày:</label>
                             <select id="category_pro" name="category_pro" class="form-select" required>
                                 <option value="">-- Chọn hãng giày --</option>
                             </select>
                         </div>
 
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label for="name_pro" class="form-label">Tên giày:</label>
                             <input type="text" class="form-control" id="name_pro" name="name_pro" required>
                         </div>
-                        <div class="col-md-4">
-                            <label for="price_pro" class="form-label">Giá sản phẩm:</label>
+
+                         <div class="col-md-3">
+                            <label for="price_enter" class="form-label">Giá nhập sản phẩm:</label>
+                            <input type="number" class="form-control" id="price_enter" name="price_enter" required>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label for="price_pro" class="form-label">Giá bán sản phẩm:</label>
                             <input type="number" class="form-control" id="price_pro" name="price_pro" required>
                         </div>
 
@@ -84,6 +95,8 @@
                                     <option value="Đỏ">Đỏ</option>
                                     <option value="Xanh">Xanh</option>
                                     <option value="Vàng">Vàng</option>
+                                    <option value="Hồng">Hồng</option>
+                                    <option value="Tím">Tím</option>
                                 </select>
                             </div>
 
@@ -129,7 +142,9 @@
                             <th>Size giày</th>
                             <th>Số lượng còn hàng (stock)</th>
                             <th>Số lượng bán (sold)</th>
-                            <th>Giá</th>
+                            <th>Giảm giá</th>
+                            <th>Giá nhập</th>
+                            <th>Giá bán</th>
                             <th>Xử lý</th>
                         </tr>
                     </thead>
