@@ -7,10 +7,12 @@ const productSchema = new mongoose.Schema({
         ref: 'category',
         required: true,
     },
+    price_enter: Number,
     price: Number,
     description: String,
     avt_imgproduct: String, 
     list_imgproduct: [String], 
+    discount: Number,
     variations: [
         {
             size: Number,
