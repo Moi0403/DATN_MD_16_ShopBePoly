@@ -49,7 +49,7 @@ public class ChiTietSanPham extends AppCompatActivity {
     private ImageView btnBack, btnFavorite, btnDecrease, btnIncrease, imgProduct, btnCart;
     private TextView tvQuantity, tvProductName, tvPrice, tvDescription, tvKho,tvCateProductName;
     private AppCompatButton btnAddToCart;
-    private TextView size37, size38, size39, size40, size41;
+    private TextView size36, size37, size38, size39, size40, size41, size42, size43, size44, size45, size46;
     private int quantity = 1;
     private boolean isFavorite = false;
     private String selectedColor = "";
@@ -214,6 +214,7 @@ public class ChiTietSanPham extends AppCompatActivity {
         imgProduct = findViewById(R.id.imgProduct);
         viewPagerProductImages = findViewById(R.id.viewPagerProductImages);
 
+        size36 = findViewById(R.id.size36);
         size37 = findViewById(R.id.size37);
         size38 = findViewById(R.id.size38);
         size39 = findViewById(R.id.size39);
@@ -546,10 +547,6 @@ public class ChiTietSanPham extends AppCompatActivity {
         }
     }
 
-
-
-
-
     private void highlightSelectedColor(String selectedCode) {
         for (int i = 0; i < layoutColorContainer.getChildCount(); i++) {
             View itemLayout = layoutColorContainer.getChildAt(i);
@@ -566,8 +563,6 @@ public class ChiTietSanPham extends AppCompatActivity {
             }
         }
     }
-
-
 
     private void updateImageByColor(String code) {
         if (product == null || product.getVariations() == null) return;

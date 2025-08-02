@@ -1,12 +1,14 @@
 package com.example.shopbepoly.nav;
 
 import android.os.Bundle;
+import android.util.Log;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
+import com.example.shopbepoly.API.WebSocketManager;
 import com.example.shopbepoly.R;
 import com.example.shopbepoly.databinding.ActivityHomeNavBinding;
 import com.example.shopbepoly.fragment.CartFragment;
@@ -53,4 +55,17 @@ public class HomeNavScreen extends AppCompatActivity {
         super.onResume();
 
     }
+//    @Override
+//    protected void onStop() {
+//        super.onStop();
+//        WebSocketManager.onAppClose();
+//        Log.d("HomeNavScreen", "onStop called, WebSocket disconnected");
+//    }
+//
+//    @Override
+//    protected void onDestroy() {
+//        super.onDestroy();
+//        WebSocketManager.onAppClose();
+//        Log.d("HomeNavScreen", "onDestroy called, WebSocket disconnected");
+//    }
 }

@@ -9,7 +9,8 @@ const userSchema = new mongoose.Schema({
     gender: String,
     phone_number: Number,
     avt_user: String,
-    role: Number
+    role: Number,
+    isOnline: { type: Boolean, default: false }
 });
 
 const userModel = mongoose.model('user', userSchema);

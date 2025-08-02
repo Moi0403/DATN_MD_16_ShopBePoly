@@ -39,31 +39,29 @@ public class ProOrderAdapter extends RecyclerView.Adapter<ProOrderAdapter.ProOrd
     public void onBindViewHolder(@NonNull ProOrderViewHolder holder, int position) {
         ProductInOrder product = list.get(position);
 
-        // Set tên sản phẩm
-        holder.txtName.setText(product.getId_product().getNameproduct());
+        if (product.getId_product() != null) {
+            holder.txtName.setText(product.getId_product().getNameproduct());
 
-        // Set màu sắc (ví dụ: "Đen: ")
+            String imageUrl = ApiClient.IMAGE_URL + product.getImg(product.getColor());
+
+            Glide.with(context)
+                    .load(imageUrl)
+                    .placeholder(R.drawable.ic_launcher_background)
+                    .error(R.drawable.ic_launcher_foreground)
+                    .override(300, 300)
+                    .centerCrop()
+                    .into(holder.imgProduct);
+        } else {
+            holder.txtName.setText("Sản phẩm không tồn tại");
+            holder.imgProduct.setImageResource(R.drawable.ic_launcher_foreground);
+        }
+
         holder.tvMau.setText(product.getColor() + ": ");
-
-        // Set size
         holder.tvSize.setText(String.valueOf(product.getSize()));
-
-        // Set số lượng
         holder.txtQuantity.setText(String.valueOf(product.getQuantity()));
-
-        // Set giá với định dạng tiền tệ
         holder.txtPrice.setText(formatCurrency(product.getPrice()));
-
-        String imageUrl = ApiClient.IMAGE_URL + product.getImg(product.getColor());
-
-        Glide.with(context)
-                .load(imageUrl)
-                .placeholder(R.drawable.ic_launcher_background)
-                .error(R.drawable.ic_launcher_foreground)
-                .override(300, 300)
-                .centerCrop()
-                .into(holder.imgProduct);
     }
+
 
     @Override
     public int getItemCount() {

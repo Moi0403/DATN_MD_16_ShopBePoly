@@ -16,24 +16,42 @@
             <table id="order-table" class="table table-bordered table-striped mt-3">
             <thead class="table-dark">
                 <tr>
+                    <th>STT</th>
                     <th>Người đặt</th>
-                    <th>Sản phẩm</th>
                     <th>Số lượng</th>
-                    <th>Tổng tiền</th>
-                    <th>Địa chỉ</th>
                     <th>Ngày đặt</th>
-                    <th>Thanh toán</th>
+                    <th>Tổng tiền</th>
                     <th>Trạng thái</th>
+                    <th>Xử lý</th>
                 </tr>
             </thead>
             <tbody id="tbody"></tbody>
             </table>
         </div>
+
+        <div class="modal fade" id="orderDetailModal" tabindex="-1" aria-labelledby="orderDetailModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Chi tiết đơn hàng</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <div class="modal-body" id="order-detail-body">
+                <!-- Nội dung chi tiết đơn sẽ được đổ vào đây -->
+            </div>
+            <!-- <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div> -->
+            </div>
+        </div>
+        </div>
+
     </div>
     <div id="sidebar-container"></div>
 
     <script src="../../Database/config.js"></script>
     <script src="./Web_GH.js"></script>
     <script src="../Style_Sidebar/Sidebar.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

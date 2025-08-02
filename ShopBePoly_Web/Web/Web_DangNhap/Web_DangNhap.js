@@ -54,7 +54,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
             }
             localStorage.setItem('userRole', data.user.role);
             alert(`Chào mừng ${data.user.name}, bạn đã đăng nhập thành công.`);
-            window.location.href = '../Web_QL_Product/QL_Product.html';
+            window.location.href = '../Web_TrangChu/TrangChu.html';
         } else {
             alert('Bạn không có quyền truy cập.');
         }
