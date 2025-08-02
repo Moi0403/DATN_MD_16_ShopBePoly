@@ -213,8 +213,7 @@ public class ChiTietSanPham extends AppCompatActivity {
         btnAddToCart = findViewById(R.id.btnAddToCart);
         imgProduct = findViewById(R.id.imgProduct);
         viewPagerProductImages = findViewById(R.id.viewPagerProductImages);
-
-        size36 = findViewById(R.id.size36);
+        
         size37 = findViewById(R.id.size37);
         size38 = findViewById(R.id.size38);
         size39 = findViewById(R.id.size39);

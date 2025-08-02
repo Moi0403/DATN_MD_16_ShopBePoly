@@ -110,8 +110,10 @@ const xemChiTietDon = async (orderId) => {
 };
 
 // Hàm xác nhận và cập nhật trạng thái
+// Hàm xác nhận và cập nhật trạng thái
 async function confirmOrder(orderId) {
   try {
+    // Lấy toàn bộ danh sách đơn hàng
     const res = await fetch(`http://${config.host}:${config.port}/api/list_order`);
     const data = await res.json();
     const order = data.find(o => o._id === orderId);
@@ -120,6 +122,30 @@ async function confirmOrder(orderId) {
       alert('Không tìm thấy đơn hàng');
       return;
     }
+
+    // Cập nhật số lượng stock và sold trước khi cập nhật trạng thái đơn hàng
+    for (const product of order.products) {
+      const productId = product.id_product?._id;
+      const color = product.color;
+      const size = product.size;
+      const quantity = product.quantity;
+
+      // Gửi yêu cầu cập nhật stock & sold lên server
+      await fetch(`http://${config.host}:${config.port}/api/updateStockSold`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          productId,
+          color,
+          size,
+          quantity
+        })
+      });
+    }
+
+    // Cập nhật trạng thái đơn hàng thành "Lấy hàng thành công"
     const response = await fetch(`http://${config.host}:${config.port}/api/updateOrderStatus/${orderId}`, {
       method: 'PUT',
       headers: {
@@ -134,7 +160,7 @@ async function confirmOrder(orderId) {
 
     if (response.ok) {
       alert(result.message);
-      hienthiOrder(); // Tải lại danh sách để cập nhật giao diện
+      hienthiOrder(); // Refresh danh sách
     } else {
       alert('Lỗi: ' + result.message);
     }
@@ -143,6 +169,7 @@ async function confirmOrder(orderId) {
     alert('Lỗi khi xác nhận đơn hàng');
   }
 }
+
 
 fetch('../Style_Sidebar/Sidebar.html')
   .then(res => res.text())

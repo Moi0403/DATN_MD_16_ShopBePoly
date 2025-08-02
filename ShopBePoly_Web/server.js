@@ -404,6 +404,33 @@ router.put('/update_stock', async (req, res) => {
     }
 });
 
+router.put('/updateStockSold', async (req, res) => {
+  try {
+    const { productId, color, size, quantity } = req.body;
+
+    const product = await productModel.findById(productId);
+    if (!product) return res.status(404).json({ message: 'Không tìm thấy sản phẩm' });
+
+    // ✅ Tìm đúng biến thể theo màu và size
+    const variation = product.variations.find(v => 
+      v.color.name.toLowerCase() === color.toLowerCase() && v.size == size
+    );
+
+    if (!variation) return res.status(404).json({ message: 'Không tìm thấy biến thể với màu và size tương ứng' });
+
+    // ✅ Cập nhật stock và sold
+    variation.stock = Math.max(0, variation.stock - quantity);
+    variation.sold = (variation.sold || 0) + quantity;
+
+    await product.save();
+    res.json({ message: 'Cập nhật stock & sold thành công' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Lỗi server', error: err.message });
+  }
+});
+
+
 router.delete('/del_product/:id', async (req, res) => {
     try {
         let id = req.params.id;
