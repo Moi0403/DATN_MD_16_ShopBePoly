@@ -226,28 +226,54 @@ router.post('/add_product', uploadProduct.any(), async (req, res) => {
         });
 
         // ✅ Gán ảnh cho từng variation (cải tiến: fallback tốt hơn)
-        variations.forEach((variation, index) => {
-            const colorCode = variation.color?.code?.toLowerCase() || '';
-            const size = variation.size;
+        // variations.forEach((variation, index) => {
+        //     const colorCode = variation.color?.code?.toLowerCase() || '';
+        //     const size = variation.size;
 
-            const fieldByKey = `variation-${colorCode}-${size}`;
-            let matchedFiles = files.filter(f => f.fieldname === fieldByKey);
+        //     const fieldByKey = `variation-${colorCode}-${size}`;
+        //     let matchedFiles = files.filter(f => f.fieldname === fieldByKey);
 
-            // Fallback theo index: variationImages-0, variationImages-1
-            if (matchedFiles.length === 0) {
-                const fieldByIndex = `variationImages-${index}`;
-                matchedFiles = files.filter(f => f.fieldname === fieldByIndex);
+        //     // Fallback theo index: variationImages-0, variationImages-1
+        //     if (matchedFiles.length === 0) {
+        //         const fieldByIndex = `variationImages-${index}`;
+        //         matchedFiles = files.filter(f => f.fieldname === fieldByIndex);
+        //     }
+
+        //     // Fallback cuối: tìm ảnh có tên chứa màu hoặc size
+        //     if (matchedFiles.length === 0) {
+        //         matchedFiles = files.filter(f =>
+        //             f.originalname?.toLowerCase().includes(colorCode) ||
+        //             f.originalname?.includes(size?.toString())
+        //         );
+        //     }
+
+        //     // ✅ Luôn gán ảnh nếu tìm được
+        //     variation.list_imgproduct = matchedFiles.map(f => f.filename);
+        //     variation.image = matchedFiles[0]?.filename || '';
+        // });
+        variations.forEach((variation, vIndex) => {
+            const colorIndex = vIndex; // fallback theo index gửi từ client
+            const matchedFiles = [];
+
+            // Quét tất cả file có fieldname dạng 'variationImages-<colorIndex>-<subIndex>'
+            files.forEach(file => {
+                const regex = new RegExp(`^variationImages-${colorIndex}-\\d+$`);
+                if (regex.test(file.fieldname)) {
+                    matchedFiles.push(file);
+                }
+            });
+
+            // Nếu không có ảnh theo index thì fallback tìm theo màu (color code)
+            if (matchedFiles.length === 0 && variation.color?.code) {
+                const colorCode = variation.color.code.replace("#", "").toLowerCase();
+                files.forEach(file => {
+                    if (file.originalname?.toLowerCase().includes(colorCode)) {
+                        matchedFiles.push(file);
+                    }
+                });
             }
 
-            // Fallback cuối: tìm ảnh có tên chứa màu hoặc size
-            if (matchedFiles.length === 0) {
-                matchedFiles = files.filter(f =>
-                    f.originalname?.toLowerCase().includes(colorCode) ||
-                    f.originalname?.includes(size?.toString())
-                );
-            }
-
-            // ✅ Luôn gán ảnh nếu tìm được
+            // Gán ảnh
             variation.list_imgproduct = matchedFiles.map(f => f.filename);
             variation.image = matchedFiles[0]?.filename || '';
         });

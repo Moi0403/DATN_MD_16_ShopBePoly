@@ -256,9 +256,9 @@ const ThemPro = () => {
       console.log(`Color: ${colorName}, FileInput:`, fileInput, 'Files:', files);
 
       if (files && files.length > 0) {
-        Array.from(files).forEach(file => {
+        Array.from(files).forEach((file, fileIndex) => {
           if (file) {
-            formData.append(`variationImages-${colorIndex}`, file);
+            formData.append(`variationImages-${colorIndex}-${fileIndex}`, file);
             listImg.push(file.name);
           }
         });
@@ -266,6 +266,7 @@ const ThemPro = () => {
         alert(`Vui lòng chọn ảnh cho màu ${colorName}!`);
         throw new Error(`No image selected for color ${colorName}`);
       }
+
 
       const rows = block.querySelectorAll('.variation-row');
       rows.forEach(row => {
