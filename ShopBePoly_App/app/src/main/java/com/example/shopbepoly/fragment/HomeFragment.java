@@ -287,21 +287,4 @@ public class HomeFragment extends Fragment {
         }
     }
 
-    private void sendLocalNotification() {
-        Intent intent = new Intent(getActivity(), ThongBao.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        PendingIntent pendingIntent = PendingIntent.getActivity(
-                getActivity(), 0, intent, PendingIntent.FLAG_IMMUTABLE);
-
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(requireContext(), CHANNEL_ID)
-                .setSmallIcon(R.drawable.bell) // ảnh nhỏ (icon)
-                .setContentTitle("Bạn có thông báo mới")
-                .setContentText("Hãy kiểm tra thông báo của bạn ngay bây giờ.")
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                .setAutoCancel(true)
-                .setContentIntent(pendingIntent);
-
-        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(requireContext());
-        notificationManager.notify(NOTIFICATION_ID, builder.build());
-    }
 }

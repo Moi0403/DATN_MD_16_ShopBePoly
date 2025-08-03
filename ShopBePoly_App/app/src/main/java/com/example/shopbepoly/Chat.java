@@ -4,9 +4,11 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
@@ -38,6 +40,7 @@ public class Chat extends AppCompatActivity {
     private RecyclerView recyclerMessages;
     private EditText edtMessage;
     private Button btnSend;
+    private ImageButton img_back;
 
     private List<Message> messageList = new ArrayList<>();
     private MessageAdapter adapter;
@@ -55,7 +58,13 @@ public class Chat extends AppCompatActivity {
         recyclerMessages = findViewById(R.id.recyclerMessages);
         edtMessage = findViewById(R.id.edtMessage);
         btnSend = findViewById(R.id.btnSend);
-
+        img_back = findViewById(R.id.btnBack_chat);
+        img_back.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+            }
+        });
         recyclerMessages.setLayoutManager(new LinearLayoutManager(this));
         apiService = ApiClient.getApiService();
 
