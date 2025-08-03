@@ -49,7 +49,7 @@ public class ChiTietSanPham extends AppCompatActivity {
     private ImageView btnBack, btnFavorite, btnDecrease, btnIncrease, imgProduct, btnCart;
     private TextView tvQuantity, tvProductName, tvPrice, tvDescription, tvKho,tvCateProductName;
     private AppCompatButton btnAddToCart;
-    private TextView size36, size37, size38, size39, size40, size41, size42, size43, size44, size45, size46;
+    private TextView size36, size37, size38, size39, size40, size41, size42, size43, size44, size45;
     private int quantity = 1;
     private boolean isFavorite = false;
     private String selectedColor = "";
@@ -213,12 +213,17 @@ public class ChiTietSanPham extends AppCompatActivity {
         btnAddToCart = findViewById(R.id.btnAddToCart);
         imgProduct = findViewById(R.id.imgProduct);
         viewPagerProductImages = findViewById(R.id.viewPagerProductImages);
-        
+
+        size36 = findViewById(R.id.size36);
         size37 = findViewById(R.id.size37);
         size38 = findViewById(R.id.size38);
         size39 = findViewById(R.id.size39);
         size40 = findViewById(R.id.size40);
         size41 = findViewById(R.id.size41);
+        size42 = findViewById(R.id.size42);
+        size43 = findViewById(R.id.size43);
+        size44 = findViewById(R.id.size44);
+        size45 = findViewById(R.id.size45);
     }
 
     private void setupClickListeners() {
@@ -294,11 +299,16 @@ public class ChiTietSanPham extends AppCompatActivity {
             }
         });
 
+        size36.setOnClickListener(v -> selectSize("36", size36));
         size37.setOnClickListener(v -> selectSize("37", size37));
         size38.setOnClickListener(v -> selectSize("38", size38));
         size39.setOnClickListener(v -> selectSize("39", size39));
         size40.setOnClickListener(v -> selectSize("40", size40));
         size41.setOnClickListener(v -> selectSize("41", size41));
+        size42.setOnClickListener(v -> selectSize("42", size42));
+        size43.setOnClickListener(v -> selectSize("43", size43));
+        size44.setOnClickListener(v -> selectSize("44", size44));
+        size45.setOnClickListener(v -> selectSize("45", size45));
     }
 
     private void updateStockDisplay() {
@@ -334,6 +344,38 @@ public class ChiTietSanPham extends AppCompatActivity {
             return false;
         }
         return true;
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (product != null) {
+            fetchProductFromServer(product.get_id());
+        }
+    }
+
+    private void fetchProductFromServer(String productId) {
+        ApiService apiService = ApiClient.getApiService();
+        apiService.getProductById(productId).enqueue(new Callback<Product>() {
+            @Override
+            public void onResponse(Call<Product> call, Response<Product> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    product = response.body(); // Cập nhật lại thông tin mới nhất
+                    updateUI();
+                    showAvailableColors();
+                    showAvailableSizes();
+                    updateStockDisplay();
+                    showDefaultProductImages(); // Gọi lại ảnh mặc định
+                } else {
+                    Log.e("FetchProduct", "Không lấy được sản phẩm");
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Product> call, Throwable t) {
+                Log.e("FetchProduct", "Lỗi khi gọi API", t);
+            }
+        });
     }
 
     private void navigateToPayment() {
@@ -382,18 +424,28 @@ public class ChiTietSanPham extends AppCompatActivity {
     }
 
     private void resetSizeSelections() {
+        size36.setBackgroundResource(R.drawable.size_selector);
         size37.setBackgroundResource(R.drawable.size_selector);
         size38.setBackgroundResource(R.drawable.size_selector);
         size39.setBackgroundResource(R.drawable.size_selector);
         size40.setBackgroundResource(R.drawable.size_selector);
         size41.setBackgroundResource(R.drawable.size_selector);
+        size42.setBackgroundResource(R.drawable.size_selector);
+        size43.setBackgroundResource(R.drawable.size_selector);
+        size44.setBackgroundResource(R.drawable.size_selector);
+        size45.setBackgroundResource(R.drawable.size_selector);
 
         int defaultTextColor = getResources().getColor(R.color.size_text_default);
+        size36.setTextColor(defaultTextColor);
         size37.setTextColor(defaultTextColor);
         size38.setTextColor(defaultTextColor);
         size39.setTextColor(defaultTextColor);
         size40.setTextColor(defaultTextColor);
         size41.setTextColor(defaultTextColor);
+        size42.setTextColor(defaultTextColor);
+        size43.setTextColor(defaultTextColor);
+        size44.setTextColor(defaultTextColor);
+        size45.setTextColor(defaultTextColor);
     }
 
     private void updateQuantity() {
@@ -413,11 +465,16 @@ public class ChiTietSanPham extends AppCompatActivity {
         if (product == null || product.getVariations() == null) return;
 
         // Ẩn trước
+        size36.setVisibility(View.GONE);
         size37.setVisibility(View.GONE);
         size38.setVisibility(View.GONE);
         size39.setVisibility(View.GONE);
         size40.setVisibility(View.GONE);
         size41.setVisibility(View.GONE);
+        size42.setVisibility(View.GONE);
+        size43.setVisibility(View.GONE);
+        size44.setVisibility(View.GONE);
+        size45.setVisibility(View.GONE);
 
         resetSizeSelections(); // reset border + màu
 
@@ -430,11 +487,16 @@ public class ChiTietSanPham extends AppCompatActivity {
                 // Nếu chưa chọn màu, hoặc màu trùng với selectedColorCode
                 if (selectedColorCode.isEmpty() || colorCode.equals(selectedColorCode)) {
                     switch (size) {
+                        case 36: size36.setVisibility(View.VISIBLE); break;
                         case 37: size37.setVisibility(View.VISIBLE); break;
                         case 38: size38.setVisibility(View.VISIBLE); break;
                         case 39: size39.setVisibility(View.VISIBLE); break;
                         case 40: size40.setVisibility(View.VISIBLE); break;
                         case 41: size41.setVisibility(View.VISIBLE); break;
+                        case 42: size42.setVisibility(View.VISIBLE); break;
+                        case 43: size43.setVisibility(View.VISIBLE); break;
+                        case 44: size44.setVisibility(View.VISIBLE); break;
+                        case 45: size45.setVisibility(View.VISIBLE); break;
                     }
                 }
             }
