@@ -56,7 +56,7 @@ public class ProOrderAdapter extends RecyclerView.Adapter<ProOrderAdapter.ProOrd
             holder.imgProduct.setImageResource(R.drawable.ic_launcher_foreground);
         }
 
-        holder.tvMau.setText(product.getColor() + ": ");
+        holder.tvMau.setText(product.getColor());
         holder.tvSize.setText(String.valueOf(product.getSize()));
         holder.txtQuantity.setText(String.valueOf(product.getQuantity()));
         holder.txtPrice.setText(formatCurrency(product.getPrice()));
