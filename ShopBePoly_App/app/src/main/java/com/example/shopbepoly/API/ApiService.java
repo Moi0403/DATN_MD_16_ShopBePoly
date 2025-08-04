@@ -22,6 +22,8 @@ public interface ApiService {
     @DELETE("notification/{id}")
     Call<ResponseBody> deleteNotification(@Path("id") String id);
 
+    @GET("banners")
+    Call<List<Banner>> getBanners();
 
     @POST("register")
     Call<Void> register(@Body User user);

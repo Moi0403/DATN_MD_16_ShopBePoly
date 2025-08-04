@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Banner Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 min-h-screen flex flex-col">
+    <div class="container mx-auto p-6">
+        <h1 class="text-3xl font-bold text-center mb-6">Banner Management</h1>
+
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+            <h2 class="text-xl font-semibold mb-4">Add New Banner</h2>
+            <div class="flex flex-col space-y-4">
+                <input type="text" id="bannerName" placeholder="Enter banner name"
+                    class="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <input type="file" id="imageFile" accept="image/*"
+                    class="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button onclick="addBanner()"
+                    class="bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-300">
+                    Upload Banner
+                </button>
+            </div>
+            <div id="error-message" class="hidden mt-4 text-red-500"></div>
+        </div>
+
+        <div id="banner-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            </div>
+    </div>
+
+    <div id="update-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
+            <h2 class="text-xl font-semibold mb-4">Update Banner</h2>
+            <div class="flex flex-col space-y-4">
+                <input type="hidden" id="updateBannerId">
+                <img id="currentBannerImage" class="w-full h-48 object-cover rounded-lg mb-2" src="" alt="Current Banner Image">
+                <input type="text" id="updateBannerName" placeholder="Enter new banner name"
+                    class="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <input type="file" id="updateImageFile" accept="image/*"
+                    class="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <div id="update-error-message" class="hidden text-red-500"></div>
+                <div class="flex justify-end space-x-2 mt-4">
+                    <button onclick="closeUpdateModal()"
+                        class="bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-600 transition duration-300">
+                        Hủy
+                    </button>
+                    <button onclick="submitUpdate()"
+                        class="bg-green-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-600 transition duration-300">
+                        Cập nhật
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../Database/config.js"></script>
+    <script src="Ql_Banner.js"></script>
+</body>
+
+</html>
