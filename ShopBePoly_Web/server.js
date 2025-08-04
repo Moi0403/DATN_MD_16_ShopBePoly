@@ -1373,142 +1373,129 @@ router.post('/verify-code', async (req, res) => {
     }
 });
 
+// Thống kê doanh thu
 router.get('/statistics', async (req, res) => {
     try {
-        const { type, year, month, day } = req.query;
-        const matchStage = { status: { $ne: 'Đã hủy' } };
-        const dateFilter = {};
-
-        if (type === 'day' && year && month && day) {
-            const paddedMonth = month.padStart(2, '0');
-            const paddedDay = day.padStart(2, '0');
-            const start = new Date(`${year}-${paddedMonth}-${paddedDay}T00:00:00+07:00`);
-            const end = new Date(start);
-            end.setDate(start.getDate() + 1);
-            dateFilter.$gte = start;
-            dateFilter.$lt = end;
-        } else if (type === 'month' && year && month) {
-            const paddedMonth = month.padStart(2, '0');
-            const start = new Date(`${year}-${paddedMonth}-01T00:00:00+07:00`);
-            const nextMonth = new Date(start);
-            nextMonth.setMonth(start.getMonth() + 1);
-            dateFilter.$gte = start;
-            dateFilter.$lt = nextMonth;
-        } else if (type === 'year' && year) {
-            const start = new Date(`${year}-01-01T00:00:00+07:00`);
-            const end = new Date(`${+year + 1}-01-01T00:00:00+07:00`);
-            dateFilter.$gte = start;
-            dateFilter.$lt = end;
+        const { start, end } = req.query;
+        if (!start || !end) {
+            return res.status(400).json({ message: 'Vui lòng cung cấp đầy đủ ngày bắt đầu và ngày kết thúc.' });
         }
 
-        if (Object.keys(dateFilter).length > 0) {
-            matchStage.date = dateFilter;
+        // Kiểm tra định dạng ngày (YYYY-MM-DD)
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end)) {
+            return res.status(400).json({ message: 'Định dạng ngày không hợp lệ.' });
         }
 
-        const result = await orderModel.aggregate([
-            { $match: matchStage },
+        // Tạo ngày với múi giờ UTC+07:00 bằng cách thêm offset
+        const startDate = new Date(`${start}T00:00:00.000+07:00`);
+        const endDate = new Date(`${end}T23:59:59.999+07:00`);
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+            return res.status(400).json({ message: 'Ngày không hợp lệ.' });
+        }
+
+        const results = await orderModel.aggregate([
+            {
+                $match: {
+                    status: { $ne: 'Đã hủy' },
+                    date: { $gte: startDate, $lte: endDate }
+                }
+            },
             {
                 $group: {
-                    _id: null,
-                    totalRevenue: { $sum: { $toDouble: "$total" } },
-                    totalOrders: { $sum: 1 }
+                    _id: { $dateToString: { format: "%Y-%m-%d", date: "$date", timezone: "+07:00" } },
+                    revenue: { $sum: { $toDouble: "$total" } }
+                }
+            },
+            {
+                $sort: { _id: 1 }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    label: "$_id",
+                    revenue: "$revenue"
                 }
             }
         ]);
 
-        if (result.length === 0) {
-            return res.json({ totalRevenue: 0, totalOrders: 0 });
+        // Điền các ngày thiếu với doanh thu 0
+        const dates = [];
+        let currentDate = new Date(startDate);
+        while (currentDate <= endDate) {
+            dates.push(currentDate.toISOString().split('T')[0]);
+            currentDate.setUTCDate(currentDate.getUTCDate() + 1); // Sử dụng UTC để tránh lệch múi giờ
         }
 
-        const { totalRevenue, totalOrders } = result[0];
-        res.json({ totalRevenue, totalOrders });
+        const dataMap = new Map(results.map(item => [item.label, item.revenue]));
+        const finalData = dates.map(date => ({
+            label: date,
+            revenue: dataMap.get(date) || 0
+        }));
+
+        res.json(finalData);
     } catch (error) {
         console.error('Lỗi thống kê doanh thu:', error);
         res.status(500).json({ message: 'Lỗi server khi thống kê doanh thu' });
     }
 });
 
-router.get('/top-products', async (req, res) => {
+// Thống kê tổng quan
+router.get('/statistics-overview', async (req, res) => {
     try {
-        const topProducts = await orderModel.aggregate([
-            { $match: { status: { $ne: "Đã hủy" } } },
-            { $unwind: "$products" },
+        const { startDate, endDate } = req.query;
+        const dateFilter = {};
+
+        // Tạo ngày với múi giờ UTC+07:00
+        if (startDate) {
+            const start = new Date(`${startDate}T00:00:00.000+07:00`);
+            if (isNaN(start.getTime())) return res.status(400).json({ message: 'Ngày bắt đầu không hợp lệ.' });
+            dateFilter.$gte = start;
+        }
+        if (endDate) {
+            const end = new Date(`${endDate}T23:59:59.999+07:00`);
+            if (isNaN(end.getTime())) return res.status(400).json({ message: 'Ngày kết thúc không hợp lệ.' });
+            dateFilter.$lte = end;
+        }
+
+        // Kiểm tra định dạng ngày (YYYY-MM-DD)
+        if (startDate && !/^\d{4}-\d{2}-\d{2}$/.test(startDate) || endDate && !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
+            return res.status(400).json({ message: 'Định dạng ngày không hợp lệ.' });
+        }
+
+        const orderMatchStage = Object.keys(dateFilter).length ? { date: dateFilter } : {};
+
+        const totalUsers = await userModel.countDocuments();
+        const totalProducts = await productModel.countDocuments();
+        const orderStats = await orderModel.aggregate([
+            { $match: orderMatchStage },
             {
                 $group: {
-                    _id: "$products.id_product",
-                    totalQuantity: { $sum: "$products.quantity" }
+                    _id: null,
+                    totalOrders: { $sum: 1 },
+                    totalRevenue: { $sum: { $cond: [{ $ne: ["$status", "Đã hủy"] }, { $toDouble: "$total" }, 0] } },
+                    countDelivered: { $sum: { $cond: [{ $eq: ["$status", "Đã giao"] }, 1, 0] } },
+                    countProcessing: { $sum: { $cond: [{ $eq: ["$status", "Đang xử lý"] }, 1, 0] } },
+                    countCancelled: { $sum: { $cond: [{ $eq: ["$status", "Đã hủy"] }, 1, 0] } },
                 }
-            },
-            {
-                $lookup: {
-                    from: "products",
-                    localField: "_id",
-                    foreignField: "_id",
-                    as: "productInfo"
-                }
-            },
-            { $unwind: "$productInfo" },
-            {
-                $project: {
-                    _id: 0,
-                    id: "$_id",
-                    name: "$productInfo.nameproduct",
-                    image: "$productInfo.avt_imgproduct",
-                    totalQuantity: 1
-                }
-            },
-            { $sort: { totalQuantity: -1 } },
-            { $limit: 5 }
+            }
         ]);
 
-        res.json(topProducts);
-    } catch (error) {
-        console.error("Lỗi khi thống kê top sản phẩm:", error);
-        res.status(500).json({ message: "Lỗi server", error });
-    }
-});
-
-router.get('/statistics/overview', async (req, res) => {
-    try {
-        const { start, end } = req.query;
-        let startDate = start ? new Date(start + "T00:00:00+07:00") : null;
-        let endDate = end ? new Date(end + "T23:59:59.999+07:00") : null;
-        const dateFilter = {};
-        if (startDate) dateFilter.$gte = startDate;
-        if (endDate) dateFilter.$lte = endDate;
-
-        const orderFilter = Object.keys(dateFilter).length ? { date: dateFilter } : {};
-        const totalProducts = await productModel.countDocuments();
-        const totalUsers = await userModel.countDocuments();
-        const totalOrders = await orderModel.countDocuments(orderFilter);
-        const allOrders = await orderModel.find(orderFilter);
-
-        let totalRevenue = 0;
-        let countDelivered = 0;
-        let countProcessing = 0;
-        let countCancelled = 0;
-
-        allOrders.forEach(order => {
-            const status = order.status || '';
-            const orderTotal = Number(order.total) || 0;
-
-            if (status !== 'Đã hủy') {
-                totalRevenue += orderTotal;
-            }
-
-            if (status === 'Đã giao') countDelivered++;
-            else if (status === 'Đang xử lý') countProcessing++;
-            else if (status === 'Đã hủy') countCancelled++;
-        });
+        const stats = orderStats[0] || {
+            totalOrders: 0,
+            totalRevenue: 0,
+            countDelivered: 0,
+            countProcessing: 0,
+            countCancelled: 0,
+        };
 
         res.json({
             totalProducts,
             totalUsers,
-            totalOrders,
-            totalRevenue,
-            countDelivered,
-            countProcessing,
-            countCancelled
+            totalOrders: stats.totalOrders,
+            totalRevenue: stats.totalRevenue,
+            countDelivered: stats.countDelivered,
+            countProcessing: stats.countProcessing,
+            countCancelled: stats.countCancelled,
         });
     } catch (error) {
         console.error('Lỗi thống kê tổng quan:', error);
@@ -1516,4 +1503,54 @@ router.get('/statistics/overview', async (req, res) => {
     }
 });
 
-app.use(express.json()); // Đã có, không cần thêm lại
+// Lấy danh sách đơn hàng theo khoảng thời gian
+router.get('/orders/by-range', async (req, res) => {
+    try {
+        const { start, end, status } = req.query;
+        if (!start || !end) {
+            return res.status(400).json({ message: 'Vui lòng cung cấp cả ngày bắt đầu và ngày kết thúc.' });
+        }
+
+        // Kiểm tra định dạng ngày (YYYY-MM-DD)
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end)) {
+            return res.status(400).json({ message: 'Định dạng ngày không hợp lệ.' });
+        }
+
+        // Tạo ngày với múi giờ UTC+07:00
+        const startDate = new Date(`${start}T00:00:00.000+07:00`);
+        const endDate = new Date(`${end}T23:59:59.999+07:00`);
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+            return res.status(400).json({ message: 'Ngày không hợp lệ.' });
+        }
+
+        const filter = {
+            date: {
+                $gte: startDate,
+                $lte: endDate
+            }
+        };
+
+        if (status) {
+            filter.status = status;
+        }
+
+        const orders = await orderModel.find(filter)
+            .sort({ date: -1 })
+            .populate('id_user', 'name phone_number')
+            .populate({
+                path: 'products.id_product',
+                select: 'nameproduct avt_imgproduct variations id_category',
+                populate: {
+                    path: 'id_category',
+                    select: 'title'
+                }
+            });
+
+        res.json(orders);
+    } catch (error) {
+        console.error('Lỗi khi lấy đơn hàng theo khoảng thời gian:', error);
+        res.status(500).json({ message: 'Lỗi server khi lấy danh sách đơn hàng' });
+    }
+});
+
+app.use(express.json()); 
