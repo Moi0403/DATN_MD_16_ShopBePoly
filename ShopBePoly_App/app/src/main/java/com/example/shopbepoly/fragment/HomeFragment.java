@@ -11,6 +11,8 @@ import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.annotation.NonNull;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -33,6 +35,7 @@ import com.example.shopbepoly.API.ApiService;
 import com.example.shopbepoly.Adapter.BannerAdapter;
 import com.example.shopbepoly.Adapter.CategoryAdapter;
 import com.example.shopbepoly.Adapter.ProductAdapter;
+import com.example.shopbepoly.DTO.Banner;
 import com.example.shopbepoly.DTO.Category;
 import com.example.shopbepoly.DTO.Notification;
 import com.example.shopbepoly.DTO.Product;
@@ -68,6 +71,9 @@ public class HomeFragment extends Fragment {
     private static final String CHANNEL_ID = "shopbepoly_channel";
     private static final int NOTIFICATION_ID = 1;
     private TextView tvNotificationCount;
+
+    private List<Banner> bannerList = new ArrayList<>();
+
     private final ActivityResultLauncher<Intent> thongBaoLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
                     result -> {
@@ -142,28 +148,30 @@ public class HomeFragment extends Fragment {
     }
 
     private void setupBanner() {
-        // Add banner images to list
-        List<Integer> bannerList = new ArrayList<>();
-        bannerList.add(R.drawable.banner1);
-        bannerList.add(R.drawable.banner2);
-        bannerList.add(R.drawable.banner);
-
-        // Setup adapter
-        bannerAdapter = new BannerAdapter(bannerList);
+        bannerAdapter = new BannerAdapter(bannerList, ApiClient.BASE_URL);
         viewPagerBanner.setAdapter(bannerAdapter);
+        fetchBanners(); // Gọi API để lấy banner
 
-        // Auto scroll banner
         handler = new Handler();
         runnable = new Runnable() {
             @Override
             public void run() {
-                if (currentPage == bannerList.size()) {
-                    currentPage = 0;
+                if (bannerList.isEmpty()) {
+                    return;
                 }
-                viewPagerBanner.setCurrentItem(currentPage++, true);
+                currentPage = (currentPage + 1) % bannerList.size();
+                viewPagerBanner.setCurrentItem(currentPage, true);
                 handler.postDelayed(this, DELAY_MS);
             }
         };
+
+        viewPagerBanner.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+            @Override
+            public void onPageSelected(int position) {
+                super.onPageSelected(position);
+                currentPage = position;
+            }
+        });
     }
     private void updateNotificationCount() {
         SharedPreferences prefs = requireContext().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
@@ -194,7 +202,9 @@ public class HomeFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        handler.postDelayed(runnable, DELAY_MS);
+        if (handler != null && runnable != null && !bannerList.isEmpty()) {
+            handler.postDelayed(runnable, DELAY_MS);
+        }
 
         // Load lại danh sách yêu thích từ SharedPreferences
         FavoriteFragment.loadFavoritesFromPrefs(requireContext());
@@ -210,7 +220,9 @@ public class HomeFragment extends Fragment {
     @Override
     public void onPause() {
         super.onPause();
-        handler.removeCallbacks(runnable);
+        if (handler != null && runnable != null) {
+            handler.removeCallbacks(runnable);
+        }
     }
 
     private void loadProduct() {
@@ -286,5 +298,27 @@ public class HomeFragment extends Fragment {
             }
         }
     }
+    private void fetchBanners() {
+        apiService.getBanners().enqueue(new Callback<List<Banner>>() {
+            @Override
+            public void onResponse(@NonNull Call<List<Banner>> call, @NonNull Response<List<Banner>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    bannerList.clear();
+                    bannerList.addAll(response.body());
+                    bannerAdapter.notifyDataSetChanged();
 
+                    if (!bannerList.isEmpty()) {
+                        handler.postDelayed(runnable, DELAY_MS);
+                    }
+                } else {
+                    Log.e("HomeFragment", "Lỗi khi lấy banner: " + response.code() + " " + response.message());
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<List<Banner>> call, @NonNull Throwable t) {
+                Log.e("HomeFragment", "Lỗi kết nối khi lấy banner", t);
+            }
+        });
+    }
 }

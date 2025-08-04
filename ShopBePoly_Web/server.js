@@ -16,6 +16,9 @@ app.use('/uploads', express.static('uploads', {
 }));
 const fs = require('fs').promises; // Sử dụng fs.promises để xử lý bất đồng bộ
 
+const multer = require('multer');
+const path = require('path');
+
 const productModel = require('./Database/productModel');
 const COMOMJS = require('./Database/COMOM');
 const userModel = require('./Database/userModel');
@@ -30,6 +33,7 @@ const notificationModel = require('./Database/notificationModel');
 const sendEmail = require('./Database/sendEmail');
 const VerifyCode = require('./Database/VerifyCode');
 const serverWS = require('./serverWS');
+const Banner = require('./Database/bannerModel');
 
 const uri = COMOMJS.uri;
 
@@ -47,8 +51,40 @@ app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
 
-const multer = require('multer');
-const path = require('path');
+
+
+
+const storageBanner = multer.diskStorage({
+    destination: async (req, file, cb) => {
+        const uploadDir = await ensureUploadsDir();
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname).toLowerCase() || '.' + file.mimetype.split('/')[1];
+        const uniqueName = `banner-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+        cb(null, uniqueName);
+    }
+});
+
+const uploadBanner = multer({
+    storage: storageBanner,
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+        if (!allowedTypes.includes(file.mimetype)) {
+            return cb(new Error('Chỉ chấp nhận file ảnh JPEG, PNG, GIF!'));
+        }
+        cb(null, true);
+    },
+    limits: { fileSize: 5 * 1024 * 1024 }
+});
+
+
+
+
+
+
+
+
 
 const ensureUploadsDir = async () => {
     const baseDir = path.dirname(require.main.filename);
@@ -383,7 +419,7 @@ router.put('/update_product/:id', uploadProduct.any(), async (req, res) => {
             id,
             {
                 nameproduct: name_pro || existingProduct.nameproduct,
-                id_category: category_pro|| existingProduct.id_category,
+                id_category: category_pro || existingProduct.id_category,
                 price: price_pro ? Number(price_pro) : existingProduct.price,
                 price_enter: price_enter ? Number(price_enter) : existingProduct.price_enter,
                 description: mota_pro || existingProduct.description,
@@ -431,29 +467,29 @@ router.put('/update_stock', async (req, res) => {
 });
 
 router.put('/updateStockSold', async (req, res) => {
-  try {
-    const { productId, color, size, quantity } = req.body;
+    try {
+        const { productId, color, size, quantity } = req.body;
 
-    const product = await productModel.findById(productId);
-    if (!product) return res.status(404).json({ message: 'Không tìm thấy sản phẩm' });
+        const product = await productModel.findById(productId);
+        if (!product) return res.status(404).json({ message: 'Không tìm thấy sản phẩm' });
 
-    // ✅ Tìm đúng biến thể theo màu và size
-    const variation = product.variations.find(v => 
-      v.color.name.toLowerCase() === color.toLowerCase() && v.size == size
-    );
+        // ✅ Tìm đúng biến thể theo màu và size
+        const variation = product.variations.find(v =>
+            v.color.name.toLowerCase() === color.toLowerCase() && v.size == size
+        );
 
-    if (!variation) return res.status(404).json({ message: 'Không tìm thấy biến thể với màu và size tương ứng' });
+        if (!variation) return res.status(404).json({ message: 'Không tìm thấy biến thể với màu và size tương ứng' });
 
-    // ✅ Cập nhật stock và sold
-    variation.stock = Math.max(0, variation.stock - quantity);
-    variation.sold = (variation.sold || 0) + quantity;
+        // ✅ Cập nhật stock và sold
+        variation.stock = Math.max(0, variation.stock - quantity);
+        variation.sold = (variation.sold || 0) + quantity;
 
-    await product.save();
-    res.json({ message: 'Cập nhật stock & sold thành công' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Lỗi server', error: err.message });
-  }
+        await product.save();
+        res.json({ message: 'Cập nhật stock & sold thành công' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Lỗi server', error: err.message });
+    }
 });
 
 
@@ -1550,6 +1586,95 @@ router.get('/orders/by-range', async (req, res) => {
     } catch (error) {
         console.error('Lỗi khi lấy đơn hàng theo khoảng thời gian:', error);
         res.status(500).json({ message: 'Lỗi server khi lấy danh sách đơn hàng' });
+    }
+});
+
+router.get('/banners', async (req, res) => {
+    try {
+        const banners = await Banner.find().sort({ createdAt: -1 });
+        res.status(200).json(banners);
+    } catch (error) {
+        console.error('Lỗi khi lấy banners:', error);
+        res.status(500).json({ message: 'Lỗi server khi lấy danh sách banner' });
+    }
+});
+
+router.post('/banners', uploadBanner.single('image'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'Vui lòng tải lên một file ảnh.' });
+        }
+        const { name } = req.body;
+        if (!name || name.trim() === '') {
+            await fs.unlink(req.file.path);
+            return res.status(400).json({ message: 'Vui lòng cung cấp tên banner.' });
+        }
+        const imageUrl = `/uploads/${req.file.filename}`;
+        const newBanner = new Banner({ name, imageUrl });
+        await newBanner.save();
+        res.status(201).json({ message: 'Thêm banner thành công!', banner: newBanner });
+    } catch (error) {
+        console.error('Lỗi khi thêm banner:', error);
+        res.status(500).json({ message: 'Lỗi server khi thêm banner' });
+    }
+});
+
+router.put('/banners/:id', uploadBanner.single('image'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name } = req.body;
+        
+        // Kiểm tra validation
+        if (!name && !req.file) {
+            return res.status(400).json({ message: 'Vui lòng cung cấp tên banner mới hoặc file ảnh mới.' });
+        }
+        
+        const banner = await Banner.findById(id);
+
+        if (!banner) {
+            if (req.file) await fs.unlink(req.file.path);
+            return res.status(404).json({ message: 'Không tìm thấy banner.' });
+        }
+
+        if (name && name.trim() !== '') {
+            banner.name = name;
+        }
+
+        if (req.file) {
+            const oldFilePath = path.join(__dirname, banner.imageUrl);
+            await fs.unlink(oldFilePath).catch(err => {
+                console.error('Lỗi khi xóa file ảnh cũ:', err.message);
+            });
+            banner.imageUrl = `/uploads/${req.file.filename}`;
+        }
+
+        await banner.save();
+        res.status(200).json({ message: 'Cập nhật banner thành công!', banner });
+    } catch (error) {
+        console.error('Lỗi khi cập nhật banner:', error);
+        res.status(500).json({ message: 'Lỗi server khi cập nhật banner' });
+    }
+});
+
+router.delete('/banners/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const banner = await Banner.findById(id);
+
+        if (!banner) {
+            return res.status(404).json({ message: 'Không tìm thấy banner.' });
+        }
+
+        const filePath = path.join(__dirname, banner.imageUrl);
+        await fs.unlink(filePath).catch(err => {
+            console.error('Lỗi khi xóa file ảnh:', err);
+        });
+
+        await Banner.findByIdAndDelete(id);
+        res.status(200).json({ message: 'Xóa banner thành công!' });
+    } catch (error) {
+        console.error('Lỗi khi xóa banner:', error);
+        res.status(500).json({ message: 'Lỗi server khi xóa banner' });
     }
 });
 

@@ -8,17 +8,19 @@ import android.widget.ImageView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
+import com.example.shopbepoly.DTO.Banner;
 import com.example.shopbepoly.R;
 
 import java.util.List;
 
 public class BannerAdapter extends RecyclerView.Adapter<BannerAdapter.BannerViewHolder> {
-    private List<Integer> bannerList;
-
-    public BannerAdapter(List<Integer> bannerList) {
+    private List<Banner> bannerList;
+    private String serverBaseUrl;
+    public BannerAdapter(List<Banner> bannerList, String serverBaseUrl) {
         this.bannerList = bannerList;
+        this.serverBaseUrl = serverBaseUrl;
     }
-
     @NonNull
     @Override
     public BannerViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -26,9 +28,24 @@ public class BannerAdapter extends RecyclerView.Adapter<BannerAdapter.BannerView
         return new BannerViewHolder(view);
     }
 
+
     @Override
     public void onBindViewHolder(@NonNull BannerViewHolder holder, int position) {
-        holder.imgBanner.setImageResource(bannerList.get(position));
+        Banner banner = bannerList.get(position);
+        String imageUrl = banner.getImageUrl();
+
+
+        if (imageUrl != null && imageUrl.startsWith("/")) {
+            imageUrl = imageUrl.substring(1);
+        }
+
+        String fullUrl = serverBaseUrl + imageUrl;
+
+        Glide.with(holder.itemView.getContext())
+                .load(fullUrl)
+                .placeholder(R.drawable.banner) // Placeholder khi ảnh đang tải
+                .error(R.drawable.banner1)     // Ảnh hiển thị khi lỗi
+                .into(holder.imgBanner);
     }
 
     @Override
@@ -44,4 +61,4 @@ public class BannerAdapter extends RecyclerView.Adapter<BannerAdapter.BannerView
             imgBanner = itemView.findViewById(R.id.imgBanner);
         }
     }
-} 
+}
