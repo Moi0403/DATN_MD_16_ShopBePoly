@@ -3,6 +3,7 @@ package com.example.shopbepoly.Adapter;
 import static com.example.shopbepoly.API.ApiClient.IMAGE_URL;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.Build;
 import android.text.Html;
 import android.view.LayoutInflater;
@@ -15,6 +16,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.example.shopbepoly.Chitietdonhang;
 import com.example.shopbepoly.DTO.Notification;
 import com.example.shopbepoly.R;
 
@@ -79,6 +81,18 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
         } else {
             holder.txtTime.setText("Không rõ thời gian");
         }
+        holder.itemView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (n.getType().equals("order") || n.getType().equals("delivery")) {
+                    // Chuyển đến màn hình chi tiết đơn hàng
+                    Intent intent = new Intent(context, Chitietdonhang.class);
+                    intent.putExtra("orderId", n.getOrderId());
+                    intent.putExtra("fromNotification", true); // Đánh dấu là từ thông báo
+                    context.startActivity(intent);
+                }
+            }
+        });
     }
 
     @Override
