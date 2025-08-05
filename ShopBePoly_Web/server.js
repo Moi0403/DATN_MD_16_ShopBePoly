@@ -1043,6 +1043,39 @@ router.post('/add_order', async (req, res) => {
     }
 });
 
+// API lấy đơn hàng theo ID (dùng khi click vào thông báo)
+router.get('/order/:orderId', async (req, res) => {
+    try {
+        const orderId = req.params.orderId;
+
+        const order = await orderModel.findById(orderId)
+            .populate('id_user', 'name phone_number')
+            .populate({
+                path: 'products.id_product',
+                select: 'nameproduct avt_imgproduct variations id_category',
+                populate: {
+                    path: 'id_category',
+                    select: 'title'
+                }
+            });
+
+        if (!order) {
+            return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+        }
+
+        // Tính tổng số lượng
+        const totalQty = order.products.reduce((sum, item) => sum + item.quantity, 0);
+
+        res.json({
+            ...order.toObject(),
+            quantity_order: totalQty
+        });
+    } catch (err) {
+        console.error('❌ Lỗi khi lấy chi tiết đơn hàng:', err);
+        res.status(500).json({ message: 'Lỗi server khi lấy chi tiết đơn hàng' });
+    }
+});
+
 router.delete('/notification/:id', async (req, res) => {
     try {
         const id = req.params.id;
