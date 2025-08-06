@@ -8,7 +8,7 @@ const hienthiOrder = async () => {
     const res = await fetch(`http://${config.host}:${config.port}/api/list_order`);
     const data = await res.json();
 
-    const filteredOrders = data.filter(order => order.status === "Đang giao");
+    const filteredOrders = data.filter(order => order.status === "Đang giao hàng");
 
     filteredOrders.forEach((order, index) => {
       const { _id, id_user, products, total, date, status } = order;
@@ -31,7 +31,6 @@ const hienthiOrder = async () => {
         <td>${statusColor}</td> <!-- Trạng thái -->
         <td>
             <button class="btn btn-info btn-sm mt-1" onclick="xemChiTietDon('${_id}')">Chi tiết</button>
-            <button class="btn btn-primary btn-sm mt-1" onclick="confirmOrder('${_id}')">Xác nhận</button>
         </td>
       `;
       tbody.appendChild(tr);

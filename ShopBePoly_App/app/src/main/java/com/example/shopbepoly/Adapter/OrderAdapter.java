@@ -138,8 +138,6 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
 
     private void updateButtonVisibility(OrderViewHolder holder, Order order) {
         String status = order.getStatus().toLowerCase();
-
-        // Ẩn tất cả nút trước
         holder.btnHuy.setVisibility(View.GONE);
         holder.btnNhan.setVisibility(View.GONE);
         holder.btnMuaLai.setVisibility(View.GONE);
@@ -149,11 +147,11 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
             case "đang xử lý":
                 holder.btnHuy.setVisibility(View.VISIBLE);
                 break;
-            case "đang giao":
+            case "đang giao hàng":
                 holder.btnNhan.setVisibility(View.VISIBLE);
                 break;
             case "đã hủy":
-            case "đã giao":
+            case "đã giao hàng":
                 holder.btnMuaLai.setVisibility(View.VISIBLE);
                 break;
         }
@@ -196,7 +194,7 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
         builder.setPositiveButton("Đúng", (dialog, which) -> {
             Order order1 = new Order();
             order1.set_id(order.get_id());
-            order1.setStatus("Đã giao");
+            order1.setStatus("Đã giao hàng");
             updateOrder(order1);
         });
         builder.setNegativeButton("Hủy", null);

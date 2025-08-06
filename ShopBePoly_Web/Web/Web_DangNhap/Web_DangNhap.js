@@ -55,6 +55,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
             localStorage.setItem('userRole', data.user.role);
             alert(`Chào mừng ${data.user.name}, bạn đã đăng nhập thành công.`);
             window.location.href = '../Web_TrangChu/TrangChu.html';
+            location.replace("../Web_TrangChu/TrangChu.html");
         } else {
             alert('Bạn không có quyền truy cập.');
         }
@@ -81,6 +82,9 @@ history.pushState(null, null, location.href);
     window.onpopstate = function () {
         history.go(1);
 };
+
+
+
 
 
 

@@ -14,7 +14,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static('uploads', {
     setHeaders: res => res.set('Cache-Control', 'no-store')
 }));
-const fs = require('fs').promises; // Sử dụng fs.promises để xử lý bất đồng bộ
+const fs = require('fs').promises;
 
 const multer = require('multer');
 const path = require('path');
@@ -51,9 +51,6 @@ app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
 
-
-
-
 const storageBanner = multer.diskStorage({
     destination: async (req, file, cb) => {
         const uploadDir = await ensureUploadsDir();
@@ -78,14 +75,6 @@ const uploadBanner = multer({
     limits: { fileSize: 5 * 1024 * 1024 }
 });
 
-
-
-
-
-
-
-
-
 const ensureUploadsDir = async () => {
     const baseDir = path.dirname(require.main.filename);
     const dir = path.join(baseDir, 'uploads');
@@ -98,7 +87,6 @@ const ensureUploadsDir = async () => {
     return dir;
 };
 
-// Storage cho avatar user
 const storageAvatar = multer.diskStorage({
     destination: async (req, file, cb) => {
         const uploadDir = await ensureUploadsDir();
@@ -122,7 +110,6 @@ const storageAvatar = multer.diskStorage({
     }
 });
 
-// Storage cho sản phẩm
 const storageProduct = multer.diskStorage({
     destination: async (req, file, cb) => {
         const uploadDir = await ensureUploadsDir();
@@ -138,7 +125,6 @@ const storageProduct = multer.diskStorage({
 const uploadAvatar = multer({ storage: storageAvatar });
 const uploadProduct = multer({ storage: storageProduct });
 
-// Storage cho category
 const storageCategory = multer.diskStorage({
     destination: async (req, file, cb) => {
         const uploadDir = await ensureUploadsDir();
@@ -170,7 +156,6 @@ router.use((err, req, res, next) => {
     res.status(500).json({ error: 'Lỗi server: ' + err.message });
 });
 
-// API các route hiện có...
 router.get('/notifications/:userId', async (req, res) => {
     const { userId } = req.params;
     try {

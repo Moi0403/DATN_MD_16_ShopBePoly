@@ -75,4 +75,3 @@ function refreshDashboard() {
 
   refreshDashboard();
   setInterval(refreshDashboard, 5000);
-

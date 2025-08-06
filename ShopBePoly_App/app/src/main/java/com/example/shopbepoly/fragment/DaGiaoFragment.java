@@ -80,7 +80,7 @@ public class DaGiaoFragment extends Fragment {
                 if (response.isSuccessful() && response.body() != null) {
                     list_order.clear();
                     for (Order order : response.body()) {
-                        if ("Đã giao".equalsIgnoreCase(order.getStatus())) {
+                        if ("Đã giao hàng".equalsIgnoreCase(order.getStatus())) {
                             list_order.add(order);
                         }
                     }
