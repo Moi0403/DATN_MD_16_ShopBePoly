@@ -42,17 +42,20 @@
                 android:textColor="#000000"
                 />
 
-
-            <View
-                android:layout_width="32dp"
-                android:layout_height="32dp" />
+            <ImageView
+                android:id="@+id/imgsearch"
+                android:src="@drawable/search"
+                android:layout_width="24dp"
+                android:layout_height="24dp" />
         </LinearLayout>
 
         <!-- Tab Layout -->
         <com.google.android.material.tabs.TabLayout
             android:id="@+id/tabLayoutDonMua"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            app:tabMode="scrollable"
+            app:tabGravity="fill" />
     </com.google.android.material.appbar.AppBarLayout>
 
     <!-- ViewPager2 -->

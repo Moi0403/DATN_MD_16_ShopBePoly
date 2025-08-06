@@ -38,6 +38,13 @@ public class DonMua extends AppCompatActivity {
         pagerAdapter = new DonMuaPagerAdapter(this);
         viewPager.setAdapter(pagerAdapter);
 
+        ImageView imgSearch = findViewById(R.id.imgsearch);
+        imgSearch.setOnClickListener(v -> {
+            Intent intent = new Intent(DonMua.this, TimDonHang.class);
+            startActivity(intent);
+        });
+
+
         new TabLayoutMediator(tabLayout, viewPager,
                 (tab, position) -> {
                     switch (position) {

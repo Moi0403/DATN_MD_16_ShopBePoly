@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.PrimitiveIterator;
+import java.util.Random;
 
 import okhttp3.ResponseBody;
 import retrofit2.Call;
@@ -347,6 +348,10 @@ public class ThanhToan extends AppCompatActivity {
         try {
             Order newOrder = new Order();
 
+            // Tạo mã đơn hàng random
+            String id_order = generateRandomOrderId();
+            newOrder.setIdOrder(id_order);
+
             // Ensure id_user is set as a User object with only the ID,
             // so UserTypeAdapter can handle it when serializing.
             User user = new User();
@@ -434,6 +439,22 @@ public class ThanhToan extends AppCompatActivity {
         // ISO 8601: yyyy-MM-dd'T'HH:mm:ss'Z' (hoặc không cần 'Z')
         return new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).format(new java.util.Date());
     }
+
+    private String generateRandomOrderId() {
+        // Ngày dạng YYMMDD
+        String datePart = new java.text.SimpleDateFormat("yyMMdd", Locale.getDefault()).format(new java.util.Date());
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        StringBuilder randomPart = new StringBuilder();
+        Random random = new Random();
+
+        // 8 ký tự random
+        for (int i = 0; i < 4; i++) {
+            randomPart.append(chars.charAt(random.nextInt(chars.length())));
+        }
+
+        return "" + datePart + randomPart.toString(); // Ví dụ: ORD250807A3Z9
+    }
+
 
 
     private String getPaymentMethodText(int paymentId, int bankId){
@@ -531,9 +552,9 @@ public class ThanhToan extends AppCompatActivity {
             SharedPreferences prefs = getSharedPreferences("OrderPrefs", MODE_PRIVATE);
             SharedPreferences.Editor editor = prefs.edit();
 
-            //tạo ID cho order
-            String orderId = "ORD" + System.currentTimeMillis();
-            order.set_id(orderId);
+            //tạo mã đơn hàng - random gồm cả chữ và số, tối đa 8 ký tự
+            String id_order = generateRandomOrderId();
+            order.setIdOrder(id_order);
 
             //láy danh sách order hiện có
             String existingOrders = prefs.getString("orders_list", "[]");

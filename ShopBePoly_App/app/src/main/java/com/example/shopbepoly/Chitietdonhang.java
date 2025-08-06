@@ -87,7 +87,8 @@ public class Chitietdonhang extends AppCompatActivity {
     }
 
     private void setDataToViews(Order order) {
-        txtmaDH.setText(order.get_id());
+        String id_order = order.getIdOrder() != null ? order.getIdOrder() : order.get_id();
+        txtmaDH.setText(id_order);
         txtTT.setText(order.getStatus());
         txtDC.setText(order.getAddress());
         txtSL.setText(String.valueOf(order.getQuantity_order()));
