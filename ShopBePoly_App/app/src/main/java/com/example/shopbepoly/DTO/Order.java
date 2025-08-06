@@ -8,6 +8,8 @@ import java.util.Map;
 
 public class Order implements Serializable {
     private String _id;
+    @SerializedName("id_order")
+    private String id_order;
     @SerializedName("id_user")
     private User id_user;
     @SerializedName("products")
@@ -34,6 +36,14 @@ public class Order implements Serializable {
 
     public void set_id(String _id) {
         this._id = _id;
+    }
+
+    public String getIdOrder() {
+        return id_order;
+    }
+
+    public void setIdOrder(String id_order) {
+        this.id_order = id_order;
     }
 
     public User getId_user() {

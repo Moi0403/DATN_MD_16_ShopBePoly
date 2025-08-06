@@ -972,8 +972,20 @@ router.post('/add_order', async (req, res) => {
             return res.status(400).json({ message: 'Dữ liệu products không hợp lệ' });
         }
 
+        // Tính tổng số lượng sản phẩm
         data.quantity_order = data.products.reduce((sum, item) => sum + item.quantity, 0);
 
+        // ⚠️ Kiểm tra nếu không có orderCode thì tự tạo để đảm bảo không null
+        if (!data.id_order || data.id_order.trim() === '') {
+            const generateIdOrder = () => {
+                const datePart = new Date().toISOString().slice(2, 10).replace(/-/g, '');
+                const randomPart = Math.random().toString(36).substring(2, 6).toUpperCase();
+                return `ORD${datePart}${randomPart}`;
+            };
+            data.id_order = generateIdOrder();
+        }
+
+        // ⚠️ Giờ dữ liệu đã có orderCode, tạo đơn
         const newOrder = await orderModel.create(data);
         if (!newOrder) {
             return res.status(500).json({ message: 'Không thể tạo đơn hàng' });
@@ -1000,7 +1012,7 @@ router.post('/add_order', async (req, res) => {
         const newNotification = new notificationModel({
             userId: data.id_user,
             title: 'Đặt hàng thành công',
-            content: `Đơn hàng <font color='#2196F3'> ${newOrder._id}</font> của bạn  đã được đặt thành công và đang được xử lý.`,
+            content: `Đơn hàng <font color='#2196F3'>${data.id_order}</font> của bạn đã được đặt thành công và đang được xử lý.`,
             type: 'order',
             isRead: false,
             createdAt: new Date(),
@@ -1020,13 +1032,14 @@ router.post('/add_order', async (req, res) => {
                 }
             });
 
-        console.log('✅ Thêm đơn hàng và tạo thông báo thành công:', newOrder._id);
+        console.log('✅ Đơn hàng đã tạo:', data.id_order);
         res.status(201).json(populatedOrder);
     } catch (error) {
         console.error('❌ Lỗi khi thêm đơn hàng:', error);
         res.status(500).json({ message: 'Lỗi server khi tạo đơn hàng' });
     }
 });
+
 
 // API lấy đơn hàng theo ID (dùng khi click vào thông báo)
 router.get('/order/:orderId', async (req, res) => {
@@ -1058,6 +1071,115 @@ router.get('/order/:orderId', async (req, res) => {
     } catch (err) {
         console.error('❌ Lỗi khi lấy chi tiết đơn hàng:', err);
         res.status(500).json({ message: 'Lỗi server khi lấy chi tiết đơn hàng' });
+    }
+});
+
+router.get('/search_order', async (req, res) => {
+    try {
+        const { code } = req.query;
+        
+        if (!code) {
+            return res.status(400).json({ error: 'Code parameter is required' });
+        }
+
+        console.log('Searching for order with code:', code);
+        console.log('Is valid ObjectId:', mongoose.Types.ObjectId.isValid(code));
+
+        let orders = [];
+
+        // Kiểm tra xem code có phải là ObjectId hợp lệ không
+        if (mongoose.Types.ObjectId.isValid(code)) {
+            console.log('Searching by ObjectId...');
+            // Tìm đơn hàng theo ObjectId chính xác
+            const order = await orderModel.findById(code)
+                .populate('id_user', 'name phone_number')
+                .populate({
+                    path: 'products.id_product',
+                    select: 'nameproduct avt_imgproduct variations id_category',
+                    populate: {
+                        path: 'id_category',
+                        select: 'title'
+                    }
+                });
+
+            console.log('Order found by ID:', order ? 'YES' : 'NO');
+            if (order) {
+                orders = [order];
+            }
+        } else {
+            console.log('Searching by partial ID, text fields, or product names...');
+            // Tìm kiếm theo một phần của ID, các trường khác, hoặc tên sản phẩm
+            orders = await orderModel.aggregate([
+                {
+                    $lookup: {
+                        from: 'users',
+                        localField: 'id_user',
+                        foreignField: '_id',
+                        as: 'user'
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'products',
+                        localField: 'products.id_product',
+                        foreignField: '_id',
+                        as: 'productDetails'
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'categories',
+                        localField: 'productDetails.id_category',
+                        foreignField: '_id',
+                        as: 'categoryDetails'
+                    }
+                },
+                {
+                    $match: {
+                        $or: [
+                            { $expr: { $regexMatch: { input: { $toString: "$_id" }, regex: code, options: "i" } } },
+                            { status: { $regex: code, $options: 'i' } },
+                            { address: { $regex: code, $options: 'i' } },
+                            { pay: { $regex: code, $options: 'i' } },
+                            { total: { $regex: code, $options: 'i' } },
+                            { 'productDetails.nameproduct': { $regex: code, $options: 'i' } }
+                        ]
+                    }
+                },
+                {
+                    $limit: 10
+                }
+            ]);
+
+            // Chuyển đổi kết quả aggregation về format tương tự như populate
+            orders = orders.map(order => {
+                const user = order.user[0] || {};
+                const products = order.products.map(product => {
+                    const productDetail = order.productDetails.find(p => p._id.toString() === product.id_product.toString()) || {};
+                    const category = order.categoryDetails.find(c => c._id.toString() === productDetail.id_category?.toString()) || {};
+                    
+                    return {
+                        ...product,
+                        id_product: {
+                            ...productDetail,
+                            id_category: category
+                        }
+                    };
+                });
+
+                return {
+                    ...order,
+                    id_user: user,
+                    products: products
+                };
+            });
+        }
+
+        console.log('Total orders found:', orders.length);
+        res.json(orders);
+    } catch (error) {
+        console.error('Search orders error:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 

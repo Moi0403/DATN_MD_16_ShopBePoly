@@ -87,7 +87,8 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
         Order order = ordList.get(position);
 
         // Bind dữ liệu đơn hàng
-        holder.tvmaDH.setText("Mã đơn hàng: " + order.get_id());
+        String orderCode = order.getIdOrder() != null ? order.getIdOrder() : order.get_id();
+        holder.tvmaDH.setText("Mã đơn hàng: " + orderCode);
 
         String totalStr = order.getTotal();
         int totalValue = 0;

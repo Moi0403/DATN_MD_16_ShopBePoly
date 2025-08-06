@@ -115,6 +115,8 @@ public interface ApiService {
     @GET("order/{id}")
     Call<Order> getOrderDetail(@Path("id") String orderId);
 
+    @GET("search_order")
+    Call<List<Order>> searchOrdersByCode(@Query("code") String code);
 
     @POST("add_favorite")
     Call<Favorite> addFavorite(@Body Favorite favorite);

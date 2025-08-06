@@ -8,6 +8,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
+        android:name=".Screen.MyApp"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:enableOnBackInvokedCallback="true"
@@ -18,8 +19,10 @@
         android:roundIcon="@drawable/logo"
         android:supportsRtl="true"
         android:theme="@style/Theme.ShopBePoly"
-        tools:targetApi="31"
-        android:name=".Screen.MyApp">
+        tools:targetApi="31">
+        <activity
+            android:name=".TimDonHang"
+            android:exported="false" />
         <activity
             android:name=".VerifyCodeScreen"
             android:exported="false" />
