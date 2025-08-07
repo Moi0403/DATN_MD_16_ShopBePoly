@@ -54,8 +54,7 @@
             android:id="@+id/tabLayoutDonMua"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:tabMode="scrollable"
-            app:tabGravity="fill" />
+            />
     </com.google.android.material.appbar.AppBarLayout>
 
     <!-- ViewPager2 -->
