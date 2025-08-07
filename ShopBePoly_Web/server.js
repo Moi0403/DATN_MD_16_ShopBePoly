@@ -1679,6 +1679,76 @@ router.get('/statistics-overview', async (req, res) => {
     }
 });
 
+router.get('/top-products', async (req, res) => {
+    try {
+        const { start, end } = req.query;
+        if (!start || !end) {
+            return res.status(400).json({ message: 'Vui lòng cung cấp đầy đủ ngày bắt đầu và ngày kết thúc.' });
+        }
+
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end)) {
+            return res.status(400).json({ message: 'Định dạng ngày không hợp lệ.' });
+        }
+
+        const startDate = new Date(`${start}T00:00:00.000+07:00`);
+        const endDate = new Date(`${end}T23:59:59.999+07:00`);
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+            return res.status(400).json({ message: 'Ngày không hợp lệ.' });
+        }
+
+        const topProducts = await orderModel.aggregate([
+            {
+                $match: {
+                    status: { $ne: 'Đã hủy' },
+                    date: { $gte: startDate, $lte: endDate }
+                }
+            },
+            {
+                $unwind: '$products'
+            },
+            {
+                $group: {
+                    _id: '$products.id_product',
+                    totalQuantity: { $sum: '$products.quantity' },
+                    productName: { $first: '$products.id_product.nameproduct' },
+                    productImage: { $first: '$products.id_product.avt_imgproduct' }
+                }
+            },
+            {
+                $lookup: {
+                    from: 'products',
+                    localField: '_id',
+                    foreignField: '_id',
+                    as: 'productDetails'
+                }
+            },
+            {
+                $unwind: '$productDetails'
+            },
+            {
+                $project: {
+                    _id: 0,
+                    productId: '$_id',
+                    name: '$productDetails.nameproduct',
+                    image: '$productDetails.avt_imgproduct',
+                    totalQuantity: 1
+                }
+            },
+            {
+                $sort: { totalQuantity: -1 }
+            },
+            {
+                $limit: 5
+            }
+        ]);
+
+        res.json(topProducts);
+    } catch (error) {
+        console.error('Lỗi khi lấy top sản phẩm:', error);
+        res.status(500).json({ message: 'Lỗi server khi lấy top sản phẩm' });
+    }
+});
+
 // Lấy danh sách đơn hàng theo khoảng thời gian
 router.get('/orders/by-range', async (req, res) => {
     try {

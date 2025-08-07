@@ -1,8 +1,9 @@
 const API_BASE = `http://${config.host}:${config.port}/api`;
-const UPLOADS_BASE = `http://${config.host}:${config.port}/Uploads`; // Đường dẫn cho hình ảnh
+const UPLOADS_BASE = `http://${config.host}:${config.port}/Uploads`;
 const chartURL = `${API_BASE}/statistics`;
 const overviewURL = `${API_BASE}/statistics-overview`;
 const ordersURL = `${API_BASE}/orders/by-range`;
+const topProductsURL = `${API_BASE}/top-products`;
 
 let myChart = null;
 
@@ -23,6 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
             updateRevenueChart();
             fetchOverview();
             fetchOrderList();
+            fetchTopProducts();
         }
     });
 
@@ -58,6 +60,7 @@ document.addEventListener("DOMContentLoaded", () => {
     updateRevenueChart();
     fetchOverview();
     fetchOrderList();
+    fetchTopProducts();
 });
 
 document.getElementById("searchOrderBtn")?.addEventListener("click", () => {
@@ -158,7 +161,7 @@ function renderSingleChart(labels, data) {
                     backgroundColor: "#1f2937",
                     callbacks: {
                         label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString('vi-VN')} ₫`,
-                        title: ctx => new Date(ctx[0].raw.label).toLocaleDateString('vi-VN', {
+                        title: ctx => new Date(ctx[0].label).toLocaleDateString('vi-VN', {
                             day: 'numeric', month: 'long', year: 'numeric'
                         })
                     }
@@ -169,18 +172,18 @@ function renderSingleChart(labels, data) {
                     ticks: { font: { size: 12, family: "Nunito" }, color: "#4b5563" },
                     grid: { display: false }
                 },
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        font: { size: 12, family: "Nunito" },
-                        color: "#4b5563",
-                        callback: value => value.toLocaleString('vi-VN') + " ₫"
-                    },
-                    grid: { color: "#e5e7eb", borderDash: [5, 5] }
-                }
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    font: { size: 12, family: "Nunito" },
+                    color: "#4b5563",
+                    callback: value => value.toLocaleString('vi-VN') + " ₫"
+                },
+                grid: { color: "#e5e7eb", borderDash: [5, 5] }
             }
         }
-    });
+    }
+});
 }
 
 async function fetchOverview() {
@@ -213,7 +216,7 @@ async function fetchOrderList() {
         const tbody = document.getElementById("orderTableBody");
         tbody.innerHTML = orders.length > 0 ? orders.map(order => `
             <tr>
-                <td class="px-4 py-2">${order._id}</td>
+                <td class="px-4 py-2">${order.id_order || order._id}</td>
                 <td class="px-4 py-2">${Number(order.total).toLocaleString('vi-VN')} ₫</td>
                 <td class="px-4 py-2">${order.status}</td>
                 <td class="px-4 py-2">${new Date(order.date).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</td>
@@ -228,13 +231,38 @@ async function fetchOrderList() {
             btn.addEventListener("click", () => showOrderDetails(btn.dataset.id));
         });
 
-        // Định dạng ngày cho modalDate
         const formattedStartDate = new Date(startDate).toLocaleDateString('vi-VN');
         const formattedEndDate = new Date(endDate).toLocaleDateString('vi-VN');
-        document.getElementById("modalDate").textContent = `${formattedStartDate} đến ${formattedEndDate}`;
+        document.getElementById("modalDate").textContent = startDate === endDate ? formattedStartDate : `${formattedStartDate} đến ${formattedEndDate}`;
     } catch (err) {
         console.error("Lỗi danh sách đơn:", err);
         showError("Không thể tải danh sách đơn hàng.");
+    }
+}
+
+async function fetchTopProducts() {
+    const start = document.getElementById("startDate").value;
+    const end = document.getElementById("endDate").value;
+
+    try {
+        const res = await fetch(`${topProductsURL}?start=${start}&end=${end}`);
+        const products = await res.json();
+        const topProductsList = document.getElementById("topProductsList");
+        topProductsList.innerHTML = products.length > 0 ? products.map((product, index) => `
+            <li class="flex items-center">
+                <span class="inline-flex items-center justify-center w-6 h-6 mr-3 text-sm font-semibold text-white bg-blue-500 rounded-full">${index + 1}</span>
+                <img src="${product.image ? `${UPLOADS_BASE}/${product.image}` : 'https://via.placeholder.com/50'}" 
+                     class="w-12 h-12 object-cover rounded mr-3" 
+                     onerror="this.src='https://via.placeholder.com/50'">
+                <div>
+                    <p class="font-semibold text-gray-800">${product.name || 'Không xác định'}</p>
+                    <p class="text-sm text-gray-500">Số lượng bán: ${product.totalQuantity}</p>
+                </div>
+            </li>
+        `).join("") : "<li class='text-center text-gray-500'>Không có sản phẩm nào</li>";
+    } catch (err) {
+        console.error("Lỗi top sản phẩm:", err);
+        showError("Không thể tải danh sách top sản phẩm.");
     }
 }
 
@@ -242,64 +270,51 @@ async function showOrderDetails(orderId) {
     try {
         const res = await fetch(`${API_BASE}/list_order`);
         const data = await res.json();
-        console.log('API response:', data); // Debug: Log toàn bộ dữ liệu API
-
         const order = data.find(o => o._id === orderId);
         if (!order) {
             showError("Không tìm thấy đơn hàng.");
             return;
         }
-        console.log('Selected order:', order); // Debug: Log đơn hàng được chọn
 
         const { id_user, products, total, address, date, pay, status } = order;
-        console.log('Products:', products); // Debug: Log danh sách sản phẩm
-
         const productHtml = Array.isArray(products) ? products.map(product => {
             const productData = product.id_product || {};
-            console.log('Product data:', productData); // Debug: Log dữ liệu sản phẩm
             const color = product.color || '';
             const category = productData.id_category?.title || 'Không có thể loại';
             let imageUrl = '';
 
-            // Kiểm tra variations và tìm ảnh theo màu
             if (productData.variations && Array.isArray(productData.variations)) {
                 const matchedVariation = productData.variations.find(v => {
                     const colorName = v.color?.name?.toLowerCase();
-                    console.log('Checking variation:', v, 'color:', color, 'colorName:', colorName); // Debug
                     return colorName === color.toLowerCase();
                 });
                 if (matchedVariation?.image) {
                     imageUrl = `${UPLOADS_BASE}/${matchedVariation.image}`;
-                    console.log('Variation image URL:', imageUrl); // Debug
                 }
             }
 
-            // Fallback về avt_imgproduct nếu không tìm thấy ảnh trong variations
             if (!imageUrl && productData.avt_imgproduct) {
                 imageUrl = `${UPLOADS_BASE}/${productData.avt_imgproduct}`;
-                console.log('Avatar image URL:', imageUrl); // Debug
             }
 
-            // Fallback về placeholder nếu không có ảnh
             if (!imageUrl) {
                 imageUrl = 'https://via.placeholder.com/90';
-                console.log('Using placeholder image'); // Debug
             }
 
-            // Thêm sự kiện onerror để xử lý lỗi tải ảnh
             return `
-                <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                    <img src="${imageUrl}" onerror="this.src='https://via.placeholder.com/90'; console.log('Image load failed:', '${imageUrl}')" style="width: 90px; height: 90px; object-fit: cover; border-radius: 6px; margin-right: 10px;">
+                <div class="flex items-center mb-4">
+                    <img src="${imageUrl}" onerror="this.src='https://via.placeholder.com/90'" class="w-16 h-16 object-cover rounded mr-3">
                     <div>
-                        <strong>${productData.nameproduct || '---'}</strong><br>
-                        <small>Thể loại: ${category}</small><br>
-                        <small>Màu: ${color} - Size: ${product.size || ''} - SL: ${product.quantity || 0}</small>
+                        <p class="font-semibold text-gray-800">${productData.nameproduct || '---'}</p>
+                        <p class="text-sm text-gray-500">Thể loại: ${category}</p>
+                        <p class="text-sm text-gray-500">Màu: ${color} - Size: ${product.size || ''} - SL: ${product.quantity || 0}</p>
                     </div>
                 </div>
             `;
-        }).join('') : '<p>Không có sản phẩm</p>';
+        }).join('') : '<p class="text-gray-500">Không có sản phẩm</p>';
 
         const bodyHtml = `
+            <p><strong>Mã đơn hàng:</strong> ${order.id_order || order._id}</p>
             <p><strong>Người đặt:</strong> ${id_user?.name || '---'}</p>
             <p><strong>SĐT:</strong> ${id_user?.phone_number || ''}</p>
             <p><strong>Địa chỉ:</strong> ${address || 'Không có'}</p>
@@ -308,8 +323,8 @@ async function showOrderDetails(orderId) {
             <p><strong>Thanh toán:</strong> ${pay || 'Không xác định'}</p>
             <p><strong>Tổng tiền:</strong> ${Number(total || 0).toLocaleString('vi-VN')} ₫</p>
             <p><strong>Trạng thái:</strong> ${status || 'Không xác định'}</p>
-            <hr>
-            <h6>Sản phẩm:</h6>
+            <hr class="my-4">
+            <h6 class="font-bold text-gray-800">Sản phẩm:</h6>
             ${productHtml}
         `;
 
