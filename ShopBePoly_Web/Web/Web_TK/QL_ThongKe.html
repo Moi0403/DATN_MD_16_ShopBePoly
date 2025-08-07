@@ -88,11 +88,19 @@
                             </div>
                         </div>
                     </div>
+
                 </div>
 
                 <!-- Biểu đồ doanh thu -->
                 <div class="bg-white rounded-lg shadow p-6">
                     <canvas id="myAreaChart" height="250"></canvas>
+                </div>
+                <!-- Top 5 sản phẩm bán chạy -->
+                <div class="card shadow-sm border-0 mt-4">
+                    <div class="card-body">
+                        <h3 class="card-title mb-3">Top 5 sản phẩm bán chạy</h3>
+                        <ul id="topProductsList" class="list-group list-group-flush"></ul>
+                    </div>
                 </div>
             </main>
         </div>
@@ -153,7 +161,6 @@
             </div>
         </div>
     </div>
-
     <!-- Script -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
@@ -161,4 +168,5 @@
     <script src="../../Database/config.js"></script>
     <script src="./QL_ThongKe.js"></script>
 </body>
+
 </html>
