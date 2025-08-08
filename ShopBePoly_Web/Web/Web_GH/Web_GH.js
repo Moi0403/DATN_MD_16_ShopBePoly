@@ -11,7 +11,7 @@ const hienthiOrder = async () => {
     const filteredOrders = data.filter(order => order.status === "Đang giao hàng");
 
     filteredOrders.forEach((order, index) => {
-      const { _id, orderCode, id_user, products, total, date, status } = order;
+      const { _id, id_user, products, total, date, status } = order;
 
       const tongSoLuong = products.reduce((sum, product) => sum + (product.quantity || 0), 0);
       const statusColor = `<span style="color: green; font-weight: bold;">${status}</span>`;

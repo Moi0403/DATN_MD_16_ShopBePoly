@@ -4,24 +4,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Banner Management</title>
+    <title>Quản lý banner</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../Style_Sidebar/Sidebar.css">
+    
 </head>
 
 <body class="bg-gray-100 min-h-screen flex flex-col">
     <div class="container mx-auto p-6">
-        <h1 class="text-3xl font-bold text-center mb-6">Banner Management</h1>
+        <h1 class="text-3xl font-bold text-center mb-6">Quản lý banner</h1>
 
         <div class="bg-white p-6 rounded-lg shadow-md mb-6">
-            <h2 class="text-xl font-semibold mb-4">Add New Banner</h2>
+            <h2 class="text-xl font-semibold mb-4">Tên banner</h2>
             <div class="flex flex-col space-y-4">
-                <input type="text" id="bannerName" placeholder="Enter banner name"
+                <input type="text" id="bannerName" placeholder="Nhập tên banner..."
                     class="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <input type="file" id="imageFile" accept="image/*"
                     class="border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <button onclick="addBanner()"
                     class="bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-300">
-                    Upload Banner
+                    Tải lên
                 </button>
             </div>
             <div id="error-message" class="hidden mt-4 text-red-500"></div>
@@ -33,7 +35,7 @@
 
     <div id="update-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center">
         <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
-            <h2 class="text-xl font-semibold mb-4">Update Banner</h2>
+            <h2 class="text-xl font-semibold mb-4">Cập nhật banner</h2>
             <div class="flex flex-col space-y-4">
                 <input type="hidden" id="updateBannerId">
                 <img id="currentBannerImage" class="w-full h-48 object-cover rounded-lg mb-2" src="" alt="Current Banner Image">
@@ -56,6 +58,9 @@
         </div>
     </div>
 
+    <div id="sidebar-container"></div>
+
+    <script src="../Style_Sidebar/Sidebar.js"></script>
     <script src="../../Database/config.js"></script>
     <script src="Ql_Banner.js"></script>
 </body>

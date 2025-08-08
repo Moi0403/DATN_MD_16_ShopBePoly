@@ -336,3 +336,17 @@ async function showOrderDetails(orderId) {
         showError("Không thể tải chi tiết đơn hàng.");
     }
 }
+
+fetch('../Style_Sidebar/Sidebar.html')
+  .then(res => res.text())
+  .then(data => {
+    document.getElementById('sidebar-container').innerHTML = data;
+    const dangxuat = document.getElementById('dangxuat');
+    if (dangxuat) {
+      dangxuat.addEventListener('click', () => {
+        if (confirm('Bạn có chắc chắn muốn đăng xuất không?')) {
+          window.location.href = '../Web_TrangChu/TrangChu.html';
+        }
+      });
+    }
+  });
