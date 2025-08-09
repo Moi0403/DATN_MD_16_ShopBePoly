@@ -1738,7 +1738,7 @@ router.get('/top-products', async (req, res) => {
                 $sort: { totalQuantity: -1 }
             },
             {
-                $limit: 5
+                $limit: 10
             }
         ]);
 
