@@ -12,6 +12,7 @@ import com.example.shopbepoly.API.WebSocketManager;
 import com.example.shopbepoly.R;
 import com.example.shopbepoly.databinding.ActivityHomeNavBinding;
 import com.example.shopbepoly.fragment.CartFragment;
+import com.example.shopbepoly.fragment.CategoryFragment;
 import com.example.shopbepoly.fragment.FavoriteFragment;
 import com.example.shopbepoly.fragment.HomeFragment;
 import com.example.shopbepoly.fragment.ProfileFragment;
@@ -32,6 +33,8 @@ public class HomeNavScreen extends AppCompatActivity {
 
             if (id == R.id.home) {
                 replaceFragment(new HomeFragment());
+            } else if (id == R.id.category) {
+                replaceFragment(new CategoryFragment());
             } else if (id == R.id.favorite) {
                 replaceFragment(new FavoriteFragment());
             } else if (id == R.id.cart) {

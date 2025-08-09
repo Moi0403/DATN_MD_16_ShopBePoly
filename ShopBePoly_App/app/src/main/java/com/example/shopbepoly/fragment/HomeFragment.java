@@ -102,8 +102,19 @@ public class HomeFragment extends Fragment {
         recyclerViewCategories.setLayoutManager(layoutManagerCategory);
         categoryAdapter = new CategoryAdapter(getContext());
         recyclerViewCategories.setAdapter(categoryAdapter);
-        categoryAdapter.setOnCategoryClickListener(category -> {
-            loadProductsByCategory(category.get_id());
+//        categoryAdapter.setOnCategoryClickListener(category -> {
+//            loadProductsByCategory(category.get_id());
+//        });
+        categoryAdapter.setOnCategoryClickListener(new CategoryAdapter.OnCategoryClickListener() {
+            @Override
+            public void onCategoryClick(Category category) {
+                loadProductsByCategory(category.get_id());
+            }
+
+            @Override
+            public void onAllCategoryClick() {
+                loadProduct();
+            }
         });
         createNotificationChannel();
         img_notify.setOnClickListener(v -> {

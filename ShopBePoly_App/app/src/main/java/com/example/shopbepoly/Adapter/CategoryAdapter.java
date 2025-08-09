@@ -26,6 +26,12 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.Catego
 
     public interface OnCategoryClickListener {
         void onCategoryClick(Category category);
+        void onAllCategoryClick();
+    }
+
+    public CategoryAdapter(List<Category> categoryList, OnCategoryClickListener listener) {
+        this.categoryList = categoryList;
+        this.listener = listener;
     }
     public void setOnCategoryClickListener(OnCategoryClickListener listener) {
         this.listener = listener;
@@ -50,25 +56,52 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.Catego
 
     @Override
     public void onBindViewHolder(@NonNull CategoryViewHolder holder, int position) {
-        Category category = categoryList.get(position);
-        holder.tvTitle.setText(category.getTitle());
 
-        Glide.with(context)
-                .load(ApiClient.IMAGE_URL + category.getCateImg())
-                .into(holder.imgCategory);
+        if (position == 0) {
+            //item dau la All
+            holder.tvTitle.setText("All");
+            holder.imgCategory.setImageResource(R.drawable.ic_all_categories);
+
+            holder.itemView.setOnClickListener(v -> {
+                if (listener != null){
+                    listener.onAllCategoryClick();
+                }
+            });
+        } else {
+            Category category = categoryList.get(position - 1);
+            holder.tvTitle.setText(category.getTitle());
+
+            Glide.with(context)
+                    .load(ApiClient.IMAGE_URL + category.getCateImg())
+                    .into(holder.imgCategory);
 
 
-        holder.itemView.setOnClickListener(v -> {
-            if (listener != null) {
-                listener.onCategoryClick(category);
-            }
-        });
+            holder.itemView.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onCategoryClick(category);
+                }
+            });
+        }
+
+        //        Category category = categoryList.get(position);
+//        holder.tvTitle.setText(category.getTitle());
+//
+//        Glide.with(context)
+//                .load(ApiClient.IMAGE_URL + category.getCateImg())
+//                .into(holder.imgCategory);
+//
+//
+//        holder.itemView.setOnClickListener(v -> {
+//            if (listener != null) {
+//                listener.onCategoryClick(category);
+//            }
+//        });
 
     }
 
     @Override
     public int getItemCount() {
-        return categoryList.size();
+        return categoryList.size() + 1;
     }
 
     public class CategoryViewHolder extends RecyclerView.ViewHolder {
