@@ -31,7 +31,7 @@ const Favorite = favoriteModel;
 const messageModel = require('./Database/messageModel');
 const notificationModel = require('./Database/notificationModel');
 const sendEmail = require('./Database/sendEmail');
-const VerifyCode = require('./Database/VerifyCode');
+const VerifyCode = require('./Database/verifyCode');
 const serverWS = require('./serverWS');
 const Banner = require('./Database/bannerModel');
 
