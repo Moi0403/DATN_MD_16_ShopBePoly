@@ -1699,7 +1699,7 @@ router.get('/top-products', async (req, res) => {
         const topProducts = await orderModel.aggregate([
             {
                 $match: {
-                    status: { $ne: 'Đã hủy' },
+                    status: 'Đã giao hàng', // Chỉ tính đơn hàng có trạng thái "Đã giao hàng"
                     date: { $gte: startDate, $lte: endDate }
                 }
             },
