@@ -1197,6 +1197,47 @@ router.delete('/notification/:id', async (req, res) => {
     }
 });
 
+router.put('/notification/mark-read/:id', async (req, res) => {
+    try {
+        const notificationId = req.params.id;
+        
+        const updatedNotification = await notificationModel.findByIdAndUpdate(
+            notificationId,
+            { isRead: true },
+            { new: true }
+        );
+
+        if (!updatedNotification) {
+            return res.status(404).json({ message: 'Không tìm thấy thông báo' });
+        }
+
+        return res.status(200).json({ 
+            message: 'Đã đánh dấu đã đọc',
+            notification: updatedNotification 
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Lỗi máy chủ nội bộ', error: error.message });
+    }
+});
+
+// Cập nhật API GET notifications để chỉ trả về thông báo chưa đọc cho count
+router.get('/notifications/unread/:userId', async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        
+        const unreadNotifications = await notificationModel.find({
+            userId: userId,
+            isRead: false
+        }).sort({ createdAt: -1 });
+
+        return res.status(200).json(unreadNotifications);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Lỗi máy chủ nội bộ', error: error.message });
+    }
+});
+
 router.delete('/del_order/:id', async (req, res) => {
     try {
         let id = req.params.id;
@@ -1275,11 +1316,11 @@ router.put('/updateOrderStatus/:orderId', async (req, res) => {
             return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
         }
 
-        if (status === 'Đang giao') {
+        if (status === 'Đang giao hàng') {
             const newNotification = new notificationModel({
                 userId: order.id_user._id,
                 title: 'Giao hàng thành công',
-                content: `Đơn hàng <font color='#2196F3'>${order._id}</font> của bạn đã được giao thành công. Cảm ơn bạn đã mua sắm tại ShopBePoly!`,
+                content: `Đơn hàng <font color='#2196F3'>${order.id_order}</font> của bạn đã được giao thành công. Cảm ơn bạn đã mua sắm tại ShopBePoly!`,
                 type: 'delivery',
                 isRead: false,
                 createdAt: new Date(),
