@@ -29,35 +29,83 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class ThongBao extends AppCompatActivity {
+public class ThongBao extends AppCompatActivity implements NotificationAdapter.OnNotificationClickListener {
     RecyclerView rcNotify;
     private NotificationAdapter adapter;
     List<Notification> list = new ArrayList<>();
     String userId;
     private ImageView img_Back;
+    private ApiService apiService;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_thong_bao);
+
         img_Back = findViewById(R.id.btnBack);
         img_Back.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                // Trả result về để HomeFragment cập nhật count
+                setResult(RESULT_OK);
                 finish();
             }
         });
+
         // Lấy userId từ SharedPreferences
         SharedPreferences prefs = getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
         userId = prefs.getString("userId", null);
 
+        apiService = ApiClient.getApiService();
+
         rcNotify = findViewById(R.id.rcNotify);
-        adapter = new NotificationAdapter(this,list);
+        // Truyền thêm callback listener
+        adapter = new NotificationAdapter(this, list, this);
         rcNotify.setLayoutManager(new LinearLayoutManager(this));
         rcNotify.setAdapter(adapter);
 
         loadNotifications();
 
+        setupSwipeToDelete();
+    }
+
+    @Override
+    public void onNotificationRead(String notificationId) {
+        // Gọi API đánh dấu đã đọc
+        markAsRead(notificationId);
+    }
+
+    private void markAsRead(String notificationId) {
+        apiService.markNotificationAsRead(notificationId).enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                if (response.isSuccessful()) {
+                    // Cập nhật local list
+                    for (Notification n : list) {
+                        if (n.get_id().equals(notificationId)) {
+                            n.setRead(true);
+                            break;
+                        }
+                    }
+                    adapter.notifyDataSetChanged();
+
+                    // Trả result về HomeFragment để update count
+                    setResult(RESULT_OK);
+
+                    Log.d("ThongBao", "Đã đánh dấu thông báo đã đọc");
+                } else {
+                    Log.e("ThongBao", "Lỗi đánh dấu đã đọc: " + response.code());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+                Log.e("ThongBao", "Lỗi kết nối khi đánh dấu đã đọc: " + t.getMessage());
+            }
+        });
+    }
+
+    private void setupSwipeToDelete() {
         ItemTouchHelper itemTouchHelper = new ItemTouchHelper(
                 new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
                     @Override
@@ -72,7 +120,6 @@ public class ThongBao extends AppCompatActivity {
                         int position = viewHolder.getAdapterPosition();
                         Notification notification = list.get(position);
 
-                        ApiService apiService = ApiClient.getApiService();
                         apiService.deleteNotification(notification.get_id()).enqueue(new Callback<ResponseBody>() {
                             @Override
                             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
@@ -80,18 +127,19 @@ public class ThongBao extends AppCompatActivity {
                                     list.remove(position);
                                     adapter.notifyItemRemoved(position);
                                     setResult(RESULT_OK);
+                                    Log.d("ThongBao", "Đã xóa thông báo");
                                 } else {
-                                    adapter.notifyItemRemoved(position);
+                                    adapter.notifyItemChanged(position);
+                                    Log.e("ThongBao", "Lỗi xóa thông báo: " + response.code());
                                 }
                             }
 
                             @Override
                             public void onFailure(Call<ResponseBody> call, Throwable t) {
                                 adapter.notifyItemChanged(position);
+                                Log.e("ThongBao", "Lỗi kết nối khi xóa: " + t.getMessage());
                             }
                         });
-
-
                     }
 
                     @Override
@@ -114,7 +162,6 @@ public class ThongBao extends AppCompatActivity {
     }
 
     private void loadNotifications() {
-        ApiService apiService = ApiClient.getApiService();
         apiService.getNotifications(userId).enqueue(new Callback<List<Notification>>() {
             @Override
             public void onResponse(Call<List<Notification>> call, Response<List<Notification>> response) {
@@ -122,15 +169,23 @@ public class ThongBao extends AppCompatActivity {
                     list.clear();
                     list.addAll(response.body());
                     adapter.notifyDataSetChanged();
+                    Log.d("ThongBao", "Đã tải " + list.size() + " thông báo");
                 } else {
-                    Log.e("Notification", "Không có dữ liệu hoặc lỗi phản hồi");
+                    Log.e("ThongBao", "Không có dữ liệu hoặc lỗi phản hồi: " + response.code());
                 }
             }
 
             @Override
             public void onFailure(Call<List<Notification>> call, Throwable t) {
-                Log.e("Notification", "Lỗi kết nối: " + t.getMessage());
+                Log.e("ThongBao", "Lỗi kết nối: " + t.getMessage());
             }
         });
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // Đảm bảo trả result khi activity bị destroy
+        setResult(RESULT_OK);
     }
 }

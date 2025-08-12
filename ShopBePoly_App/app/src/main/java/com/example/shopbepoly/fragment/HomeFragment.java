@@ -194,9 +194,16 @@ public class HomeFragment extends Fragment {
             @Override
             public void onResponse(Call<List<Notification>> call, Response<List<Notification>> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    int count = response.body().size();
-                    if (count > 0) {
-                        tvNotificationCount.setText(String.valueOf(count));
+                    // Chỉ đếm những thông báo chưa đọc
+                    int unreadCount = 0;
+                    for (Notification notification : response.body()) {
+                        if (!notification.isRead()) {
+                            unreadCount++;
+                        }
+                    }
+
+                    if (unreadCount > 0) {
+                        tvNotificationCount.setText(String.valueOf(unreadCount));
                         tvNotificationCount.setVisibility(View.VISIBLE);
                     } else {
                         tvNotificationCount.setVisibility(View.GONE);
@@ -210,6 +217,14 @@ public class HomeFragment extends Fragment {
             }
         });
     }
+
+    private void setupNotificationClick() {
+        img_notify.setOnClickListener(v -> {
+            Intent intent = new Intent(getActivity(), ThongBao.class);
+            thongBaoLauncher.launch(intent);
+        });
+    }
+
     @Override
     public void onResume() {
         super.onResume();

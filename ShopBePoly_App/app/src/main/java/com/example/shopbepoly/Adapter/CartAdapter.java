@@ -329,7 +329,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
                 total += item.getTotal();
             }
         }
-        frag_total.tvTotal.setText(String.format("Giá: " + "%,d đ",total));
+        frag_total.tvTotal.setText(String.format("Thành tiền: " + "%,d đ",total));
     }
     public void selectAll(boolean isChecked) {
         for (Cart cart : list_cart) {

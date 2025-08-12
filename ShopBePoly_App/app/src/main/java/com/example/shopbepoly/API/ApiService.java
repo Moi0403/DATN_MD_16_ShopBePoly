@@ -21,7 +21,8 @@ public interface ApiService {
     Call<List<Notification>> getNotifications(@Path("userId") String userId);
     @DELETE("notification/{id}")
     Call<ResponseBody> deleteNotification(@Path("id") String id);
-
+    @PUT("notification/mark-read/{id}")
+    Call<ResponseBody> markNotificationAsRead(@Path("id") String notificationId);
     @GET("banners")
     Call<List<Banner>> getBanners();
 
