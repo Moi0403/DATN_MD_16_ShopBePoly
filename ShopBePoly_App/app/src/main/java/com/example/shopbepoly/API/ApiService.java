@@ -133,21 +133,17 @@ public interface ApiService {
 
 
     @POST("messages")
-    Call<ResponseBody> sendMessage(@Body Message message);
+    Call<SendMessageResponse> sendMessage(@Body SendMessageRequest message);
 
     @GET("messages")
     Call<List<Message>> getMessages(
-            @Query("from") String from,
-            @Query("to") String to
+            @Query("userId") String userId,
+            @Query("adminId") String adminId
     );
 
-    @GET("messages")
-    Call<List<Message>> getMessagesPaged(
-            @Query("from") String from,
-            @Query("to") String to,
-            @Query("page") int page,
-            @Query("limit") int limit
-    );
+    @GET("chat-users")
+    Call<List<User>> getChatUsers(@Query("adminId") String adminId);
+
     // Gửi mã xác thực đến email người dùng
     @POST("send-verification-code")
     Call<Void> sendVerificationCode(@Body Map<String, String> body);
@@ -155,4 +151,46 @@ public interface ApiService {
     // Xác minh mã đã gửi
     @POST("verify-code")
     Call<Void> verifyCode(@Body Map<String, String> body);
+
+    // Gửi đánh giá sản phẩm
+    @POST("add_review")
+    Call<ResponseBody> addReview(@Body Review review);
+
+    // Gửi nhiều đánh giá cùng lúc (cho đơn hàng có nhiều sản phẩm)
+    @POST("order_reviews/{orderId}")
+    Call<ResponseBody> sendOrderReviews(
+            @Path("orderId") String orderId,
+            @Body List<Review> reviews
+    );
+
+//    @GET("reviews/{productId}")
+//    Call<List<ListReview>> getReviews(@Path("productId") String productId);
+//
+//    @GET("reviews/{productId}")
+//    Call<List<ListReview>> getReviewsByStar(@Path("productId") String productId,
+//                                            @Query("rating") int rating);
+
+    // Lấy review theo sản phẩm
+    @GET("reviews/{productId}")
+    Call<List<ListReview>> getReviews(@Path("productId") String productId);
+
+    // Lấy review theo đơn hàng (nhiều sản phẩm)
+    @GET("reviews/order/{orderId}")
+    Call<List<ListReview>> getReviewsByOrder(@Path("orderId") String orderId);
+
+    @PUT("reviews/{id}")
+    Call<ListReview> updateReview(
+            @Path("id") String reviewId,
+            @Query("rating") int rating,
+            @Query("comment") String comment
+    );
+
+    @PUT("reviews/{id}")
+    Call<ListReview> updateReview(
+            @Path("id") String reviewId,
+            @Body ReviewUpdateRequest body
+    );
+
+    @GET("/reviews")
+    Call<List<ListReview>> getAllReviews();
 }

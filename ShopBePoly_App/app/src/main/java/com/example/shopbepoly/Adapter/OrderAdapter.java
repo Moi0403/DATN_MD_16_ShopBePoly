@@ -19,6 +19,7 @@ import com.example.shopbepoly.DTO.Product;
 import com.example.shopbepoly.DTO.ProductInOrder;
 import com.example.shopbepoly.DTO.Variation;
 import com.example.shopbepoly.R;
+import com.example.shopbepoly.Screen.DanhGia;
 import com.google.gson.Gson;
 
 import android.widget.Button;
@@ -32,6 +33,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -191,12 +193,17 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         builder.setIcon(R.drawable.thongbao);
         builder.setTitle("Thông báo");
-        builder.setMessage("Bạn chắc chắn đã nhận được hàng?");
+        builder.setMessage("Bạn chắc chắn đã nhận được hàng ?");
         builder.setPositiveButton("Đúng", (dialog, which) -> {
             Order order1 = new Order();
             order1.set_id(order.get_id());
-            order1.setStatus("Đã giao hàng");
+            order1.setStatus("Đã giao");
             updateOrder(order1);
+
+            Intent intent = new Intent(context, DanhGia.class);
+            intent.putExtra("orderId", order.get_id());
+            intent.putExtra("listProductInOrder", new ArrayList<>(order.getProducts()));
+            context.startActivity(intent);
         });
         builder.setNegativeButton("Hủy", null);
         builder.show();

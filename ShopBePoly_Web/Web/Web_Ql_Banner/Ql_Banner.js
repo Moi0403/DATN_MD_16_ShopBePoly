@@ -1,6 +1,7 @@
 const API_BASE = `http://${config.host}:${config.port}/api`;
 const UPLOADS_BASE = `http://${config.host}:${config.port}/uploads`;
 
+// Load Sidebar
 fetch('../Style_Sidebar/Sidebar.html')
   .then(res => res.text())
   .then(data => {
@@ -8,78 +9,55 @@ fetch('../Style_Sidebar/Sidebar.html')
     const dangxuat = document.getElementById('dangxuat');
     if (dangxuat) {
       dangxuat.addEventListener('click', () => {
-        const confirmLogout = confirm('Bạn có chắc chắn muốn đăng xuất không?');
-        if (confirmLogout) {
+        if (confirm('Bạn có chắc chắn muốn đăng xuất không?')) {
           window.location.href = '../Web_DangNhap/Web_DangNhap.html';
         }
       });
     }
   });
-// Fetch and display banners
+
+// Lấy và hiển thị danh sách banner
 async function fetchBanners() {
     try {
         const response = await fetch(`${API_BASE}/banners`);
-        if (!response.ok) {
-            throw new Error(`Failed to fetch banners: ${response.statusText}`);
-        }
+        if (!response.ok) throw new Error(`Lỗi tải banner: ${response.statusText}`);
         const banners = await response.json();
         renderBanners(banners);
     } catch (error) {
         console.error('Error fetching banners:', error);
-        showError('Không thể tải danh sách banner. Vui lòng thử lại.');
+        alert('Không thể tải danh sách banner. Vui lòng thử lại.');
     }
 }
 
+// Render bảng
 function renderBanners(banners) {
-    const bannerList = document.getElementById('banner-list');
-    bannerList.innerHTML = '';
-    banners.forEach(banner => {
+    const tbody = document.getElementById('tbody');
+    tbody.innerHTML = '';
+    banners.forEach((banner, index) => {
         const imageUrl = `${UPLOADS_BASE}/${banner.imageUrl.split('/').pop()}`;
-        const bannerCard = document.createElement('div');
-        bannerCard.className = 'bg-white rounded-lg shadow-md overflow-hidden';
-        bannerCard.innerHTML = `
-            <img 
-                src="${imageUrl}" 
-                alt="${banner.name}" 
-                class="w-full h-48 object-cover" 
-                onerror="this.src='https://via.placeholder.com/300x200?text=Image+Not+Found'"
-            >
-            <div class="p-4">
-                <p class="text-lg font-semibold truncate">${banner.name}</p>
-                <p class="text-gray-500 text-sm">Ngày tạo: ${new Date(banner.createdAt).toLocaleDateString('vi-VN')}</p>
-                <div class="mt-2 flex space-x-2">
-                    <button
-                        onclick="openUpdateModal('${banner._id}', '${banner.name}', '${imageUrl}')"
-                        class="bg-green-500 text-white py-1 px-3 rounded hover:bg-green-600"
-                    >
-                        Sửa
-                    </button>
-                    <button
-                        onclick="deleteBanner('${banner._id}')"
-                        class="bg-red-500 text-white py-1 px-3 rounded hover:bg-red-600"
-                    >
-                        Xóa
-                    </button>
-                </div>
-            </div>
+        const row = `
+            <tr>
+                <td>${index + 1}</td>
+                <td><img src="${imageUrl}" alt="${banner.name}" style="width: 800px; height: auto; max-width: 100%;"></td>
+                <td>${banner.name}</td>
+                <td>
+                    <button class="btn btn-sm btn-success" onclick="openUpdateModal('${banner._id}', '${banner.name}', '${imageUrl}')">Sửa</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteBanner('${banner._id}')">Xóa</button>
+                </td>
+            </tr>
         `;
-        bannerList.appendChild(bannerCard);
+        tbody.insertAdjacentHTML('beforeend', row);
     });
 }
 
-// Add a new banner
-async function addBanner() {
-    const bannerName = document.getElementById('bannerName').value;
-    const imageFile = document.getElementById('imageFile').files[0];
-    const errorMessage = document.getElementById('error-message');
+// Thêm banner
+document.getElementById('themBanner').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const bannerName = document.getElementById('titleBanner').value;
+    const imageFile = document.getElementById('imgBanner').files[0];
 
-    if (!bannerName.trim()) {
-        showError('Vui lòng nhập tên banner.');
-        return;
-    }
-
-    if (!imageFile) {
-        showError('Vui lòng chọn một file ảnh.');
+    if (!bannerName.trim() || !imageFile) {
+        alert('Vui lòng nhập đầy đủ thông tin.');
         return;
     }
 
@@ -92,70 +70,78 @@ async function addBanner() {
             method: 'POST',
             body: formData
         });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Không thể thêm banner.');
-        }
-
-        document.getElementById('bannerName').value = '';
-        document.getElementById('imageFile').value = '';
-        errorMessage.classList.add('hidden');
+        if (!response.ok) throw new Error('Không thể thêm banner.');
+        document.getElementById('themBanner').reset();
         await fetchBanners();
     } catch (error) {
         console.error('Error adding banner:', error);
-        showError(error.message || 'Không thể thêm banner. Vui lòng thử lại.');
+        alert(error.message);
     }
-}
+});
 
-// Delete a banner
+// Xóa banner
 async function deleteBanner(bannerId) {
     if (!confirm('Bạn có chắc chắn muốn xóa banner này không?')) return;
-
     try {
         const response = await fetch(`${API_BASE}/banners/${bannerId}`, {
             method: 'DELETE'
         });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Không thể xóa banner.');
-        }
-
+        if (!response.ok) throw new Error('Không thể xóa banner.');
         await fetchBanners();
     } catch (error) {
         console.error('Error deleting banner:', error);
-        showError(error.message || 'Không thể xóa banner. Vui lòng thử lại.');
+        alert(error.message);
     }
 }
 
-// Update functions
-function openUpdateModal(bannerId, bannerName, imageUrl) {
-    document.getElementById('updateBannerId').value = bannerId;
-    document.getElementById('updateBannerName').value = bannerName;
-    document.getElementById('currentBannerImage').src = imageUrl;
-    document.getElementById('updateImageFile').value = '';
-    document.getElementById('update-error-message').classList.add('hidden');
-    document.getElementById('update-modal').classList.remove('hidden');
-    document.getElementById('update-modal').classList.add('flex');
+// Mở modal cập nhật (có đổi ảnh)
+function openUpdateModal(id, name, imageUrl) {
+    const formHtml = `
+        <label>Tên banner mới:</label>
+        <input type="text" id="updateName" class="swal2-input" value="${name}">
+        <label>Chọn ảnh mới (nếu muốn đổi):</label>
+        <input type="file" id="updateImage" class="swal2-file" accept="image/*">
+        <br>
+        <img id="previewImage" src="${imageUrl}" alt="Ảnh hiện tại" style="width: 300px; margin-top: 10px; border: 1px solid #ccc; border-radius: 5px;">
+    `;
+
+    Swal.fire({
+        title: 'Cập nhật banner',
+        html: formHtml,
+        focusConfirm: false,
+        showCancelButton: true,
+        confirmButtonText: 'Cập nhật',
+        cancelButtonText: 'Hủy',
+        didOpen: () => {
+            const fileInput = document.getElementById("updateImage");
+            const previewImg = document.getElementById("previewImage");
+
+            fileInput.addEventListener("change", (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        previewImg.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        },
+        preConfirm: () => {
+            const newName = document.getElementById("updateName").value.trim();
+            const newImage = document.getElementById("updateImage").files[0];
+            return { newName, newImage };
+        }
+    }).then(result => {
+        if (result.isConfirmed) {
+            updateBanner(id, result.value.newName, result.value.newImage);
+        }
+    });
 }
 
-function closeUpdateModal() {
-    document.getElementById('update-modal').classList.add('hidden');
-    document.getElementById('update-modal').classList.remove('flex');
-}
 
-async function submitUpdate() {
-    const bannerId = document.getElementById('updateBannerId').value;
-    const newName = document.getElementById('updateBannerName').value;
-    const newImageFile = document.getElementById('updateImageFile').files[0];
-    const errorMessage = document.getElementById('update-error-message');
-
-    if (!newName.trim() && !newImageFile) {
-        showUpdateError('Vui lòng nhập tên mới hoặc chọn một file ảnh mới.');
-        return;
-    }
-
+// Cập nhật banner (tên + ảnh)
+async function updateBanner(id, newName, newImageFile) {
     const formData = new FormData();
     formData.append('name', newName);
     if (newImageFile) {
@@ -163,36 +149,18 @@ async function submitUpdate() {
     }
 
     try {
-        const response = await fetch(`${API_BASE}/banners/${bannerId}`, {
+        const response = await fetch(`${API_BASE}/banners/${id}`, {
             method: 'PUT',
             body: formData
         });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Không thể cập nhật banner.');
-        }
-
-        closeUpdateModal();
+        if (!response.ok) throw new Error('Không thể cập nhật banner.');
         await fetchBanners();
+        Swal.fire('Thành công!', 'Banner đã được cập nhật.', 'success');
     } catch (error) {
         console.error('Error updating banner:', error);
-        showUpdateError(error.message || 'Không thể cập nhật banner. Vui lòng thử lại.');
+        Swal.fire('Lỗi!', error.message, 'error');
     }
 }
 
-// Show error messages
-function showError(message) {
-    const errorMessage = document.getElementById('error-message');
-    errorMessage.textContent = message;
-    errorMessage.classList.remove('hidden');
-}
-
-function showUpdateError(message) {
-    const errorMessage = document.getElementById('update-error-message');
-    errorMessage.textContent = message;
-    errorMessage.classList.remove('hidden');
-}
-
-// Load banners on page load
+// Load dữ liệu khi trang mở
 document.addEventListener('DOMContentLoaded', fetchBanners);

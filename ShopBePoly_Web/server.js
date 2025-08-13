@@ -5,6 +5,7 @@ const app = express();
 const cors = require('cors');
 const port = 3000;
 const http = require('http');
+const server = http.createServer(app);
 
 const bodyParser = require('body-parser');
 app.use(bodyParser.json());
@@ -32,8 +33,9 @@ const messageModel = require('./Database/messageModel');
 const notificationModel = require('./Database/notificationModel');
 const sendEmail = require('./Database/sendEmail');
 const VerifyCode = require('./Database/verifyCode');
-const serverWS = require('./serverWS');
+const { userSockets, initWebSocket } = require('./serverWS');
 const Banner = require('./Database/bannerModel');
+const reviewModel = require("./Database/reviewModel");
 
 const uri = COMOMJS.uri;
 
@@ -46,8 +48,10 @@ mongoose.connect(uri, {
     .then(() => console.log('Connected to MongoDB'))
     .catch((err) => console.error('MongoDB connection error:', err));
 
+initWebSocket(server);
+    
 // Khởi động server
-app.listen(port, () => {
+server.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
 
@@ -211,8 +215,7 @@ app.get('/ds_product', async (req, res) => {
 app.use('/api/users', router);
 app.use('/api', router);
 
-const server = http.createServer(app);
-require('./serverWS')(server);
+
 
 router.get('/list_product', async (req, res) => {
     try {
@@ -1393,60 +1396,266 @@ router.put('/up_comment/:id', async (req, res) => {
     }
 });
 
+
+
+
+// API lấy danh sách user mà user hiện tại đã nhắn tin
+router.get('/conversations/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+            return res.status(400).json({ message: 'ID user không hợp lệ' });
+        }
+
+        // Tìm tất cả tin nhắn mà user là from hoặc to
+        const conversations = await messageModel.aggregate([
+            {
+                $match: {
+                    $or: [
+                        { from: new mongoose.Types.ObjectId(userId) },
+                        { to: new mongoose.Types.ObjectId(userId) }
+                    ]
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        $cond: [
+                            { $eq: ['$from', new mongoose.Types.ObjectId(userId)] },
+                            '$to',
+                            '$from'
+                        ]
+                    },
+                    lastMessage: { $last: '$content' },
+                    timestamp: { $last: '$timestamp' }
+                }
+            },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: '_id',
+                    foreignField: '_id',
+                    as: 'user'
+                }
+            },
+            { $unwind: '$user' },
+            {
+                $project: {
+                    userId: '$_id',
+                    name: '$user.name',
+                    avt_user: '$user.avt_user',
+                    isOnline: '$user.isOnline',
+                    lastMessage: 1,
+                    timestamp: 1
+                }
+            },
+            { $sort: { timestamp: -1 } }
+        ]);
+
+        res.json({
+            message: conversations.length ? 'Lấy danh sách cuộc trò chuyện thành công' : 'Chưa có cuộc trò chuyện nào',
+            data: conversations
+        });
+    } catch (err) {
+        console.error('Lỗi lấy danh sách cuộc trò chuyện:', err.message);
+        res.status(500).json({ message: 'Lỗi server', error: err.message });
+    }
+});
+
+router.post('/send-message', async (req, res) => {
+    try {
+        const { from, to, content } = req.body;
+
+        if (!mongoose.Types.ObjectId.isValid(from) || !mongoose.Types.ObjectId.isValid(to)) {
+            return res.status(400).json({ error: 'ID from hoặc to không hợp lệ' });
+        }
+
+        const newMessage = new messageModel({
+            from: new mongoose.Types.ObjectId(from),
+            to: new mongoose.Types.ObjectId(to),
+            content,
+            timestamp: new Date()
+        });
+        await newMessage.save();
+
+        const populatedMessage = await messageModel
+            .findById(newMessage._id)
+            .populate('from', 'name avt_user')
+            .populate('to', 'name avt_user');
+
+        // Push tin nhắn mới qua WebSocket đến người nhận (admin web)
+        const recipientSocket = userSockets.get(to);
+        if (recipientSocket && recipientSocket.readyState === WebSocket.OPEN) {
+            recipientSocket.send(JSON.stringify({ type: 'new_message', data: populatedMessage }));
+        }
+
+        // Auto-reply nếu là tin nhắn đầu tiên đến admin
+        const admin = await userModel.findOne({ _id: to, role: 2 });
+        if (admin) {
+            const hasReplied = await messageModel.exists({ from: to, to: from });
+            if (!hasReplied) {
+                const autoReply = new messageModel({
+                    from: new mongoose.Types.ObjectId(to),
+                    to: new mongoose.Types.ObjectId(from),
+                    content: "Chào bạn! Bạn cần hỗ trợ gì?",
+                    timestamp: new Date()
+                });
+                await autoReply.save();
+                const populatedReply = await messageModel
+                    .findById(autoReply._id)
+                    .populate('from', 'name avt_user')
+                    .populate('to', 'name avt_user');
+
+                // Push auto-reply qua WebSocket đến người gửi (nếu online, nhưng vì app không WS, có thể bỏ hoặc push nếu user online)
+                const senderSocket = userSockets.get(from);
+                if (senderSocket && senderSocket.readyState === WebSocket.OPEN) {
+                    senderSocket.send(JSON.stringify({ type: 'new_message', data: populatedReply }));
+                }
+            }
+        }
+
+        // Trả về response cho app
+        res.status(200).json({ success: true, data: populatedMessage });
+    } catch (err) {
+        console.error('Error sending message:', err);
+        res.status(500).json({ error: 'Lỗi server khi gửi tin nhắn' });
+    }
+});
+
 router.get('/messages', async (req, res) => {
     try {
-        const { from, to } = req.query;
-
-        if (!from || !to) {
-            return res.status(400).json({ message: 'Thiếu from hoặc to trong query' });
+        const { userId, adminId } = req.query;
+        if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(adminId)) {
+            return res.status(400).json({ error: 'ID user hoặc admin không hợp lệ' });
         }
 
         const messages = await messageModel.find({
             $or: [
-                { from, to },
-                { from: to, to: from }
+                { from: new mongoose.Types.ObjectId(adminId), to: new mongoose.Types.ObjectId(userId) },
+                { from: new mongoose.Types.ObjectId(userId), to: new mongoose.Types.ObjectId(adminId) }
             ]
-        }).sort({ timestamp: 1 });
+        })
+        .sort({ timestamp: 1 })  // Sắp xếp theo thời gian tăng dần
+        .populate('from', 'name avt_user')  // Populate thông tin người gửi
+        .populate('to', 'name avt_user');   // Populate thông tin người nhận
 
         res.json(messages);
     } catch (err) {
-        console.error('Lỗi lấy tin nhắn:', err);
-        res.status(500).json({ message: 'Lỗi server khi lấy tin nhắn' });
+        console.error('Lỗi khi lấy tin nhắn:', err);
+        res.status(500).json({ error: 'Lỗi server khi lấy tin nhắn' });
     }
 });
-
+// API gửi tin nhắn (fallback nếu không dùng WebSocket)
 router.post('/messages', async (req, res) => {
     const { from, to, content } = req.body;
-
     if (!from || !to || !content) {
         return res.status(400).json({ message: 'Thiếu from, to hoặc content trong body' });
     }
+    if (!mongoose.Types.ObjectId.isValid(from) || !mongoose.Types.ObjectId.isValid(to)) {
+        return res.status(400).json({ message: 'ID from hoặc to không hợp lệ' });
+    }
 
     try {
-        const newMessage = new messageModel({ from, to, content, timestamp: new Date() });
+        const newMessage = new messageModel({
+            from: new mongoose.Types.ObjectId(from),
+            to: new mongoose.Types.ObjectId(to),
+            content,
+            timestamp: new Date()
+        });
         await newMessage.save();
 
-        const hasAdminReplied = await messageModel.exists({
-            from: to,
-            to: from
-        });
+        const populatedMessage = await messageModel
+            .findById(newMessage._id)
+            .populate('from', 'name avt_user')
+            .populate('to', 'name avt_user');
 
-        if (!hasAdminReplied) {
-            const autoReply = new messageModel({
-                from: to,
-                to: from,
-                content: "Chào bạn! Bạn cần giúp đỡ gì không? ",
-                timestamp: new Date()
-            });
-            await autoReply.save();
+        // Gửi auto-reply nếu là tin nhắn đầu tiên đến admin
+        const admin = await userModel.findOne({ _id: to, role: 2 });
+        if (admin) {
+            const hasReplied = await messageModel.exists({ from: to, to: from });
+            if (!hasReplied) {
+                const autoReply = new messageModel({
+                    from: new mongoose.Types.ObjectId(to),
+                    to: new mongoose.Types.ObjectId(from),
+                    content: "Chào bạn! Bạn cần hỗ trợ gì?",
+                    timestamp: new Date()
+                });
+                await autoReply.save();
+            }
         }
 
-        res.status(201).json({ message: 'Gửi tin nhắn thành công', data: newMessage });
+        res.status(201).json({
+            message: 'Gửi tin nhắn thành công',
+            data: populatedMessage
+        });
     } catch (err) {
-        console.error('Lỗi khi gửi tin nhắn:', err);
-        res.status(500).json({ message: 'Lỗi server khi gửi tin nhắn' });
+        console.error('Lỗi khi gửi tin nhắn:', err.message);
+        res.status(500).json({ message: 'Lỗi server khi gửi tin nhắn', error: err.message });
     }
 });
+
+router.get('/chat-users', async (req, res) => {
+    try {
+        const { adminId } = req.query;
+        const users = await messageModel.aggregate([
+            {
+                $match: {
+                    $or: [
+                        { from: new mongoose.Types.ObjectId(adminId) },
+                        { to: new mongoose.Types.ObjectId(adminId) }
+                    ]
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        $cond: [
+                            { $eq: ["$from", new mongoose.Types.ObjectId(adminId)] },
+                            "$to",
+                            "$from"
+                        ]
+                    }
+                }
+            },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: '_id',
+                    foreignField: '_id',
+                    as: 'userInfo'
+                }
+            },
+            { $unwind: '$userInfo' },
+            {
+                $project: {
+                    _id: '$userInfo._id',
+                    name: '$userInfo.name',
+                    avt_user: '$userInfo.avt_user',
+                    isOnline: '$userInfo.isOnline'
+                }
+            }
+        ]);
+        res.json(users);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Lỗi server khi lấy danh sách user chat' });
+    }
+});
+
+
+router.get('/get-admin', async (req, res) => {
+    try {
+        const admin = await userModel.findOne({ role: 2 });
+        if (!admin) {
+            return res.status(404).json({ message: 'Admin not found' });
+        }
+        res.json({ _id: admin._id, name: admin.name, avt_user: admin.avt_user, isOnline: admin.isOnline });
+    } catch (error) {
+        console.error('Lỗi khi lấy admin:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 
 router.put('/up_password/:id', async (req, res) => {
     try {
@@ -1542,18 +1751,7 @@ router.get('/favorites/:userId', async (req, res) => {
     }
 });
 
-router.get('/get-admin', async (req, res) => {
-    try {
-        const admin = await userModel.findOne({ role: 2 });
-        if (!admin) {
-            return res.status(404).json({ message: 'Admin not found' });
-        }
-        res.json(admin);
-    } catch (error) {
-        console.error('Lỗi khi lấy admin:', error);
-        res.status(500).json({ message: 'Server error' });
-    }
-});
+
 
 router.post('/send-verification-code', async (req, res) => {
     const { email } = req.body;
@@ -1927,6 +2125,325 @@ router.delete('/banners/:id', async (req, res) => {
         console.error('Lỗi khi xóa banner:', error);
         res.status(500).json({ message: 'Lỗi server khi xóa banner' });
     }
+});
+
+router.post("/add_review", async (req, res) => {
+  try {
+    let { userId, productId, orderId, rating, comment, images } = req.body;
+
+    if (!userId || !productId || !orderId || !rating || !comment) {
+      return res.status(400).json({ message: "Thiếu dữ liệu bắt buộc" });
+    }
+
+    if (rating < 1 || rating > 5) {
+      return res.status(400).json({ message: "Số sao không hợp lệ (1-5)" });
+    }
+
+    try {
+      userId = new mongoose.Types.ObjectId(userId);
+      productId = new mongoose.Types.ObjectId(productId);
+      orderId = new mongoose.Types.ObjectId(orderId);
+    } catch (e) {
+      return res.status(400).json({ message: "ID không hợp lệ" });
+    }
+
+    console.log("[AddReview Input]", {
+      userId,
+      productId,
+      orderId,
+      rating,
+      comment,
+      images,
+    });
+
+    const order = await orderModel.findOne({
+      _id: orderId,
+      id_user: userId,
+      "products.id_product": productId,
+      status: { $in: ["Đã giao", "delivered"] },
+    });
+
+    if (!order) {
+      return res.status(400).json({
+        message: "Bạn chưa mua sản phẩm này hoặc đơn hàng chưa hoàn tất",
+      });
+    }
+
+    const existedReview = await reviewModel.findOne({
+      userId,
+      productId,
+      orderId,
+    });
+
+    if (existedReview) {
+      return res.status(400).json({
+        message: "Bạn đã đánh giá sản phẩm này rồi",
+      });
+    }
+
+    const newReview = new reviewModel({
+      userId,
+      productId,
+      orderId,
+      rating,
+      comment,
+      images: Array.isArray(images) ? images : [],
+      createdAt: new Date(),
+    });
+
+    await newReview.save();
+
+    res.status(200).json({
+      message: "Đánh giá thành công",
+      review: newReview,
+    });
+
+    console.log("[AddReview Success]", newReview);
+
+  } catch (error) {
+    console.error("Add review error:", error);
+    res.status(500).json({
+      message: "Lỗi server",
+      error: error.message,
+    });
+  }
+});
+
+router.post("/order_reviews/:orderId", async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const reviews = req.body;
+
+    if (!Array.isArray(reviews) || reviews.length === 0) {
+      return res.status(400).json({ message: "Dữ liệu đánh giá không hợp lệ" });
+    }
+
+    let orderObjId;
+    try {
+      orderObjId = new mongoose.Types.ObjectId(orderId);
+    } catch {
+      return res.status(400).json({ message: "Order ID không hợp lệ" });
+    }
+
+    const results = [];
+
+    for (const r of reviews) {
+      const { userId, productId, rating, comment, images } = r;
+
+      if (!userId || !productId || !rating || !comment) {
+        results.push({ productId, success: false, message: "Thiếu dữ liệu bắt buộc" });
+        continue;
+      }
+      if (rating < 1 || rating > 5) {
+        results.push({ productId, success: false, message: "Số sao không hợp lệ (1-5)" });
+        continue;
+      }
+
+      let userObjId, productObjId;
+      try {
+        userObjId = new mongoose.Types.ObjectId(userId);
+        productObjId = new mongoose.Types.ObjectId(productId);
+      } catch {
+        results.push({ productId, success: false, message: "ID không hợp lệ" });
+        continue;
+      }
+
+      const order = await orderModel.findOne({
+        _id: orderObjId,
+        id_user: userObjId,
+        "products.id_product": productObjId,
+        status: { $in: ["Đã giao", "delivered"] },
+      });
+
+      if (!order) {
+        results.push({ productId, success: false, message: "Sản phẩm chưa mua hoặc đơn hàng chưa hoàn tất" });
+        continue;
+      }
+
+      const existedReview = await reviewModel.findOne({
+        userId: userObjId,
+        productId: productObjId,
+        orderId: orderObjId,
+      });
+
+      if (existedReview) {
+        results.push({ productId, success: false, message: "Sản phẩm đã được đánh giá" });
+        continue;
+      }
+
+      const newReview = new reviewModel({
+        userId: userObjId,
+        productId: productObjId,
+        orderId: orderObjId,
+        rating,
+        comment,
+        images: Array.isArray(images) ? images : [],
+        createdAt: new Date(),
+      });
+
+      await newReview.save();
+      results.push({ productId, success: true, message: "Đánh giá thành công" });
+    }
+
+    res.status(200).json({
+      message: "Hoàn tất gửi đánh giá",
+      results,
+    });
+
+  } catch (error) {
+    console.error("[OrderReviews Error]", error);
+    res.status(500).json({ message: "Lỗi server", error: error.message });
+  }
+});
+
+router.get("/reviews/:productId", async (req, res) => {
+  try {
+    const { productId } = req.params;
+
+    const reviews = await reviewModel
+      .find({ productId: new mongoose.Types.ObjectId(productId) })
+      .populate("userId", "name avt_user")
+      .sort({ createdAt: -1 });
+
+    const formatted = reviews.map(r => ({
+      _id: r._id,
+      rating: r.rating,
+      comment: r.comment,
+      images: r.images || [],
+      createdAt: r.createdAt,
+      user: {
+        _id: r.userId?._id,
+        name: r.userId?.name,
+        avt_user: r.userId?.avt_user
+      }
+    }));
+
+    res.status(200).json(formatted);
+  } catch (err) {
+    console.error("[GetReviewsByProduct Error]", err);
+    res.status(500).json({ message: "Lỗi khi lấy đánh giá", error: err.message });
+  }
+});
+
+router.get("/reviews/order/:orderId", async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    const order = await orderModel
+      .findById(orderId)
+      .populate({
+        path: "products.id_product",
+        select: "nameproduct avt_imgproduct",
+      });
+
+    if (!order) {
+      return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
+    }
+
+    const productIds = order.products
+      .map(p => p.id_product?._id)
+      .filter(Boolean);
+
+    const reviews = await reviewModel
+      .find({ productId: { $in: productIds }, orderId })
+      .populate("userId", "name avt_user")
+      .populate("productId", "nameproduct avt_imgproduct")
+      .sort({ createdAt: -1 });
+
+    const formatted = reviews.map(r => ({
+      _id: r._id,
+      rating: r.rating,
+      comment: r.comment,
+      images: r.images || [],
+      createdAt: r.createdAt,
+      user: {
+        _id: r.userId?._id,
+        name: r.userId?.name,
+        avt_user: r.userId?.avt_user
+      },
+      product: r.productId
+        ? {
+            _id: r.productId._id,
+            name: r.productId.nameproduct,
+            avt_img: r.productId.avt_imgproduct
+          }
+        : null
+    }));
+
+    res.status(200).json(formatted);
+  } catch (err) {
+    console.error("[GetReviewsByOrder Error]", err);
+    res.status(500).json({ message: "Lỗi khi lấy đánh giá", error: err.message });
+  }
+});
+
+router.put("/update_review/:id", async (req, res) => {
+    try {
+        const reviewId = req.params.id;
+        const { rating, comment, images } = req.body;
+
+        if (!rating && !comment && !images) {
+            return res.status(400).json({ message: "Không có dữ liệu để cập nhật" });
+        }
+
+        const updatedReview = await Review.findByIdAndUpdate(
+            reviewId,
+            {
+                ...(rating !== undefined && { rating }),
+                ...(comment !== undefined && { comment }),
+                ...(images !== undefined && { images })
+            },
+            { new: true }
+        );
+
+        if (!updatedReview) {
+            return res.status(404).json({ message: "Không tìm thấy review" });
+        }
+
+        res.json({
+            message: "Cập nhật đánh giá thành công",
+            review: updatedReview
+        });
+
+    } catch (error) {
+        console.error("[UpdateReview Error]", error);
+        res.status(500).json({ message: "Lỗi server khi cập nhật đánh giá" });
+    }
+});
+
+router.get("/reviews", async (req, res) => {
+  try {
+    const reviews = await reviewModel
+      .find()
+      .populate("userId", "name avt_user")
+      .populate("productId", "nameproduct avt_imgproduct")
+      .sort({ createdAt: -1 });
+
+    const formatted = reviews.map(r => ({
+      _id: r._id,
+      rating: r.rating,
+      comment: r.comment,
+      images: r.images || [],
+      createdAt: r.createdAt,
+      user: {
+        _id: r.userId?._id,
+        name: r.userId?.name,
+        avt_user: r.userId?.avt_user
+      },
+      product: r.productId
+        ? {
+            _id: r.productId._id,
+            name: r.productId.nameproduct,
+            avt_img: r.productId.avt_imgproduct
+          }
+        : null
+    }));
+
+    res.status(200).json(formatted);
+  } catch (err) {
+    console.error("[GetAllReviews Error]", err);
+    res.status(500).json({ message: "Lỗi khi lấy đánh giá", error: err.message });
+  }
 });
 
 app.use(express.json()); 

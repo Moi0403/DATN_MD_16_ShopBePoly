@@ -119,6 +119,9 @@
         <activity
             android:name=".EditAddressActivity"
             android:exported="false" />
+        <activity
+            android:name=".DanhSachDanhGia"
+            android:exported="false" />
     </application>
 
 </manifest>
