@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nhắn tin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+        }
+
+        .chat-container {
+            display: flex;
+            flex: 1;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 20px;
+        }
+
+        #chat-list {
+            width: 300px;
+            background-color: #f9f9f9;
+            border-right: 1px solid #eee;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #chat-list h2 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        #user-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+
+        #user-list li {
+            padding: 10px 15px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+
+        #user-list li:last-child {
+            border-bottom: none;
+        }
+
+        #user-list li:hover {
+            background-color: #e9f5f9;
+        }
+
+        .user-item-content {
+            position: relative;
+            margin-right: 10px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #ddd;
+            object-fit: cover;
+        }
+
+        .user-name {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .user-status-dot {
+            width: 10px;
+            height: 10px;
+            background-color: #ccc;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            position: absolute;
+            bottom: 0;
+            right: 0;
+        }
+
+        .user-status-dot.online {
+            background-color: #4CAF50;
+        }
+        
+        #chat-window {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #chat-header {
+            background-color: #f0f0f0;
+            padding: 15px 20px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+        }
+        
+        .chat-header-user-info {
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+
+        #header-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #ddd;
+            object-fit: cover;
+        }
+
+        #header-status-dot {
+            width: 10px;
+            height: 10px;
+            background-color: #ccc;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            position: absolute;
+            bottom: -2px;
+            left: 30px;
+        }
+        
+        #header-status-dot.online {
+            background-color: #4CAF50;
+        }
+        
+        .header-title-container {
+            margin-left: 10px;
+        }
+
+        #chat-header-title {
+            font-size: 1.2rem;
+            margin: 0;
+            color: #333;
+            font-weight: bold;
+        }
+
+        #messages {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message {
+            background-color: #e1f2fb;
+            color: #333;
+            border-radius: 8px;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            max-width: 80%;
+            word-break: break-word;
+        }
+
+        .message.me {
+            background-color: #dcf8c6;
+            align-self: flex-end;
+        }
+
+        .message-container {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .message-container.me {
+            flex-direction: row-reverse;
+        }
+
+        .message-container.me .message {
+            background-color: #dcf8c6;
+            margin-left: auto;
+            margin-right: 15px;
+        }
+
+        .message-container.other .message {
+            background-color: #e1f2fb;
+            margin-right: auto;
+            margin-left: 15px;
+        }
+
+        .message-container .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+
+        .sender-name {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+        }
+
+        #input-area {
+            background-color: #f0f0f0;
+            padding: 15px 20px;
+            border-top: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+        }
+
+        #message-input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1rem;
+            margin-right: 10px;
+        }
+
+        #send-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.2s ease;
+        }
+
+        #send-button:hover {
+            background-color: #0056b3;
+        }
+
+        .unread-indicator {
+            font-size: 1.2rem;
+            color: #ff4444;
+            margin-left: 10px;
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #ff4444;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            display: none;
+            z-index: 1000;
+        }
+
+        .notification.show {
+            display: block;
+            animation: fadeIn 0.5s, fadeOut 0.5s 3s forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="chat-container">
+        <div id="chat-list">
+            <h2>Danh sách chat</h2>
+            <ul id="user-list">
+            </ul>
+        </div>
+        <div id="chat-window">
+            <div id="chat-header">
+                <div class="chat-header-user-info">
+                    <img id="header-avatar" class="header-avatar" src="" alt="Avatar">
+                    <div class="header-title-container">
+                        <h2 id="chat-header-title">Chọn một cuộc trò chuyện</h2>
+                        <span id="header-status-dot" class="status-dot"></span>
+                    </div>
+                </div>
+            </div>
+            <div id="messages">
+            </div>
+            <div id="input-area">
+                <input type="text" id="message-input" placeholder="Nhập tin nhắn...">
+                <button id="send-button"><i class="fa fa-paper-plane"></i> Gửi</button>
+            </div>
+        </div>
+    </div>
+    <div id="notification" class="notification">Bạn có tin nhắn mới!</div>
+
+    <script src="../../Database/config.js"></script>
+    <script src="./LienHe.js"></script>
+
+</body>
+
+</html>

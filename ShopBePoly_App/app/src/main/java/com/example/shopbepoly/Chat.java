@@ -4,8 +4,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -18,19 +16,20 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.shopbepoly.API.ApiClient;
 import com.example.shopbepoly.API.ApiService;
+import com.example.shopbepoly.API.WebSocketManager;
 import com.example.shopbepoly.Adapter.MessageAdapter;
 import com.example.shopbepoly.DTO.AdminResponse;
 import com.example.shopbepoly.DTO.Message;
+import com.example.shopbepoly.DTO.SendMessageRequest;
+import com.example.shopbepoly.DTO.SendMessageResponse;
 import com.example.shopbepoly.DTO.User;
 import com.example.shopbepoly.Screen.LoginScreen;
-import com.google.gson.JsonObject;
 
 import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -54,21 +53,15 @@ public class Chat extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat);
 
-        // Ánh xạ view
         recyclerMessages = findViewById(R.id.recyclerMessages);
         edtMessage = findViewById(R.id.edtMessage);
         btnSend = findViewById(R.id.btnSend);
         img_back = findViewById(R.id.btnBack_chat);
-        img_back.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish();
-            }
-        });
+        img_back.setOnClickListener(v -> finish());
+
         recyclerMessages.setLayoutManager(new LinearLayoutManager(this));
         apiService = ApiClient.getApiService();
 
-        // Lấy userId từ SharedPreferences
         SharedPreferences sharedPreferences = getSharedPreferences("LoginPrefs", MODE_PRIVATE);
         currentUserId = sharedPreferences.getString("userId", null);
 
@@ -79,10 +72,86 @@ public class Chat extends AppCompatActivity {
             return;
         }
 
-        // Gọi hàm lấy adminId và khởi tạo adapter
+        adapter = new MessageAdapter(this, messageList, currentUserId);
+        recyclerMessages.setAdapter(adapter);
+
         loadAdminId();
+
         btnSend.setEnabled(false);
         btnSend.setOnClickListener(v -> sendMessage());
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        connectSocket();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        WebSocketManager.disconnect();
+    }
+
+    private void connectSocket() {
+        WebSocketManager.setMessageListener(text -> runOnUiThread(() -> {
+            try {
+                JSONObject json = new JSONObject(text);
+                String messageType = json.optString("type");
+
+                if ("new_message".equals(messageType)) {
+                    JSONObject data = json.getJSONObject("data");
+                    Log.d("Chat", "Received WS message: " + data.toString());
+
+                    JSONObject fromJson = data.getJSONObject("from");
+                    User fromUser = new User();
+                    fromUser.setId(fromJson.optString("_id"));
+                    fromUser.setName(fromJson.optString("name"));
+                    fromUser.setAvatar(fromJson.optString("avt_user"));
+                    fromUser.setOnline(fromJson.optBoolean("isOnline")); // Thêm dòng này
+
+                    JSONObject toJson = data.getJSONObject("to");
+                    User toUser = new User();
+                    toUser.setId(toJson.optString("_id"));
+                    toUser.setName(toJson.optString("name"));
+                    toUser.setAvatar(toJson.optString("avt_user"));
+
+                    Message newMsg = new Message(fromUser, toUser, data.getString("content"));
+                    newMsg.set_id(data.optString("_id"));
+                    newMsg.setTimestamp(data.optString("timestamp"));
+
+                    boolean isDuplicate = false;
+                    for (Message existingMsg : messageList) {
+                        if (newMsg.get_id() != null && newMsg.get_id().equals(existingMsg.get_id())) {
+                            isDuplicate = true;
+                            break;
+                        }
+                    }
+
+                    if (!isDuplicate) {
+                        messageList.add(newMsg);
+                        adapter.notifyItemInserted(messageList.size() - 1);
+                        recyclerMessages.scrollToPosition(messageList.size() - 1);
+                    }
+                } else if ("user_status".equals(messageType)) {
+                    // Xử lý thông báo trạng thái online/offline
+                    String userIdToUpdate = json.optString("userId");
+                    boolean isOnline = json.optBoolean("isOnline");
+
+                    // Cập nhật trạng thái trong danh sách tin nhắn
+                    for (Message message : messageList) {
+                        if (message.getFrom().getId().equals(userIdToUpdate)) {
+                            message.getFrom().setOnline(isOnline);
+                        }
+                    }
+                    // Thông báo cho adapter để cập nhật UI
+                    adapter.notifyDataSetChanged();
+                }
+            } catch (Exception e) {
+                Log.e("Chat", "Parse WS message error: " + e.getMessage());
+            }
+        }));
+        WebSocketManager.connect(currentUserId);
     }
 
     private void loadAdminId() {
@@ -90,18 +159,9 @@ public class Chat extends AppCompatActivity {
             @Override
             public void onResponse(Call<AdminResponse> call, Response<AdminResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    adminId = response.body().get_id();  // Lấy id admin
+                    adminId = response.body().get_id();
                     btnSend.setEnabled(true);
-
-                    Log.d("Chat", "adminId: " + adminId);
-
-                    adapter = new MessageAdapter(Chat.this, messageList, currentUserId);
-                    recyclerMessages.setAdapter(adapter);
-
-                    SharedPreferences prefs = getSharedPreferences("LoginPrefs", MODE_PRIVATE);
-                    if (prefs.getBoolean("hasChatted", false)) {
-                        loadMessages();
-                    }
+                    loadMessages();
                 } else {
                     Toast.makeText(Chat.this, "Không tìm thấy tài khoản admin", Toast.LENGTH_SHORT).show();
                 }
@@ -114,7 +174,6 @@ public class Chat extends AppCompatActivity {
         });
     }
 
-
     private void loadMessages() {
         apiService.getMessages(currentUserId, adminId).enqueue(new Callback<List<Message>>() {
             @Override
@@ -125,72 +184,72 @@ public class Chat extends AppCompatActivity {
                     adapter.notifyDataSetChanged();
                     recyclerMessages.scrollToPosition(messageList.size() - 1);
                 } else {
-                    Toast.makeText(Chat.this, "Không thể tải tin nhắn", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(Chat.this, "Không tải được tin nhắn", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(Call<List<Message>> call, Throwable t) {
-                Toast.makeText(Chat.this, "Lỗi tải tin nhắn: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(Chat.this, "Lỗi tải tin nhắn", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
     private void sendMessage() {
         String content = edtMessage.getText().toString().trim();
-        if (content.isEmpty()) return;
-
-        if (adminId == null || adminId.isEmpty()) {
-            Toast.makeText(this, "Đang tải dữ liệu, vui lòng thử lại sau...", Toast.LENGTH_SHORT).show();
+        if (content.isEmpty() || adminId == null) {
             return;
         }
 
+        // Tạo đối tượng User tạm thời chỉ với ID
+        User currentUser = new User();
+        currentUser.setId(currentUserId);
+        User adminUser = new User();
+        adminUser.setId(adminId);
+
+
+        Message tempMessage = new Message(currentUser, adminUser, content);
+        messageList.add(tempMessage);
+        adapter.notifyItemInserted(messageList.size() - 1);
+        recyclerMessages.scrollToPosition(messageList.size() - 1);
+        edtMessage.setText("");
+
+
         btnSend.setEnabled(false);
 
-        SharedPreferences.Editor editor = getSharedPreferences("LoginPrefs", MODE_PRIVATE).edit();
-        editor.putBoolean("hasChatted", true);
-        editor.apply();
+        SendMessageRequest request = new SendMessageRequest(currentUserId, adminId, content);
 
-        Message message = new Message(currentUserId, adminId, content);
-
-        apiService.sendMessage(message).enqueue(new Callback<ResponseBody>() {
+        apiService.sendMessage(request).enqueue(new Callback<SendMessageResponse>() {
             @Override
-            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                btnSend.setEnabled(true);
-                if (response.isSuccessful() && response.body() != null) {
-                    try {
-                        String responseStr = response.body().string();
-                        JSONObject jsonObject = new JSONObject(responseStr);
-                        JSONObject data = jsonObject.getJSONObject("data");
+            public void onResponse(Call<SendMessageResponse> call, Response<SendMessageResponse> response) {
+                runOnUiThread(() -> {
+                    btnSend.setEnabled(true);
+                    if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
 
-                        Message newMessage = new Message(
-                                data.getString("from"),
-                                data.getString("to"),
-                                data.getString("content")
-                        );
-                        newMessage.setId(data.getString("_id"));
-                        newMessage.setTimestamp(data.getString("timestamp"));
+                        messageList.remove(tempMessage);
 
-                        edtMessage.setText("");
-                        messageList.add(newMessage);
-                        adapter.notifyItemInserted(messageList.size() - 1);
+                        messageList.add(response.body().getData());
+
+                        adapter.notifyDataSetChanged();
                         recyclerMessages.scrollToPosition(messageList.size() - 1);
+                    } else {
 
-                        new android.os.Handler().postDelayed(() -> loadMessages(), 500);
-
-                    } catch (Exception e) {
-                        Toast.makeText(Chat.this, "Lỗi phân tích dữ liệu", Toast.LENGTH_SHORT).show();
-                        Log.e("Chat", "JSON parse error: " + e.getMessage());
+                        messageList.remove(tempMessage);
+                        adapter.notifyDataSetChanged();
+                        Toast.makeText(Chat.this, "Không gửi được tin nhắn", Toast.LENGTH_SHORT).show();
                     }
-                } else {
-                    Toast.makeText(Chat.this, "Không gửi được tin nhắn", Toast.LENGTH_SHORT).show();
-                }
+                });
             }
 
             @Override
-            public void onFailure(Call<ResponseBody> call, Throwable t) {
-                btnSend.setEnabled(true);
-                Toast.makeText(Chat.this, "Lỗi gửi tin nhắn: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            public void onFailure(Call<SendMessageResponse> call, Throwable t) {
+                runOnUiThread(() -> {
+                    btnSend.setEnabled(true);
+                    // Nếu thất bại, xóa tin nhắn tạm thời
+                    messageList.remove(tempMessage);
+                    adapter.notifyDataSetChanged();
+                    Toast.makeText(Chat.this, "Lỗi gửi tin nhắn: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                });
             }
         });
     }

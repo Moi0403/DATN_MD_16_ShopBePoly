@@ -133,21 +133,17 @@ public interface ApiService {
 
 
     @POST("messages")
-    Call<ResponseBody> sendMessage(@Body Message message);
+    Call<SendMessageResponse> sendMessage(@Body SendMessageRequest message);
 
     @GET("messages")
     Call<List<Message>> getMessages(
-            @Query("from") String from,
-            @Query("to") String to
+            @Query("userId") String userId,
+            @Query("adminId") String adminId
     );
 
-    @GET("messages")
-    Call<List<Message>> getMessagesPaged(
-            @Query("from") String from,
-            @Query("to") String to,
-            @Query("page") int page,
-            @Query("limit") int limit
-    );
+    @GET("chat-users")
+    Call<List<User>> getChatUsers(@Query("adminId") String adminId);
+
     // Gửi mã xác thực đến email người dùng
     @POST("send-verification-code")
     Call<Void> sendVerificationCode(@Body Map<String, String> body);
