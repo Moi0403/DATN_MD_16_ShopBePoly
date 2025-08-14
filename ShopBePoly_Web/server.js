@@ -328,10 +328,11 @@ router.post('/add_product', uploadProduct.any(), async (req, res) => {
             id_category: body.category_pro,
             price_enter: body.price_enter,
             price: body.price_pro,
+            price_sale: body.price_pro ,
             description: body.mota_pro,
             avt_imgproduct: avt_imgpro?.filename || '',
             list_imgproduct: mergedImages,
-            discount: body.discount || "",
+            sale: body.sale || 0,
             variations: variations
         });
 
@@ -346,8 +347,6 @@ router.post('/add_product', uploadProduct.any(), async (req, res) => {
     }
 });
 
-
-
 router.put('/update_product/:id', uploadProduct.any(), async (req, res) => {
     try {
         const { id } = req.params;
@@ -355,7 +354,7 @@ router.put('/update_product/:id', uploadProduct.any(), async (req, res) => {
             return res.status(400).json({ error: 'ID sản phẩm không hợp lệ' });
         }
 
-        const { name_pro, category_pro, price_pro, price_enter, mota_pro, discount, variations } = req.body;
+        const { name_pro, category_pro, price_pro, price_enter, mota_pro, sale, variations } = req.body;
         const parsedVariations = JSON.parse(variations || '[]');
 
         const existingProduct = await productModel.findById(id);
@@ -411,7 +410,7 @@ router.put('/update_product/:id', uploadProduct.any(), async (req, res) => {
                 price: price_pro ? Number(price_pro) : existingProduct.price,
                 price_enter: price_enter ? Number(price_enter) : existingProduct.price_enter,
                 description: mota_pro || existingProduct.description,
-                discount: discount !== undefined ? Number(discount) : existingProduct.discount,
+                sale: sale !== undefined ? Number(sale) : existingProduct.sale,
                 avt_imgproduct,
                 list_imgproduct: list_imgproduct.length > 0 ? list_imgproduct : existingProduct.list_imgproduct,
                 variations: updatedVariations,
@@ -480,6 +479,26 @@ router.put('/updateStockSold', async (req, res) => {
     }
 });
 
+router.put('/products/:id/sale', async (req, res) => {
+    try {
+        const { sale } = req.body;
+        const product = await productModel.findById(req.params.id);
+        if (!product) return res.status(404).json({ message: 'Không tìm thấy sản phẩm' });
+
+        // Lưu tỷ lệ giảm giá
+        product.sale = sale;
+
+        // Tính giá mới dựa trên giá gốc
+        product.price_sale = Math.floor(product.price * (1 - sale / 100));
+
+        await product.save();
+
+        res.json({ message: 'Cập nhật giảm giá thành công', product });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Lỗi server', error: err.message });
+    }
+});
 
 router.delete('/del_product/:id', async (req, res) => {
     try {

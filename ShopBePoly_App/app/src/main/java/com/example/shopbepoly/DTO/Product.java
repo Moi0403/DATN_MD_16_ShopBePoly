@@ -12,6 +12,8 @@ public class Product implements Serializable {
     @SerializedName("id_category")
     private Category id_category;
     private int price;
+    private int price_sale;
+    private int sale;
     private int quantity;
     private String description;
     private String avt_imgproduct;
@@ -36,6 +38,22 @@ public class Product implements Serializable {
         this.list_imgproduct = list_imgproduct;
         this.sold = sold;
         this.variations = variations;
+    }
+
+    public int getPrice_sale() {
+        return price_sale;
+    }
+
+    public void setPrice_sale(int price_sale) {
+        this.price_sale = price_sale;
+    }
+
+    public int getSale() {
+        return sale;
+    }
+
+    public void setSale(int sale) {
+        this.sale = sale;
     }
 
     public String get_id() {

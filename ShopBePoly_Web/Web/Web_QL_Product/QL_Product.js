@@ -1,20 +1,6 @@
 // Đảm bảo config được định nghĩa (giả sử đã có trong window.config)
 const { host, port } = window.config || { host: 'localhost', port: 3000 };
 
-// Load Sidebar
-fetch('../Style_Sidebar/Sidebar.html')
-  .then(res => res.text())
-  .then(data => {
-    document.getElementById('sidebar-container').innerHTML = data;
-    const dangxuat = document.getElementById('dangxuat');
-    if (dangxuat) {
-      dangxuat.addEventListener('click', () => {
-        if (confirm('Bạn có chắc chắn muốn đăng xuất không?')) {
-          window.location.href = '../Web_TrangChu/TrangChu.html';
-        }
-      });
-    }
-  });
 
 window.addEventListener('DOMContentLoaded', async () => {
   const cate_selet = document.getElementById('category_pro');
@@ -57,7 +43,6 @@ function convertToColorCode(color) {
 
   return colorMap[color.toLowerCase()] || '#CCCCCC'; // fallback nếu không khớp
 }
-
 
 function updateColorSpinner() {
   const colorSpinner = document.getElementById('colorSpinner');
@@ -450,7 +435,7 @@ const hienThiPro = async () => {
                       data-color="${v.color?.name}"
                       data-size="${v.size}"
                       title="Chỉnh sửa tồn kho">
-                <i class="bi bi-pencil-square me-1" style="font-size: 0.8rem;"></i>Sửa
+                Sửa
               </button>
             </div>
           `).join('') + '<hr>';
@@ -467,7 +452,7 @@ const hienThiPro = async () => {
       [tdSize, tdColor, tdStock, tdSold].forEach(td => td.style.textAlign = 'center');
 
       const tdDis = document.createElement('td');
-      tdDis.textContent = item.discount;
+      tdDis.textContent = item.sale +"%";
       tdDis.style.textAlign = 'center';
 
       const tdPriceE = document.createElement('td');
@@ -477,6 +462,10 @@ const hienThiPro = async () => {
       const tdPrice = document.createElement('td');
       tdPrice.textContent = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.price);
       tdPrice.style.textAlign = 'center';
+
+      const tdPriceSale = document.createElement('td');
+      tdPriceSale.textContent = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.price_sale);
+      tdPriceSale.style.textAlign = 'center';
 
       const tdXL = document.createElement('td');
       tdXL.style.textAlign = 'center';
@@ -505,7 +494,7 @@ const hienThiPro = async () => {
       btnSua.textContent = 'Sửa';
       btnSua.classList.add('btn', 'btn-outline-primary');
       btnSua.style.marginTop = '10px';
-        btnSua.addEventListener('click', () => {
+      btnSua.addEventListener('click', () => {
           editingProductId = item._id;
           window.currentEditingVariations = item.variations || [];
           document.getElementById("ThemPro").style.display = "none";
@@ -763,6 +752,37 @@ const hienThiPro = async () => {
       btnGG.textContent = 'Giảm giá';
       btnGG.classList.add('btn', 'btn-outline-warning');
       btnGG.style.marginTop = '10px';
+      btnGG.addEventListener('click', async () => {
+        editingProductId = item._id;
+        const sale = prompt('Nhập tỷ lệ giảm giá (0-100%):');
+
+        if (sale === null) return; // bấm Cancel
+        const discountNum = Number(sale);
+
+        if (isNaN(discountNum) || discountNum < 0 || discountNum > 100) {
+            alert('Vui lòng nhập số hợp lệ từ 0 đến 100');
+            return;
+        }
+
+        try {
+            const res = await fetch(`http://${host}:${port}/api/products/${editingProductId}/sale`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sale: discountNum })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                alert('Cập nhật giảm giá thành công');
+                location.reload();
+            } else {
+                alert('Lỗi: ' + data.message);
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Không thể kết nối tới server');
+        }
+      });
 
       btnGroup.appendChild(btnDel);
       btnGroup.appendChild(btnSua);
@@ -780,6 +800,7 @@ const hienThiPro = async () => {
       tr.appendChild(tdDis);
       tr.appendChild(tdPriceE);
       tr.appendChild(tdPrice);
+      tr.appendChild(tdPriceSale);
       tr.appendChild(tdXL);
       tbody.appendChild(tr);
 

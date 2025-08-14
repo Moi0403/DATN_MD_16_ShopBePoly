@@ -5,6 +5,11 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.TextUtils;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.StrikethroughSpan;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -64,8 +69,34 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
         Product product = productList.get(position);
         holder.tvProductName.setText(product.getNameproduct());
 
-        // Sử dụng method getFormattedPrice() đã có sẵn trong model
-        holder.tvProductPrice.setText(product.getFormattedPrice());
+        int originalPrice = product.getPrice(); // Giá gốc
+        int price_sale = product.getPrice_sale();
+        int discount = product.getSale(); // % giảm giá
+
+        if (discount > 0) {
+            SpannableString originalPriceStr = new SpannableString(product.getFormattedPrice());
+            originalPriceStr.setSpan(new StrikethroughSpan(), 0, originalPriceStr.length(), 0);
+            originalPriceStr.setSpan(
+                    new ForegroundColorSpan(context.getResources().getColor(android.R.color.darker_gray)),
+                    0,
+                    originalPriceStr.length(),
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+            );
+
+            SpannableString finalPriceStr = new SpannableString(String.format("%,d đ", price_sale));
+            finalPriceStr.setSpan(
+                    new ForegroundColorSpan(context.getResources().getColor(R.color.heart_color)),
+                    0,
+                    finalPriceStr.length(),
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+            );
+
+            holder.tvProductPrice.setText(TextUtils.concat(originalPriceStr, "  ", finalPriceStr));
+            holder.tvProductDiscount.setVisibility(View.VISIBLE);
+            holder.tvProductDiscount.setText(product.getSale() + "%");
+        } else {
+            holder.tvProductPrice.setText(product.getFormattedPrice());
+        }
 
         int totalSold = 0;
         for (Variation v : product.getVariations()) {
@@ -247,6 +278,7 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
         TextView tvProductName;
         TextView tvProductPrice;
         TextView tvProductSold;
+        TextView tvProductDiscount;
 
         public ProductViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -254,6 +286,7 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
             tvProductName = itemView.findViewById(R.id.tvProductName);
             tvProductPrice = itemView.findViewById(R.id.tvProductPrice);
             tvProductSold = itemView.findViewById(R.id.tvProductSold);
+            tvProductDiscount = itemView.findViewById(R.id.tvProductDiscount);
             imgFavorite = itemView.findViewById(R.id.imgFavorite);
             ivCart = itemView.findViewById(R.id.ivCart);
         }

@@ -11,7 +11,7 @@ const hienthiOrder = async () => {
     const filteredOrders = data.filter(order => order.status === "Đang giao hàng");
 
     filteredOrders.forEach((order, index) => {
-      const { _id, id_user, products, total, date, status } = order;
+      const { _id, id_order, id_user, products, total, date, status } = order;
 
       const tongSoLuong = products.reduce((sum, product) => sum + (product.quantity || 0), 0);
       const statusColor = `<span style="color: green; font-weight: bold;">${status}</span>`;
@@ -22,6 +22,7 @@ const hienthiOrder = async () => {
       tr.setAttribute('data-order-id', _id);
       tr.innerHTML = `
         <td>${index + 1}</td> <!-- STT -->
+        <td>${id_order}</td>
         <td>${id_user?.name || 'Không có'}<br>
             <small>SĐT: ${id_user?.phone_number || '---'}</small>
         </td>
@@ -51,7 +52,7 @@ const xemChiTietDon = async (orderId) => {
     const order = data.find(o => o._id === orderId);
     if (!order) return;
 
-    const { id_user, products, total, address, date, pay, status } = order;
+    const {id_order, id_user, products, total, address, date, pay, status } = order;
 
     const productHtml = products.map(product => {
       const productData = product.id_product || {};
@@ -85,6 +86,7 @@ const xemChiTietDon = async (orderId) => {
     }).join('');
 
     const bodyHtml = `
+      <p><strong>Mã đơn: </strong>${id_order}</p>
       <p><strong>Người đặt:</strong> ${id_user?.name || '---'}</p>
       <p><strong>SĐT:</strong> ${id_user?.phone_number || ''}</p>
       <p><strong>Địa chỉ:</strong> ${address}</p>
@@ -107,20 +109,3 @@ const xemChiTietDon = async (orderId) => {
     console.error('Lỗi khi hiển thị chi tiết đơn:', err);
   }
 };
-
-
-
-fetch('../Style_Sidebar/Sidebar.html')
-  .then(res => res.text())
-  .then(data => {
-    document.getElementById('sidebar-container').innerHTML = data;
-    const dangxuat = document.getElementById('dangxuat');
-    if (dangxuat) {
-      dangxuat.addEventListener('click', () => {
-        const confirmLogout = confirm('Bạn có chắc chắn muốn đăng xuất không?');
-        if (confirmLogout) {
-          window.location.href = '../Web_TrangChu/TrangChu.html';
-        }
-      });
-    }
-  });

@@ -9,10 +9,11 @@ const productSchema = new mongoose.Schema({
     },
     price_enter: Number,
     price: Number,
+    price_sale: Number,
     description: String,
     avt_imgproduct: String, 
     list_imgproduct: [String], 
-    discount: Number,
+    sale: Number,
     variations: [
         {
             size: Number,
