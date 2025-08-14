@@ -58,58 +58,74 @@ public class ListReviewAdapter extends RecyclerView.Adapter<ListReviewAdapter.Re
     public void onBindViewHolder(@NonNull ReviewViewHolder holder, int position) {
         ListReview review = reviewList.get(position);
 
-        // Debug xem userId có dữ liệu gì
-        Log.d("ListReview", "Review data: " + new Gson().toJson(review));
+        holder.tvName.setText(getDisplayName(review));
 
-// Set tên người dùng
-        if (review.getUserId() != null && review.getUserId().getUsername() != null) {
-            holder.tvName.setText(review.getUserId().getUsername());
-        } else {
-            holder.tvName.setText("Người dùng");
-        }
-
-// Rating
         float ratingValue = 0f;
         try {
             ratingValue = (float) review.getRating();
             if (ratingValue < 0f) ratingValue = 0f;
             if (ratingValue > 5f) ratingValue = 5f;
         } catch (Exception ignored) {}
-        holder.ratingBar.setRating(ratingValue); // hoặc 6 - ratingValue nếu API ngược
+        holder.ratingBar.setIsIndicator(true);
+        holder.ratingBar.setStepSize(0.5f);
+        holder.ratingBar.setNumStars(5);
+        holder.ratingBar.setRating(ratingValue);
 
         holder.tvComment.setText(review.getComment() != null ? review.getComment() : "");
 
-        // Ngày tạo
-        try {
-            SimpleDateFormat inputFormat =
-                    new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault());
-            SimpleDateFormat outputFormat =
-                    new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
-            String formattedDate = outputFormat.format(inputFormat.parse(review.getCreatedAt()));
-            holder.tvDate.setText(formattedDate);
-        } catch (Exception e) {
-            holder.tvDate.setText(review.getCreatedAt() != null ? review.getCreatedAt() : "");
-        }
+        holder.tvDate.setText(formatIsoUtcToLocal(review.getCreatedAt()));
 
-        // Nút sửa — chỉ hiện nếu review thuộc về user hiện tại
-        boolean isMyReview = false;
-        if (currentUserId != null && review.getUserId() != null) {
-            String reviewUserId = review.getUserId().getId();
-            if (reviewUserId != null && reviewUserId.equals(currentUserId)) {
-                isMyReview = true;
-            }
-        }
+        String reviewUserId = getReviewUserId(review);
+        boolean isMyReview = currentUserId != null && currentUserId.equals(reviewUserId);
 
         holder.btnEdit.setVisibility(isMyReview ? View.VISIBLE : View.GONE);
-
         if (isMyReview) {
             holder.btnEdit.setOnClickListener(v -> {
-                if (editClickListener != null) {
-                    editClickListener.onEditClick(review);
-                }
+                if (editClickListener != null) editClickListener.onEditClick(review);
             });
         } else {
             holder.btnEdit.setOnClickListener(null);
+        }
+    }
+
+    private String getDisplayName(ListReview r) {
+        if (r.getUserId() != null) {
+            if (r.getUserId().getName() != null && !r.getUserId().getName().isEmpty()) {
+                return r.getUserId().getName();
+            }
+            if (r.getUserId().getUsername() != null && !r.getUserId().getUsername().isEmpty()) {
+                return r.getUserId().getUsername();
+            }
+        }
+        return "Người dùng";
+    }
+
+    private String getReviewUserId(ListReview r) {
+        try {
+            if (r.getUserId() != null) {
+                if (r.getUserId().getId() != null) return r.getUserId().getId();
+                if (r.getUserId().getId() != null)  return r.getUserId().getId();
+            }
+            if (r.getUserId() != null) {
+                if (r.getUserId().getId() != null) return r.getUserId().getId();
+                if (r.getUserId().getId() != null)  return r.getUserId().getId();
+            }
+        } catch (Exception ignored) {}
+        return null;
+    }
+
+    private String formatIsoUtcToLocal(String isoUtc) {
+        if (isoUtc == null || isoUtc.isEmpty()) return "";
+        try {
+            java.text.SimpleDateFormat in = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX", java.util.Locale.US);
+            in.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+            java.util.Date d = in.parse(isoUtc);
+
+            java.text.SimpleDateFormat out = new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault());
+            out.setTimeZone(java.util.TimeZone.getDefault());
+            return out.format(d);
+        } catch (Exception e) {
+            return isoUtc;
         }
     }
 
