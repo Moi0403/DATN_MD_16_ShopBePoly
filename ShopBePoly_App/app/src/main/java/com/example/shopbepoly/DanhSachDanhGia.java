@@ -149,16 +149,27 @@ public class DanhSachDanhGia extends AppCompatActivity {
 
     private void loadReviewsFromApi() {
         ApiService apiService = ApiClient.getApiService();
-        Call<List<ListReview>> call = apiService.getAllReviews(); // API mới lấy tất cả review
+
+        Call<List<ListReview>> call;
+        if (productId != null && !productId.isEmpty()) {
+            // Ưu tiên lấy review theo sản phẩm
+            call = apiService.getReviews(productId);
+        } else if (orderId != null && !orderId.isEmpty()) {
+            // Nếu chỉ có orderId, lấy review của order và product của order (nếu có)
+            call = apiService.getReviewsByOrder(orderId);
+        } else {
+            // Fallback
+            call = apiService.getAllReviews();
+        }
 
         call.enqueue(new Callback<List<ListReview>>() {
             @Override
             public void onResponse(Call<List<ListReview>> call, Response<List<ListReview>> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    allReviews.clear();
-                    allReviews.addAll(response.body());
+                    // Dùng merge thay vì clear
+                    mergeReviews(response.body());
 
-                    // Sắp xếp từ mới nhất -> cũ nhất
+                    // Sort mới nhất lên đầu
                     allReviews.sort((r1, r2) -> r2.getCreatedAt().compareTo(r1.getCreatedAt()));
 
                     adapter.setReviews(allReviews);

@@ -131,7 +131,7 @@ public class DanhGia extends AppCompatActivity {
 
                         // Chuyển sang màn danh sách đánh giá sản phẩm đầu tiên
                         if (!reviewList.isEmpty()) {
-                            navigateToAllReviews();
+                            navigateToReviewListByOrder(orderId);
                         } else {
                             finish();
                         }
@@ -168,13 +168,6 @@ public class DanhGia extends AppCompatActivity {
     private void navigateToReviewListByOrder(String orderId) {
         Intent intent = new Intent(DanhGia.this, DanhSachDanhGia.class);
         intent.putExtra("orderId", orderId);
-        startActivity(intent);
-        finish();
-    }
-
-    private void navigateToAllReviews() {
-        Intent intent = new Intent(DanhGia.this, DanhSachDanhGia.class);
-        intent.putExtra("showAll", true);
         startActivity(intent);
         finish();
     }
