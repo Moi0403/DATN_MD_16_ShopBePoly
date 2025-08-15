@@ -172,18 +172,18 @@ function renderSingleChart(labels, data) {
                     ticks: { font: { size: 12, family: "Nunito" }, color: "#4b5563" },
                     grid: { display: false }
                 },
-            y: {
-                beginAtZero: true,
-                ticks: {
-                    font: { size: 12, family: "Nunito" },
-                    color: "#4b5563",
-                    callback: value => value.toLocaleString('vi-VN') + " ₫"
-                },
-                grid: { color: "#e5e7eb", borderDash: [5, 5] }
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        font: { size: 12, family: "Nunito" },
+                        color: "#4b5563",
+                        callback: value => value.toLocaleString('vi-VN') + " ₫"
+                    },
+                    grid: { color: "#e5e7eb", borderDash: [5, 5] }
+                }
             }
         }
-    }
-});
+    });
 }
 
 async function fetchOverview() {
@@ -265,6 +265,7 @@ async function fetchTopProducts() {
         showError("Không thể tải danh sách top sản phẩm.");
     }
 }
+
 async function showOrderDetails(orderId) {
     try {
         const res = await fetch(`${API_BASE}/list_order`);
@@ -343,15 +344,15 @@ async function showOrderDetails(orderId) {
 }
 
 fetch('../Style_Sidebar/Sidebar.html')
-  .then(res => res.text())
-  .then(data => {
-    document.getElementById('sidebar-container').innerHTML = data;
-    const dangxuat = document.getElementById('dangxuat');
-    if (dangxuat) {
-      dangxuat.addEventListener('click', () => {
-        if (confirm('Bạn có chắc chắn muốn đăng xuất không?')) {
-          window.location.href = '../Web_TrangChu/TrangChu.html';
+    .then(res => res.text())
+    .then(data => {
+        document.getElementById('sidebar-container').innerHTML = data;
+        const dangxuat = document.getElementById('dangxuat');
+        if (dangxuat) {
+            dangxuat.addEventListener('click', () => {
+                if (confirm('Bạn có chắc chắn muốn đăng xuất không?')) {
+                    window.location.href = '../Web_TrangChu/TrangChu.html';
+                }
+            });
         }
-      });
-    }
-  });
+    });

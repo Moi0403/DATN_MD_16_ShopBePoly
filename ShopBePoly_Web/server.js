@@ -702,6 +702,20 @@ router.post('/login', async (req, res) => {
     }
 });
 
+router.post('/logout', async (req, res) => {
+    const { userId } = req.body;
+    try {
+        const user = await userModel.findById(userId);
+        if (!user) return res.status(404).json({ message: 'Người dùng không tồn tại' });
+        user.isOnline = false;
+        await user.save();
+        res.json({ message: 'Đăng xuất thành công' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Lỗi server khi đăng xuất' });
+    }
+});
+
 router.get('/users_online', async (req, res) => {
     try {
         const onlineUsers = await userModel.countDocuments({ isOnline: true });
@@ -711,6 +725,18 @@ router.get('/users_online', async (req, res) => {
         res.status(500).json({ error: 'Server error' });
     }
 });
+
+router.get('/list/users_online', async (req, res) => {
+    try {
+        const users = await userModel.find({ isOnline: true })
+            .select('username name email phone_number avt_user role'); 
+        res.json({ users });
+    } catch (err) {
+        console.error('Error fetching online users list:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 
 router.get('/list_cart/:userId', async (req, res) => {
     try {
@@ -2465,4 +2491,197 @@ router.get("/reviews", async (req, res) => {
   }
 });
 
+router.get('/statistics-today', async (req, res) => {
+    try {
+        const now = new Date();
+        const vnOffsetMs = 7 * 60 * 60 * 1000;
+        const vnTime = new Date(now.getTime() + vnOffsetMs);
+
+        const year = vnTime.getUTCFullYear();
+        const month = String(vnTime.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(vnTime.getUTCDate()).padStart(2, '0');
+
+        const todayStr = `${year}-${month}-${day}`;
+
+        const startDate = new Date(`${todayStr}T00:00:00.000+07:00`);
+        const endDate = new Date(`${todayStr}T23:59:59.999+07:00`);
+
+        const result = await orderModel.aggregate([
+            {
+                $match: {
+                    status: { $ne: 'Đã hủy' },
+                    date: { $gte: startDate, $lte: endDate }
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    totalRevenue: { $sum: { $toDouble: "$total" } },
+                    totalOrders: { $sum: 1 }
+                }
+            }
+        ]);
+
+        res.json({
+            date: todayStr,
+            totalOrders: result[0]?.totalOrders || 0,
+            totalRevenue: result[0]?.totalRevenue || 0
+        });
+
+    } catch (error) {
+        console.error('Lỗi lấy doanh thu hôm nay:', error);
+        res.status(500).json({ message: 'Lỗi server khi lấy doanh thu hôm nay' });
+    }
+});
+
+router.get('/products/low-stock', async (req, res) => {
+    try {
+        const threshold = parseInt(req.query.threshold) || 20;
+        const products = await productModel.find().populate('id_category').lean();
+
+        const result = [];
+
+        products.forEach(p => {
+            const variationsByColor = {};
+
+            p.variations.forEach(v => {
+                const colorName = v.color?.name || 'Unknown';
+                const colorCode = v.color?.code || '#000000';
+                if (!variationsByColor[colorName]) {
+                    variationsByColor[colorName] = { colorCode, variations: [], totalStock: 0 };
+                }
+                variationsByColor[colorName].variations.push(v);
+                variationsByColor[colorName].totalStock += v.stock;
+            });
+
+            Object.entries(variationsByColor).forEach(([colorName, info]) => {
+                if (info.totalStock < threshold) {
+                    result.push({
+                        productId: p._id,
+                        name: p.nameproduct,
+                        category: p.id_category?.title || 'Unknown',
+                        color: colorName,
+                        colorCode: info.colorCode,
+                        totalStock: info.totalStock,
+                        variations: info.variations,
+                        price: p.price,
+                        sale_price: p.price_sale,
+                        avt_imgproduct: p.avt_imgproduct 
+                    });
+                }
+            });
+        });
+
+        res.status(200).json({
+            message: 'Danh sách sản phẩm gần hết hàng theo màu',
+            data: result
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Lỗi server', error: error.message });
+    }
+});
+
+router.get('/products/stagnant', async (req, res) => {
+    try {
+        const soldLimit = 10;      
+        const daysAgo = 1;         
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - daysAgo);
+
+        const products = await productModel.find({ createdAt: { $lte: cutoffDate } })
+            .populate('id_category')
+            .lean();
+
+        const stagnantProducts = products
+            .filter(p => {
+                const totalSold = p.variations?.reduce((sum, v) => sum + v.sold, 0) || 0;
+                return totalSold <= soldLimit;
+            })
+            .map(p => {
+                const totalStock = p.variations?.reduce((sum, v) => sum + v.stock, 0) || 0;
+
+                const variationsByColor = {};
+                p.variations?.forEach(v => {
+                    const colorName = v.color?.name || 'Unknown';
+                    const colorCode = v.color?.code || '#000000';
+                    if (!variationsByColor[colorName]) {
+                        variationsByColor[colorName] = { colorCode, variations: [] };
+                    }
+                    variationsByColor[colorName].variations.push({
+                        size: v.size,
+                        stock: v.stock,
+                        sold: v.sold,
+                        image: v.image
+                    });
+                });
+
+                return {
+                    productId: p._id,
+                    name: p.nameproduct,
+                    category: p.id_category?.title || 'Unknown',
+                    totalSold: p.variations?.reduce((sum, v) => sum + v.sold, 0) || 0,
+                    totalStock,
+                    price: p.price,
+                    sale_price: p.price_sale,
+                    avt_imgproduct: p.avt_imgproduct,
+                    variationsByColor
+                };
+            });
+
+        res.status(200).json({
+            message: 'Danh sách sản phẩm tồn kho lâu',
+            data: stagnantProducts
+        });
+
+    } catch (error) {
+        console.error('Lỗi API /products/stagnant:', error);
+        res.status(500).json({ message: 'Lỗi server', error: error.message });
+    }
+});
+
+router.get('/orders-today', async (req, res) => {
+    try {
+        const now = new Date();
+        const utc = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
+        const vietnamOffset = 7;
+        const vietnamTime = new Date(utc.getTime() + vietnamOffset * 3600000);
+        const startOfDay = new Date(vietnamTime);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(vietnamTime);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        const orders = await orderModel.find({
+            date: { $gte: startOfDay, $lte: endOfDay }
+        })
+            .populate('id_user', 'name email')
+            .populate('products.id_product', 'nameproduct price_sale');
+
+        res.json({ success: true, orders });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Lỗi server' });
+    }
+});
+
+router.get('/orders/pending', async (req, res) => {
+    try {
+        const pendingOrders = await orderModel.find({ status: 'Đang xử lý' })
+            .populate('id_user', 'name phone_number email avt_user') 
+            .populate({
+                path: 'products.id_product',
+                select: 'nameproduct avt_imgproduct id_category', 
+                populate: { path: 'id_category', select: 'title' }
+            });
+
+        res.json({
+            count: pendingOrders.length,
+            orders: pendingOrders
+        });
+    } catch (error) {
+        console.error('Lỗi khi lấy đơn hàng cần xác nhận:', error);
+        res.status(500).json({ error: 'Lỗi server khi lấy đơn hàng cần xác nhận' });
+    }
+});
 app.use(express.json()); 

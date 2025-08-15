@@ -10,17 +10,37 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        
+         /* === Reset & Layout chính === */
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+
+        body {
+            display: flex; /* Sidebar + MainContent ngang hàng */
+            height: 100vh;
+            overflow: hidden;
+        }
+
+
+        .main-content {
+            width: 80%;
+            margin-left: 200px;
+            height: 60%;
+        }
+
+        /* === Chat container full height === */
         .chat-container {
-            display: flex;
             flex: 1;
+            display: flex;
             background-color: #fff;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             border-radius: 8px;
-            overflow: hidden;
             margin: 20px;
+            overflow: hidden;
         }
 
+        /* === Danh sách chat === */
         #chat-list {
             width: 300px;
             background-color: #f9f9f9;
@@ -94,7 +114,8 @@
         .user-status-dot.online {
             background-color: #4CAF50;
         }
-        
+
+        /* === Khung chat chính === */
         #chat-window {
             flex: 1;
             display: flex;
@@ -108,7 +129,7 @@
             display: flex;
             align-items: center;
         }
-        
+
         .chat-header-user-info {
             display: flex;
             align-items: center;
@@ -133,11 +154,11 @@
             bottom: -2px;
             left: 30px;
         }
-        
+
         #header-status-dot.online {
             background-color: #4CAF50;
         }
-        
+
         .header-title-container {
             margin-left: 10px;
         }
@@ -149,27 +170,13 @@
             font-weight: bold;
         }
 
+        /* === Khu vực tin nhắn === */
         #messages {
             flex-grow: 1;
             padding: 20px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-        }
-
-        .message {
-            background-color: #e1f2fb;
-            color: #333;
-            border-radius: 8px;
-            padding: 10px 15px;
-            margin-bottom: 10px;
-            max-width: 80%;
-            word-break: break-word;
-        }
-
-        .message.me {
-            background-color: #dcf8c6;
-            align-self: flex-end;
         }
 
         .message-container {
@@ -180,6 +187,13 @@
 
         .message-container.me {
             flex-direction: row-reverse;
+        }
+
+        .message {
+            border-radius: 8px;
+            padding: 10px 15px;
+            max-width: 80%;
+            word-break: break-word;
         }
 
         .message-container.me .message {
@@ -194,19 +208,7 @@
             margin-left: 15px;
         }
 
-        .message-container .user-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-        }
-
-        .sender-name {
-            font-weight: bold;
-            display: block;
-            margin-bottom: 5px;
-            color: #555;
-        }
-
+        /* === Ô nhập tin nhắn === */
         #input-area {
             background-color: #f0f0f0;
             padding: 15px 20px;
@@ -239,12 +241,7 @@
             background-color: #0056b3;
         }
 
-        .unread-indicator {
-            font-size: 1.2rem;
-            color: #ff4444;
-            margin-left: 10px;
-        }
-
+        /* === Notification === */
         .notification {
             position: fixed;
             bottom: 20px;
@@ -264,103 +261,109 @@
         }
 
         @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-
-            to {
-                opacity: 1;
-            }
+            from {opacity: 0;}
+            to {opacity: 1;}
         }
 
         @keyframes fadeOut {
-            to {
-                opacity: 0;
-            }
+            to {opacity: 0;}
         }
     </style>
 </head>
 
 <body>
 
-        <div class="sidebar">
-            <div class="header_menu d-flex justify-content-between align-items-center px-3 py-2 border-bottom border-light">
+    <div class="sidebar">
+        <div class="header_menu d-flex justify-content-between align-items-center px-3 py-2 border-bottom border-light">
             <div class="info">
                 <p id="name">Họ và tên</p>
-                <img id="avt" width="40px" height="40px" class="avt" data-bs-toggle="modal" data-bs-target="#userModal"/>
+                <img id="avt" width="40px" height="40px" class="avt" data-bs-toggle="modal"
+                    data-bs-target="#userModal" />
             </div>
-            </div>
-            <ul class="list-unstyled sidebar-nav px-2 mt-3">
-            <li><a href="../Web_TrangChu/TrangChu.html" class="nav-link"><i class="bi bi-house me-2"></i>Trang Chủ</a></li>
+        </div>
+        <ul class="list-unstyled sidebar-nav px-2 mt-3">
+            <li><a href="../Web_TrangChu/TrangChu.html" class="nav-link"><i class="bi bi-house me-2"></i>Trang Chủ</a>
+            </li>
             <li class="nav-title">Quản trị</li>
-            <li class="nav-item"><a class="nav-link" href="../Web_Ql_Banner/QL_Banner.html"><i class="bi bi-image me-2"></i>Banner</a></li>
-            <li class="nav-item"><a class="nav-link" href="../Web_QL_Category/QL_Category.html"><i class="bi bi-tags me-2"></i>Thương hiệu</a></li>
-            <li class="nav-item"><a class="nav-link" href="../Web_QL_Product/QL_Product.html"><i class="bi bi-box-seam me-2"></i>Sản phẩm</a></li>
-            <li class="nav-item" id="menu-ql-tk"><a class="nav-link" href="../Web_QL_User/QL_User.html"><i class="bi bi-people me-2"></i>Tài khoản</a></li>
+            <li class="nav-item"><a class="nav-link" href="../Web_Ql_Banner/QL_Banner.html"><i
+                        class="bi bi-image me-2"></i>Banner</a></li>
+            <li class="nav-item"><a class="nav-link" href="../Web_QL_Category/QL_Category.html"><i
+                        class="bi bi-tags me-2"></i>Thương hiệu</a></li>
+            <li class="nav-item"><a class="nav-link" href="../Web_QL_Product/QL_Product.html"><i
+                        class="bi bi-box-seam me-2"></i>Sản phẩm</a></li>
+            <li class="nav-item" id="menu-ql-tk"><a class="nav-link" href="../Web_QL_User/QL_User.html"><i
+                        class="bi bi-people me-2"></i>Tài khoản</a></li>
             <li class="nav-title">Đơn hàng</li>
-            <li class="nav-item"><a class="nav-link" href="../Web_XNDH/Web_XNDH.html"><i class="bi bi-clipboard-check me-2"></i>Xác nhận đơn</a></li>
-            <li class="nav-item"><a class="nav-link" href="../Web_GH/Web_GH.html"><i class="bi bi-truck me-2"></i>Giao hàng</a></li>
-            <li class="nav-item"><a class="nav-link" href="../Web_GHTC/Web_GHTC.html"><i class="bi bi-check2-circle me-2"></i>Đã giao</a></li>
-            <li class="nav-item"><a class="nav-link" href="../Web_DH/Web_DH.html"><i class="bi bi-x-circle me-2"></i>Đơn hủy</a></li>
+            <li class="nav-item"><a class="nav-link" href="../Web_XNDH/Web_XNDH.html"><i
+                        class="bi bi-clipboard-check me-2"></i>Xác nhận đơn</a></li>
+            <li class="nav-item"><a class="nav-link" href="../Web_GH/Web_GH.html"><i class="bi bi-truck me-2"></i>Giao
+                    hàng</a></li>
+            <li class="nav-item"><a class="nav-link" href="../Web_GHTC/Web_GHTC.html"><i
+                        class="bi bi-check2-circle me-2"></i>Đã giao</a></li>
+            <li class="nav-item"><a class="nav-link" href="../Web_DH/Web_DH.html"><i class="bi bi-x-circle me-2"></i>Đơn
+                    hủy</a></li>
             <li class="nav-title">Thống kê</li>
-            <li><a class="nav-link" href="../Web_TK/QL_ThongKe.html"><i class="bi bi-bar-chart me-2"></i>Doanh thu</a></li>
+            <li><a class="nav-link" href="../Web_TK/QL_ThongKe.html"><i class="bi bi-bar-chart me-2"></i>Doanh thu</a>
+            </li>
             <li class="nav-title">Liên hệ</li>
             <li><a class="nav-link" href="../Web_LienHe/LienHe.html"><i class="bi bi-chat-dots me-2"></i>Chat</a></li>
-            </ul>
-        </div>
+        </ul>
+    </div>
 
-        <div class="main-content" id="mainContent">
-           <div class="chat-container">
-        <div id="chat-list">
-            <h2>Danh sách chat</h2>
-            <ul id="user-list">
-            </ul>
-        </div>
-        <div id="chat-window">
-            <div id="chat-header">
-                <div class="chat-header-user-info">
-                    <img id="header-avatar" class="header-avatar" src="" alt="Avatar">
-                    <div class="header-title-container">
-                        <h2 id="chat-header-title">Chọn một cuộc trò chuyện</h2>
-                        <span id="header-status-dot" class="status-dot"></span>
+    <div class="main-content" id="mainContent">
+        <div class="chat-container">
+            <div id="chat-list">
+                <h2>Danh sách chat</h2>
+                <ul id="user-list">
+                </ul>
+            </div>
+            <div id="chat-window">
+                <div id="chat-header">
+                    <div class="chat-header-user-info">
+                        <img id="header-avatar" class="header-avatar" src="" alt="Avatar">
+                        <div class="header-title-container">
+                            <h2 id="chat-header-title">Chọn một cuộc trò chuyện</h2>
+                            <span id="header-status-dot" class="status-dot"></span>
+                        </div>
                     </div>
                 </div>
+                <div id="messages">
+                </div>
+                <div id="input-area">
+                    <input type="text" id="message-input" placeholder="Nhập tin nhắn...">
+                    <button id="send-button"><i class="fa fa-paper-plane"></i> Gửi</button>
+                </div>
             </div>
-            <div id="messages">
-            </div>
-            <div id="input-area">
-                <input type="text" id="message-input" placeholder="Nhập tin nhắn...">
-                <button id="send-button"><i class="fa fa-paper-plane"></i> Gửi</button>
+        </div>
+        <div id="notification" class="notification">Bạn có tin nhắn mới!</div>
+    </div>
+
+
+    <div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="userModalLabel">Thông tin người dùng</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="list-unstyled">
+                        <li><a class="dropdown-item" href="#">Hồ sơ</a></li>
+                        <li><a class="dropdown-item" href="#">Cài đặt</a></li>
+                        <li><a class="dropdown-item" href="#">Nhật ký hoạt động</a></li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li><a id="dangxuat" class="dropdown-item text-danger" href="#">Đăng xuất</a></li>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                </div>
             </div>
         </div>
     </div>
-    <div id="notification" class="notification">Bạn có tin nhắn mới!</div>
-        </div>
 
-
-        <div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                <h5 class="modal-title" id="userModalLabel">Thông tin người dùng</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                <ul class="list-unstyled">
-                    <li><a class="dropdown-item" href="#">Hồ sơ</a></li>
-                    <li><a class="dropdown-item" href="#">Cài đặt</a></li>
-                    <li><a class="dropdown-item" href="#">Nhật ký hoạt động</a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a id="dangxuat" class="dropdown-item text-danger" href="#">Đăng xuất</a></li>
-                </ul>
-                </div>
-                <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                </div>
-            </div>
-            </div>
-        </div>
-    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"></script>
     <script src="../Style_Sidebar/Sidebar.js"></script>
     <script src="../../Database/config.js"></script>
