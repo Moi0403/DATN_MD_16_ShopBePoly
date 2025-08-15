@@ -1,146 +1,258 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Trang chủ quản trị</title>
+
     <link rel="stylesheet" href="../Style_Sidebar/Sidebar.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4Q6Gf2aSP4eDXB8Miphtr37CMZZQ5oXLH2yaXMJ2w8e2ZtHTl7GptT4jmndRuHDT" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css"
+        integrity="sha384-4Q6Gf2aSP4eDXB8Miphtr37CMZZQ5oXLH2yaXMJ2w8e2ZtHTl7GptT4jmndRuHDT" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/startbootstrap-sb-admin-2@5.0.7/css/sb-admin-2.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+
     <style>
-        .container{
+        .container {
             display: flex;
         }
-        .boderbox{
+
+        .boderbox {
             display: flex;
             gap: 50px;
         }
-        .item{
+
+        .item {
             border: 1px solid black;
             border-radius: 15px;
             padding: 10px;
-            /* box-shadow: 0 0 10px rgba(13, 154, 112, 0.4);
-            transition: box-shadow 0.3s ease; */
+          
         }
-        .item:hover{
+
+        .item:hover {
             transform: translateY(-6px);
+        }
+
+        .table-container {
+            margin-top: 20px;
+        }
+
+        .table-container h4 {
+            margin-bottom: 10px;
+        }
+
+        .table th,
+        .table td {
+            vertical-align: middle;
         }
     </style>
 </head>
+
 <body>
-  
     <div class="sidebar">
         <div class="header_menu d-flex justify-content-between align-items-center px-3 py-2 border-bottom border-light">
-        <div class="info">
-            <p id="name">Họ và tên</p>
-            <img id="avt" width="40px" height="40px" class="avt" data-bs-toggle="modal" data-bs-target="#userModal"/>
-        </div>
+            <div class="info">
+                <p id="name">Họ và tên</p>
+                <img id="avt" width="40px" height="40px" class="avt" data-bs-toggle="modal"
+                    data-bs-target="#userModal" />
+            </div>
         </div>
         <ul class="list-unstyled sidebar-nav px-2 mt-3">
-        <li><a href="../Web_TrangChu/TrangChu.html" class="nav-link"><i class="bi bi-house me-2"></i>Trang Chủ</a></li>
-        <li class="nav-title">Quản trị</li>
-        <li class="nav-item"><a class="nav-link" href="../Web_Ql_Banner/QL_Banner.html"><i class="bi bi-image me-2"></i>Banner</a></li>
-        <li class="nav-item"><a class="nav-link" href="../Web_QL_Category/QL_Category.html"><i class="bi bi-tags me-2"></i>Thương hiệu</a></li>
-        <li class="nav-item"><a class="nav-link" href="../Web_QL_Product/QL_Product.html"><i class="bi bi-box-seam me-2"></i>Sản phẩm</a></li>
-        <li class="nav-item" id="menu-ql-tk"><a class="nav-link" href="../Web_QL_User/QL_User.html"><i class="bi bi-people me-2"></i>Tài khoản</a></li>
-        <li class="nav-title">Đơn hàng</li>
-        <li class="nav-item"><a class="nav-link" href="../Web_XNDH/Web_XNDH.html"><i class="bi bi-clipboard-check me-2"></i>Xác nhận đơn</a></li>
-        <li class="nav-item"><a class="nav-link" href="../Web_GH/Web_GH.html"><i class="bi bi-truck me-2"></i>Giao hàng</a></li>
-        <li class="nav-item"><a class="nav-link" href="../Web_GHTC/Web_GHTC.html"><i class="bi bi-check2-circle me-2"></i>Đã giao</a></li>
-        <li class="nav-item"><a class="nav-link" href="../Web_DH/Web_DH.html"><i class="bi bi-x-circle me-2"></i>Đơn hủy</a></li>
-        <li class="nav-title">Thống kê</li>
-        <li><a class="nav-link" href="../Web_TK/QL_ThongKe.html"><i class="bi bi-bar-chart me-2"></i>Doanh thu</a></li>
-        <li class="nav-title">Liên hệ</li>
-        <li><a class="nav-link" href="../Web_LienHe/LienHe.html"><i class="bi bi-chat-dots me-2"></i>Chat</a></li>
+            <li><a href="../Web_TrangChu/TrangChu.html" class="nav-link"><i class="bi bi-house me-2"></i>Trang Chủ</a>
+            </li>
+            <li class="nav-title">Quản trị</li>
+            <li class="nav-item"><a class="nav-link" href="../Web_Ql_Banner/QL_Banner.html"><i
+                        class="bi bi-image me-2"></i>Banner</a></li>
+            <li class="nav-item"><a class="nav-link" href="../Web_QL_Category/QL_Category.html"><i
+                        class="bi bi-tags me-2"></i>Thương hiệu</a></li>
+            <li class="nav-item"><a class="nav-link" href="../Web_QL_Product/QL_Product.html"><i
+                        class="bi bi-box-seam me-2"></i>Sản phẩm</a></li>
+            <li class="nav-item" id="menu-ql-tk"><a class="nav-link" href="../Web_QL_User/QL_User.html"><i
+                        class="bi bi-people me-2"></i>Tài khoản</a></li>
+            <li class="nav-title">Đơn hàng</li>
+            <li class="nav-item"><a class="nav-link" href="../Web_XNDH/Web_XNDH.html"><i
+                        class="bi bi-clipboard-check me-2"></i>Xác nhận đơn</a></li>
+            <li class="nav-item"><a class="nav-link" href="../Web_GH/Web_GH.html"><i class="bi bi-truck me-2"></i>Giao
+                    hàng</a></li>
+            <li class="nav-item"><a class="nav-link" href="../Web_GHTC/Web_GHTC.html"><i
+                        class="bi bi-check2-circle me-2"></i>Đã giao</a></li>
+            <li class="nav-item"><a class="nav-link" href="../Web_DH/Web_DH.html"><i class="bi bi-x-circle me-2"></i>Đơn
+                    hủy</a></li>
+            <li class="nav-title">Thống kê</li>
+            <li><a class="nav-link" href="../Web_TK/QL_ThongKe.html"><i class="bi bi-bar-chart me-2"></i>Doanh thu</a>
+            </li>
+            <li class="nav-title">Liên hệ</li>
+            <li><a class="nav-link" href="../Web_LienHe/LienHe.html"><i class="bi bi-chat-dots me-2"></i>Chat</a></li>
         </ul>
     </div>
+
     <div class="main-content" id="mainContent">
-        <div class="container">
-        <div class="header">
-            <h1>Trang chủ quản trị</h1>
+        <div id="wrapper">
+            <div id="content-wrapper" class="d-flex flex-column">
+                <div id="content">
+                    <nav class="navbar navbar-expand navbar-light bg-white shadow mb-4">
+                        <div class="container">
+                            <div class="d-flex w-100 align-items-center">
+                                <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle me-3">
+                                    <i class="fa fa-bars"></i>
+                                </button>
+                                <h1 class="h3 mb-0 text-gray-800 text-center flex-grow-1">TRANG CHỦ</h1>
+                            </div>
+                        </div>
+                    </nav>
 
-            <div class="boderbox">
-                <div class="item">
-                    <h4>Tài khoản hoạt động</h4>
-                    <h5 id="user_online">0</h5>
-                </div>
+                    <div class="container-fluid">
+                        <div class="row">
+                            <div class="col-xl-3 col-md-6 mb-4">
+                                <div class="card border-left-primary shadow h-100 py-2">
+                                    <div class="card-body text-center">
+                                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Tài khoản
+                                            online</div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="user_online">0</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-xl-3 col-md-6 mb-4" id="todayOrdersCard" data-bs-toggle="modal"
+                                data-bs-target="#orderModal">
+                                <div class="card border-left-info shadow h-100 py-2">
+                                    <div class="card-body text-center">
+                                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Đơn hàng hôm
+                                            nay</div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="todayOrdersCount">0
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-xl-3 col-md-6 mb-4">
+                                <div class="card border-left-warning shadow h-100 py-2">
+                                    <div class="card-body text-center">
+                                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Doanh thu
+                                            hôm nay</div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="todayRevenue">0đ</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-xl-3 col-md-6 mb-4">
+                                <div class="card border-left-danger shadow h-100 py-2">
+                                    <div class="card-body text-center">
+                                        <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Đơn hàng
+                                            chờ xác nhận</div>
+                                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="pendingOrders">0</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card shadow mb-4">
+                            <div class="card-header py-3">
+                                <h6 class="m-0 font-weight-bold text-primary">Sản phẩm gần hết hàng</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-hover" id="lowStockTableWrapper">
+                                        <thead id="lowStockTableHead">
+                                            <tr>
+                                                <th>Tên sản phẩm</th>
+                                                <th>Danh mục</th>
+                                                <th>Màu sắc</th>
+                                                <th>Giá bán</th>
+                                                <th>Giá khuyến mãi</th>
+                                                <th>Size</th>
+                                                <th>Tồn kho</th>
+                                                <th>Ảnh đại diện</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="lowStockTable"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card shadow mb-4">
+                            <div class="card-header py-3">
+                                <h6 class="m-0 font-weight-bold text-primary">Sản phẩm tồn kho lâu</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-hover" id="stagnantTableWrapper">
+                                        <thead id="stagnantTableHead">
+                                            <tr>
+                                                <th>Tên sản phẩm</th>
+                                                <th>Danh mục</th>
+                                                <th>Màu sắc</th>
+                                                <th>Giá bán</th>
+                                                <th>Giá khuyến mãi</th>
+                                                <th>Size</th>
+                                                <th>Tồn kho</th>
+                                                <th>Ảnh đại diện</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="stagnantTable"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
 
-                <div class="item">
-                    <h4>Đơn hàng mới</h4>
-                    <h5 id="getStatusOder">0</h5>
-                </div>
-
-                <div class="item">
-                    <h4>Đơn hàng hôm nay</h4>
-                    <h5 id="todayOder">0</h5>
-                </div>
-
-                <div class="item">
-                    <h4>Doanh thu hôm nay</h4>
-                    <h5 id="todayReve">0đ</h5>
+                    </div>
                 </div>
             </div>
         </div>
-
-    </div>
     </div>
 
-    <!-- Modal -->
-    <div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-body">
-                <ul class="list-unstyled">
-                    <div class="modal-header">
-                        <a class="dropdown-item" href="#">
-                            <i class="bi bi-info-circle me-2"></i> Thông tin
-                        </a>
-                    </div>
-                    <div class="modal-header">
-                        <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
-                            <i class="bi bi-lock me-2"></i> Đổi mật khẩu
-                        </a>
-                    </div>
-                    <div class="modal-header">
-                        <li><a id="dangxuat" class="dropdown-item text-danger" href="#">
-                            <i class="bi bi-box-arrow-right me-2"></i> Đăng xuất
-                        </a></li>
-                    </div>
-                </ul>
-            </div>
-        </div>
-        </div>
-    </div>
-
-    <div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
+    <div id="orderModal" class="modal fade" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                <h5 class="modal-title" id="userModalLabel">Thông tin người dùng</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <h5 class="modal-title">Chi tiết đơn hàng hôm nay</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
-                <ul class="list-unstyled">
-                    <li><a class="dropdown-item" href="#">Hồ sơ</a></li>
-                    <li><a class="dropdown-item" href="#">Cài đặt</a></li>
-                    <li><a class="dropdown-item" href="#">Nhật ký hoạt động</a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a id="dangxuat" class="dropdown-item text-danger" href="#">Đăng xuất</a></li>
-                </ul>
-                </div>
+                <div class="modal-body"></div>
                 <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
                 </div>
-            </div>
             </div>
         </div>
+    </div>
+
+    <div id="userModal" class="modal fade" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Người dùng online</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="pendingOrdersModal" class="modal fade" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Đơn hàng chờ xác nhận</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/startbootstrap-sb-admin-2@5.0.7/js/sb-admin-2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script src="../../Database/config.js"></script>
     <script src="./TrangChu.js"></script>
     <script src="../Style_Sidebar/Sidebar.js"></script>
-
 </body>
+
 </html>

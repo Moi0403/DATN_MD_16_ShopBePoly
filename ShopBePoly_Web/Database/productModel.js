@@ -27,7 +27,7 @@ const productSchema = new mongoose.Schema({
             list_imgproduct: [String] 
         }
     ]
-});
+    }, { timestamps: true }); 
 
 
 const productModel = mongoose.models.product || mongoose.model('product', productSchema);
