@@ -210,11 +210,9 @@ public class ThanhToan extends AppCompatActivity implements VietQRPaymentHandler
     private Order createOrderObject(String name, String phone, String address, int paymentId, int bankId) {
         Order newOrder = new Order();
 
-        // Generate random order ID
         String id_order = generateRandomOrderId();
         newOrder.setIdOrder(id_order);
 
-        // Set user
         User user = new User();
         user.setId(userId);
         newOrder.setId_user(user);
@@ -229,51 +227,70 @@ public class ThanhToan extends AppCompatActivity implements VietQRPaymentHandler
         List<ProductInOrder> productsInOrderList = new ArrayList<>();
 
         if (jsonCart != null && !jsonCart.isEmpty()) {
-            List<Cart> cartList = new Gson().fromJson(jsonCart, new com.google.gson.reflect.TypeToken<List<Cart>>() {}.getType());
+            List<Cart> cartList = new Gson().fromJson(
+                    jsonCart, new com.google.gson.reflect.TypeToken<List<Cart>>() {}.getType()
+            );
 
             for (Cart cart : cartList) {
-                ProductInOrder productInOrder = new ProductInOrder();
+                // 1) Lấy finalPrice, nếu chưa có thì tính theo sale/gốc
+                int finalPrice = cart.getFinalPrice() > 0
+                        ? cart.getFinalPrice()
+                        : (cart.getIdProduct().getPrice_sale() > 0
+                        ? cart.getIdProduct().getPrice_sale()
+                        : cart.getIdProduct().getPrice());
 
+                // optional: cập nhật vào cart để lần sau có sẵn
+                cart.setFinalPrice(finalPrice);
+
+                ProductInOrder pio = new ProductInOrder();
                 Product productForOrder = new Product();
                 productForOrder.set_id(cart.getIdProduct().get_id());
+                pio.setId_product(productForOrder);
 
-                productInOrder.setId_product(productForOrder);
-                productInOrder.setQuantity(cart.getQuantity());
-                productInOrder.setPrice(cart.getIdProduct().getPrice());
-                productInOrder.setColor(cart.getColor());
-                productInOrder.setSize(cart.getSize()+"");
-                productInOrder.setImg(cart.getIdProduct().getAvt_imgproduct());
+                pio.setQuantity(cart.getQuantity());
+                pio.setColor(cart.getColor());
+                pio.setSize(cart.getSize() + "");
+                pio.setImg(cart.getIdProduct().getAvt_imgproduct());
 
-                totalAmount += cart.getIdProduct().getPrice() * cart.getQuantity();
-                productsInOrderList.add(productInOrder);
+                // 2) Nhét đúng giá hiển thị
+                pio.setPrice(finalPrice);
+                pio.setFinalPrice(finalPrice); // field bạn mới thêm
+
+                // 3) Cộng tổng bằng finalPrice
+                totalAmount += finalPrice * cart.getQuantity();
+
+                productsInOrderList.add(pio);
                 selectedCartIds.add(cart.get_id());
             }
         } else if (selectedProduct != null) {
-            ProductInOrder productInOrder = new ProductInOrder();
+            // Trường hợp mua 1 sản phẩm trực tiếp
+            int finalPrice = selectedProduct.getPrice_sale() > 0
+                    ? selectedProduct.getPrice_sale()
+                    : selectedProduct.getPrice();
 
+            ProductInOrder pio = new ProductInOrder();
             Product productForOrder = new Product();
             productForOrder.set_id(selectedProduct.get_id());
+            pio.setId_product(productForOrder);
 
-            productInOrder.setId_product(productForOrder);
-            productInOrder.setQuantity(quantity);
-            productInOrder.setPrice(selectedProduct.getPrice());
-            productInOrder.setColor(selectedColor);
-            productInOrder.setSize(selectedSize);
-            productInOrder.setImg(selectedProduct.getAvt_imgproduct());
+            pio.setQuantity(quantity);
+            pio.setColor(selectedColor);
+            pio.setSize(selectedSize);
+            pio.setImg(selectedProduct.getAvt_imgproduct());
 
-            totalAmount += selectedProduct.getPrice() * quantity;
-            productsInOrderList.add(productInOrder);
+            pio.setPrice(finalPrice);
+            pio.setFinalPrice(finalPrice);
+
+            totalAmount += finalPrice * quantity;
+            productsInOrderList.add(pio);
         }
 
         totalAmount += shippingFee;
         newOrder.setTotal(String.valueOf(totalAmount));
         newOrder.setProducts(productsInOrderList);
 
-        // Calculate total quantity
         int totalQuantity = 0;
-        for (ProductInOrder pio : productsInOrderList) {
-            totalQuantity += pio.getQuantity();
-        }
+        for (ProductInOrder p : productsInOrderList) totalQuantity += p.getQuantity();
         newOrder.setQuantity_order(totalQuantity);
 
         return newOrder;
@@ -408,7 +425,11 @@ public class ThanhToan extends AppCompatActivity implements VietQRPaymentHandler
         txtProductQuantity.setText("Số lượng: " + quantity);
         txtProductColor.setText(selectedColor);
         txtProductSize.setText("Size: " + (selectedSize.isEmpty() ? "Không có" : selectedSize));
-        productPrice = selectedProduct.getPrice();
+        if (selectedProduct.getPrice_sale() > 0) {
+            productPrice = selectedProduct.getPrice_sale();
+        } else {
+            productPrice = selectedProduct.getPrice();
+        }
         txtProductPrice.setText(formatPrice(productPrice));
         Glide.with(this)
                 .load(ApiClient.IMAGE_URL + selectedProduct.getAvt_imgproduct())
@@ -428,7 +449,10 @@ public class ThanhToan extends AppCompatActivity implements VietQRPaymentHandler
         if (jsonCart != null && !jsonCart.isEmpty()) {
             List<Cart> cartList = new Gson().fromJson(jsonCart, new com.google.gson.reflect.TypeToken<List<Cart>>() {}.getType());
             for (Cart cart : cartList) {
-                totalProductPrice += cart.getIdProduct().getPrice() * cart.getQuantity();
+                int price = cart.getIdProduct().getPrice_sale() > 0
+                        ? cart.getIdProduct().getPrice_sale()
+                        : cart.getIdProduct().getPrice();
+                totalProductPrice += price * cart.getQuantity();
             }
         } else if (selectedProduct != null) {
             totalProductPrice = productPrice * quantity;
@@ -498,7 +522,10 @@ public class ThanhToan extends AppCompatActivity implements VietQRPaymentHandler
     private void calculateTotalFromCart(List<Cart> cartList) {
         int totalProductPrice = 0;
         for (Cart cart : cartList) {
-            totalProductPrice += cart.getIdProduct().getPrice() * cart.getQuantity();
+            int price = cart.getIdProduct().getPrice_sale() > 0
+                    ? cart.getIdProduct().getPrice_sale()
+                    : cart.getIdProduct().getPrice();
+            totalProductPrice += price * cart.getQuantity();
         }
         txtProductTotal.setText(formatPrice(totalProductPrice));
         txtShippingFee.setText(formatPrice(shippingFee));

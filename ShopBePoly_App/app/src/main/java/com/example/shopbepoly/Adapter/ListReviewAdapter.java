@@ -1,7 +1,6 @@
 package com.example.shopbepoly.Adapter;
 
 import android.content.Context;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,14 +12,12 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.shopbepoly.DTO.ListReview;
 import com.example.shopbepoly.R;
-import com.google.gson.Gson;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 public class ListReviewAdapter extends RecyclerView.Adapter<ListReviewAdapter.ReviewViewHolder> {
 
@@ -58,58 +55,91 @@ public class ListReviewAdapter extends RecyclerView.Adapter<ListReviewAdapter.Re
     public void onBindViewHolder(@NonNull ReviewViewHolder holder, int position) {
         ListReview review = reviewList.get(position);
 
-        // Debug xem userId có dữ liệu gì
-        Log.d("ListReview", "Review data: " + new Gson().toJson(review));
+        // ✅ Hiển thị tên user
+        holder.tvName.setText(getDisplayName(review));
 
-// Set tên người dùng
-        if (review.getUserId() != null && review.getUserId().getUsername() != null) {
-            holder.tvName.setText(review.getUserId().getUsername());
+        // ✅ Hiển thị avatar user
+        String avatarUrl = getAvatarUrl(review);
+        if (avatarUrl != null) {
+            Glide.with(context)
+                    .load(avatarUrl)
+                    .placeholder(R.drawable.person)
+                    .error(R.drawable.person)
+                    .circleCrop()
+                    .into(holder.imgAvatar);
         } else {
-            holder.tvName.setText("Người dùng");
+            holder.imgAvatar.setImageResource(R.drawable.person);
         }
 
-// Rating
-        float ratingValue = 0f;
-        try {
-            ratingValue = (float) review.getRating();
-            if (ratingValue < 0f) ratingValue = 0f;
-            if (ratingValue > 5f) ratingValue = 5f;
-        } catch (Exception ignored) {}
-        holder.ratingBar.setRating(ratingValue); // hoặc 6 - ratingValue nếu API ngược
+        // ✅ Hiển thị rating
+        float ratingValue = review.getRating() > 5 ? 5f : Math.max(review.getRating(), 0f);
+        holder.ratingBar.setIsIndicator(true);
+        holder.ratingBar.setStepSize(0.5f);
+        holder.ratingBar.setNumStars(5);
+        holder.ratingBar.setRating(ratingValue);
 
+        // ✅ Hiển thị comment
         holder.tvComment.setText(review.getComment() != null ? review.getComment() : "");
 
-        // Ngày tạo
-        try {
-            SimpleDateFormat inputFormat =
-                    new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault());
-            SimpleDateFormat outputFormat =
-                    new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
-            String formattedDate = outputFormat.format(inputFormat.parse(review.getCreatedAt()));
-            holder.tvDate.setText(formattedDate);
-        } catch (Exception e) {
-            holder.tvDate.setText(review.getCreatedAt() != null ? review.getCreatedAt() : "");
-        }
+        // ✅ Hiển thị ngày
+        holder.tvDate.setText(formatIsoUtcToLocal(review.getCreatedAt()));
 
-        // Nút sửa — chỉ hiện nếu review thuộc về user hiện tại
-        boolean isMyReview = false;
-        if (currentUserId != null && review.getUserId() != null) {
-            String reviewUserId = review.getUserId().getId();
-            if (reviewUserId != null && reviewUserId.equals(currentUserId)) {
-                isMyReview = true;
-            }
-        }
+        // ✅ Chỉ chủ review mới được sửa
+        String reviewUserId = getReviewUserId(review);
+        boolean isMyReview = currentUserId != null && currentUserId.equals(reviewUserId);
 
         holder.btnEdit.setVisibility(isMyReview ? View.VISIBLE : View.GONE);
-
         if (isMyReview) {
             holder.btnEdit.setOnClickListener(v -> {
-                if (editClickListener != null) {
-                    editClickListener.onEditClick(review);
-                }
+                if (editClickListener != null) editClickListener.onEditClick(review);
             });
         } else {
             holder.btnEdit.setOnClickListener(null);
+        }
+    }
+
+    private String getDisplayName(ListReview r) {
+        if (r.getUserId() != null) {
+            if (r.getUserId().getName() != null && !r.getUserId().getName().isEmpty()) {
+                return r.getUserId().getName();
+            }
+            if (r.getUserId().getUsername() != null && !r.getUserId().getUsername().isEmpty()) {
+                return r.getUserId().getUsername();
+            }
+        }
+        return "Người dùng";
+    }
+
+    private String getAvatarUrl(ListReview r) {
+        if (r.getUserId() != null && r.getUserId().getAvatar() != null && !r.getUserId().getAvatar().isEmpty()) {
+            String avtUrl = r.getUserId().getAvatar();
+            if (!avtUrl.startsWith("http")) {
+                avtUrl = "https://yourdomain.com/" + avtUrl; // ⚠️ thay bằng domain API thật của bạn
+            }
+            return avtUrl;
+        }
+        return null;
+    }
+
+    private String getReviewUserId(ListReview r) {
+        if (r.getUserId() != null) {
+            return r.getUserId().getId();
+        }
+        return null;
+    }
+
+    private String formatIsoUtcToLocal(String isoUtc) {
+        if (isoUtc == null || isoUtc.isEmpty()) return "";
+        try {
+            java.text.SimpleDateFormat in = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX", java.util.Locale.US);
+            in.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+            java.util.Date d = in.parse(isoUtc);
+
+            java.text.SimpleDateFormat out = new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault());
+            out.setTimeZone(java.util.TimeZone.getDefault());
+            return out.format(d);
+        } catch (Exception e) {
+            return isoUtc;
         }
     }
 

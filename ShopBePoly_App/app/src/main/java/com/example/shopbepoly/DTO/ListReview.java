@@ -5,7 +5,7 @@ import java.util.Objects;
 
 public class ListReview {
     private String _id;
-    private User userId; // thông tin user (đã populate từ server)
+    private User userId;   // user (server populate)
     private String productId;
     private String orderId;
     private int rating;
@@ -13,12 +13,13 @@ public class ListReview {
     private List<String> images;
     private String createdAt;
 
-    public String get_id() {
+    // ---- Getter/Setter ----
+    public String getId() {  // ✅ thay get_id() -> getId()
         return _id;
     }
 
-    public void set_id(String _id) {
-        this._id = _id;
+    public void setId(String id) {
+        this._id = id;
     }
 
     public User getUserId() {
@@ -27,6 +28,10 @@ public class ListReview {
 
     public void setUserId(User userId) {
         this.userId = userId;
+    }
+
+    public String getUser() {   // ✅ tiện cho so sánh currentUserId
+        return userId != null ? userId.getId() : null;
     }
 
     public String getProductId() {
@@ -77,10 +82,11 @@ public class ListReview {
         this.createdAt = createdAt;
     }
 
+    // ---- equals & hashCode để merge không trùng _id ----
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (!(o instanceof ListReview)) return false;
         ListReview that = (ListReview) o;
         return _id != null && _id.equals(that._id);
     }

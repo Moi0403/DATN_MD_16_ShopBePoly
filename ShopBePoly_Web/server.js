@@ -2271,7 +2271,7 @@ router.post("/order_reviews/:orderId", async (req, res) => {
         _id: orderObjId,
         id_user: userObjId,
         "products.id_product": productObjId,
-        status: { $in: ["Đã giao", "delivered"] },
+        status: { $in: ["Đã giao hàng", "delivered"] },
       });
 
       if (!order) {

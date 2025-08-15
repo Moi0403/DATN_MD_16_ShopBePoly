@@ -108,6 +108,9 @@ public interface ApiService {
     @GET("list_order/{userId}")
     Call<List<Order>> getOrderList(@Path("userId") String userId);
 
+    @PUT("orders/{id}/status")
+    Call<Void> updateOrderStatus(@Path("id") String orderId, @Query("status") String newStatus);
+
     @DELETE("del_order/{id}")
     Call<Void> deleteOrder(@Path("id") String id);
 
@@ -144,37 +147,24 @@ public interface ApiService {
     @GET("chat-users")
     Call<List<User>> getChatUsers(@Query("adminId") String adminId);
 
-    // Gửi mã xác thực đến email người dùng
     @POST("send-verification-code")
     Call<Void> sendVerificationCode(@Body Map<String, String> body);
 
-    // Xác minh mã đã gửi
     @POST("verify-code")
     Call<Void> verifyCode(@Body Map<String, String> body);
 
-    // Gửi đánh giá sản phẩm
     @POST("add_review")
     Call<ResponseBody> addReview(@Body Review review);
 
-    // Gửi nhiều đánh giá cùng lúc (cho đơn hàng có nhiều sản phẩm)
     @POST("order_reviews/{orderId}")
     Call<ResponseBody> sendOrderReviews(
             @Path("orderId") String orderId,
             @Body List<Review> reviews
     );
 
-//    @GET("reviews/{productId}")
-//    Call<List<ListReview>> getReviews(@Path("productId") String productId);
-//
-//    @GET("reviews/{productId}")
-//    Call<List<ListReview>> getReviewsByStar(@Path("productId") String productId,
-//                                            @Query("rating") int rating);
-
-    // Lấy review theo sản phẩm
     @GET("reviews/{productId}")
     Call<List<ListReview>> getReviews(@Path("productId") String productId);
 
-    // Lấy review theo đơn hàng (nhiều sản phẩm)
     @GET("reviews/order/{orderId}")
     Call<List<ListReview>> getReviewsByOrder(@Path("orderId") String orderId);
 
@@ -185,12 +175,6 @@ public interface ApiService {
             @Query("comment") String comment
     );
 
-    @PUT("reviews/{id}")
-    Call<ListReview> updateReview(
-            @Path("id") String reviewId,
-            @Body ReviewUpdateRequest body
-    );
-
-    @GET("/reviews")
+    @GET("reviews")
     Call<List<ListReview>> getAllReviews();
 }

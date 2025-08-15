@@ -13,7 +13,7 @@ public class Cart implements Serializable {
     @SerializedName("img_cart")
     private String img_cart;
     private int quantity;
-    private int price;
+    private int price; // giá gốc trong DB (có thể là giá chưa KM)
     @SerializedName("size")
     private int size;
     private int total;
@@ -22,9 +22,11 @@ public class Cart implements Serializable {
     private String color;
     private boolean checked;
 
+    // ➕ Thêm field finalPrice (giá thực tế để hiển thị/thanh toán)
+    private int finalPrice;
+
     public Cart() {
     }
-
 
     public Cart(String _id, String idUser, Product idProduct, int quantity, int price, int size, int total, int status) {
         this._id = _id;
@@ -35,6 +37,15 @@ public class Cart implements Serializable {
         this.size = size;
         this.total = total;
         this.status = status;
+
+        // Tính finalPrice luôn khi khởi tạo
+        if (idProduct != null) {
+            this.finalPrice = (idProduct.getPrice_sale() > 0)
+                    ? idProduct.getPrice_sale()
+                    : idProduct.getPrice();
+        } else {
+            this.finalPrice = price;
+        }
     }
 
     public String getImg_cart() {
@@ -83,6 +94,13 @@ public class Cart implements Serializable {
 
     public void setIdProduct(Product idProduct) {
         this.idProduct = idProduct;
+
+        // Cập nhật lại finalPrice khi set sản phẩm mới
+        if (idProduct != null) {
+            this.finalPrice = (idProduct.getPrice_sale() > 0)
+                    ? idProduct.getPrice_sale()
+                    : idProduct.getPrice();
+        }
     }
 
     public int getQuantity() {
@@ -123,5 +141,14 @@ public class Cart implements Serializable {
 
     public void setChecked(boolean checked) {
         this.checked = checked;
+    }
+
+    // ➕ Getter & Setter cho finalPrice
+    public int getFinalPrice() {
+        return finalPrice;
+    }
+
+    public void setFinalPrice(int finalPrice) {
+        this.finalPrice = finalPrice;
     }
 }

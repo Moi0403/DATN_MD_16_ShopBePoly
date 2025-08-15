@@ -197,7 +197,7 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
         builder.setPositiveButton("Đúng", (dialog, which) -> {
             Order order1 = new Order();
             order1.set_id(order.get_id());
-            order1.setStatus("Đã giao");
+            order1.setStatus("Đã giao hàng");
             updateOrder(order1);
 
             Intent intent = new Intent(context, DanhGia.class);

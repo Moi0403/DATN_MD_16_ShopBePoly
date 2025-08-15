@@ -14,7 +14,9 @@ import com.bumptech.glide.Glide;
 import com.example.shopbepoly.DTO.Cart;
 import com.example.shopbepoly.R;
 
+import java.text.NumberFormat;
 import java.util.List;
+import java.util.Locale;
 
 public class PayAdapter extends RecyclerView.Adapter<PayAdapter.PayViewHolder> {
 
@@ -39,9 +41,23 @@ public class PayAdapter extends RecyclerView.Adapter<PayAdapter.PayViewHolder> {
 
         holder.txtProductName.setText(cart.getIdProduct().getNameproduct());
         holder.txtProductQuantity.setText("Số lượng: " + cart.getQuantity());
-        holder.txtProductColor.setText(cart.getColor());
+        holder.txtProductColor.setText("Màu: " + cart.getColor());
         holder.txtProductSize.setText("Size: " + cart.getSize());
-        holder.txtProductPrice.setText(cart.getPrice() + " VND");
+
+        // Ưu tiên hiển thị giá sale nếu có, ngược lại hiển thị giá gốc
+        int displayPrice = cart.getIdProduct().getPrice_sale() > 0
+                ? cart.getIdProduct().getPrice_sale()
+                : cart.getIdProduct().getPrice();
+
+        // Lưu giá vào cart (nếu cần dùng cho tính toán)
+        cart.setPrice(displayPrice);
+
+        // Format sang VNĐ
+        NumberFormat formatter = NumberFormat.getInstance(new Locale("vi", "VN"));
+        String formattedPrice = formatter.format(displayPrice);
+
+        holder.txtProductPrice.setText(formattedPrice + " VND");
+        holder.txtProductPrice.setTextColor(android.graphics.Color.RED);
 
         Glide.with(context).load(cart.getImg_cart()).into(holder.imgProduct);
     }

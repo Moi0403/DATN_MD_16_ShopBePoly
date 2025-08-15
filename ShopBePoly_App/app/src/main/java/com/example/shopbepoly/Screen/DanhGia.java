@@ -129,7 +129,8 @@ public class DanhGia extends AppCompatActivity {
                             }
                         }
 
-                        // Chuyển sang màn danh sách đánh giá sản phẩm đầu tiên
+                        // ...
+                        // Chuyển sang màn danh sách tất cả đánh giá
                         if (!reviewList.isEmpty()) {
                             navigateToAllReviews();
                         } else {
@@ -174,7 +175,8 @@ public class DanhGia extends AppCompatActivity {
 
     private void navigateToAllReviews() {
         Intent intent = new Intent(DanhGia.this, DanhSachDanhGia.class);
-        intent.putExtra("showAll", true);
+        intent.putExtra("showAllReviews", true);
+        intent.putExtra("refreshAfterAdd", true); // <-- thêm flag này
         startActivity(intent);
         finish();
     }

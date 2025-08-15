@@ -5,7 +5,13 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.os.Bundle;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.TextUtils;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.StrikethroughSpan;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -25,8 +31,10 @@ import com.example.shopbepoly.Adapter.CartAdapter;
 import com.example.shopbepoly.Adapter.ImageSliderAdapter;
 import com.example.shopbepoly.DTO.Cart;
 import com.example.shopbepoly.DTO.Favorite;
+import com.example.shopbepoly.DTO.ListReview;
 import com.example.shopbepoly.DTO.Product;
 import com.example.shopbepoly.DTO.Variation;
+import com.example.shopbepoly.DanhSachDanhGia;
 import com.example.shopbepoly.R;
 import com.example.shopbepoly.ThanhToan;
 import com.example.shopbepoly.fragment.FavoriteFragment;
@@ -46,8 +54,8 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class ChiTietSanPham extends AppCompatActivity {
-    private ImageView btnBack, btnFavorite, btnDecrease, btnIncrease, imgProduct, btnCart;
-    private TextView tvQuantity, tvProductName, tvPrice, tvDescription, tvKho,tvCateProductName;
+    private ImageView btnBack, btnFavorite, btnDecrease, btnIncrease, imgProduct, btnCart, star1, star2, star3, star4, star5;
+    private TextView tvQuantity, tvProductName, tvPrice, tvDescription, tvKho,tvCateProductName, tvSalePrice, tvOriginalPrice, tvDiscount;
     private AppCompatButton btnAddToCart;
     private TextView size36, size37, size38, size39, size40, size41, size42, size43, size44, size45;
     private int quantity = 1;
@@ -208,6 +216,7 @@ public class ChiTietSanPham extends AppCompatActivity {
         tvProductName = findViewById(R.id.tvProductName);
         tvCateProductName = findViewById(R.id.tvCateProductName);
         tvPrice = findViewById(R.id.tvPrice);
+        tvDiscount = findViewById(R.id.tvDiscount);
         tvKho = findViewById(R.id.tvKho);
         tvDescription = findViewById(R.id.tvDescription);
         btnAddToCart = findViewById(R.id.btnAddToCart);
@@ -224,7 +233,26 @@ public class ChiTietSanPham extends AppCompatActivity {
         size43 = findViewById(R.id.size43);
         size44 = findViewById(R.id.size44);
         size45 = findViewById(R.id.size45);
+
+        star1 = findViewById(R.id.star1_);
+        star2 = findViewById(R.id.star2_);
+        star3 = findViewById(R.id.star3_);
+        star4 = findViewById(R.id.star4_);
+        star5 = findViewById(R.id.star5_);
+
+        star1.setOnClickListener(starClick);
+        star2.setOnClickListener(starClick);
+        star3.setOnClickListener(starClick);
+        star4.setOnClickListener(starClick);
+        star5.setOnClickListener(starClick);
     }
+
+    View.OnClickListener starClick = view -> {
+        Intent intent = new Intent(ChiTietSanPham.this, DanhSachDanhGia.class);
+        intent.putExtra("productId", product.get_id()); // truyền id sản phẩm
+        startActivity(intent);
+    };
+
 
     private void setupClickListeners() {
         btnBack.setOnClickListener(v -> finish());
@@ -539,8 +567,51 @@ public class ChiTietSanPham extends AppCompatActivity {
         if (product != null) {
             tvProductName.setText(product.getNameproduct());
             tvDescription.setText(product.getDescription());
-            tvCateProductName.setText("("+ product.getCategoryName()+")");
-            tvPrice.setText(String.format("%,d đ", product.getPrice()));
+            tvCateProductName.setText("(" + product.getCategoryName() + ")");
+
+            int originalPrice = product.getPrice(); // Giá gốc
+            int price_sale = product.getPrice_sale(); // Giá sau khi giảm
+            int discount = product.getSale(); // % giảm giá
+
+            if (discount > 0) {
+                // Giá gốc gạch ngang, màu xám
+                SpannableString originalPriceStr = new SpannableString(product.getFormattedPrice());
+                originalPriceStr.setSpan(new StrikethroughSpan(), 0, originalPriceStr.length(), 0);
+                originalPriceStr.setSpan(
+                        new ForegroundColorSpan(getResources().getColor(android.R.color.darker_gray)),
+                        0,
+                        originalPriceStr.length(),
+                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                );
+
+                // Giá sale màu đỏ
+                SpannableString finalPriceStr = new SpannableString(String.format("%,d đ", price_sale));
+                finalPriceStr.setSpan(
+                        new ForegroundColorSpan(getResources().getColor(R.color.heart_color)),
+                        0,
+                        finalPriceStr.length(),
+                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                );
+
+                // Hiển thị giá gốc + giá sale
+                tvPrice.setText(TextUtils.concat(originalPriceStr, "  ", finalPriceStr));
+
+                // Hiển thị % giảm giá
+                tvDiscount.setVisibility(View.VISIBLE);
+                tvDiscount.setText(discount + "%");
+
+            } else {
+                // Không giảm giá → giá gốc màu đỏ
+                SpannableString redPrice = new SpannableString(product.getFormattedPrice());
+                redPrice.setSpan(
+                        new ForegroundColorSpan(getResources().getColor(R.color.heart_color)),
+                        0,
+                        redPrice.length(),
+                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                );
+                tvPrice.setText(redPrice);
+                tvDiscount.setVisibility(View.GONE);
+            }
         }
     }
 
