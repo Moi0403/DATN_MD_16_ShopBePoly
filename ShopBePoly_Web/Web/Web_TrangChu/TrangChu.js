@@ -349,23 +349,25 @@ function renderPendingOrdersTable() {
                     <th>Ngày đặt</th>
                     <th>Tổng tiền</th>
                     <th>Trạng thái</th>
-                    <th>Xử lý </th>
+                    <th>Xử lý</th>
                 </tr>
             </thead>
             <tbody>
-    `;
+  `;
 
   pendingOrdersData.forEach(order => {
+    const totalQuantity = order.products.reduce((acc, p) => acc + (p.quantity || 0), 0);
+
     tableHtml += `
             <tr>
-                <td>${order._id}</td>
+                <td>${order.id_order}</td>
                 <td>${order.id_user?.name || 'N/A'}</td>
-                <td>${order.products.reduce((acc, p) => acc + (p.quantity || 0), 0)}</td>
+                <td>${totalQuantity}</td>
                 <td>${order.date ? new Date(order.date).toLocaleString('vi-VN') : '-'}</td>
                 <td>${Number(order.total || 0).toLocaleString('vi-VN')} ₫</td>
                 <td>${order.status}</td>
                 <td>
-                    <button class="btn btn-sm btn-primary process-order-btn" data-order-id="${order._id}">Xử lý đơn hàng</button>
+                    <button class="btn btn-sm btn-primary process-order-btn" data-order-id="${order.id_order}">Xử lý đơn hàng</button>
                 </td>
             </tr>
         `;
@@ -375,7 +377,7 @@ function renderPendingOrdersTable() {
             </tbody>
         </table>
     </div>
-    `;
+  `;
 
   modalBody.innerHTML = tableHtml;
 
@@ -388,6 +390,7 @@ function renderPendingOrdersTable() {
     });
   });
 }
+
 
 document.querySelector('.border-left-danger')?.addEventListener('click', async () => {
   const pendingModal = new bootstrap.Modal(document.getElementById('pendingOrdersModal'));
