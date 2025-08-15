@@ -11,7 +11,7 @@ const hienthiOrder = async () => {
     const filteredOrders = data.filter(order => order.status === "Đã hủy");
 
     filteredOrders.forEach((order, index) => {
-      const { _id, id_user, products, total, date, status } = order;
+      const { _id,id_order, id_user, products, total, date, status } = order;
 
       const tongSoLuong = products.reduce((sum, product) => sum + (product.quantity || 0), 0);
       const statusColor = `<span style="color: green; font-weight: bold;">${status}</span>`;
@@ -22,6 +22,7 @@ const hienthiOrder = async () => {
       tr.setAttribute('data-order-id', _id);
       tr.innerHTML = `
         <td>${index + 1}</td> <!-- STT -->
+        <td>${id_order}</td>
         <td>${id_user?.name || 'Không có'}<br>
             <small>SĐT: ${id_user?.phone_number || '---'}</small>
         </td>
@@ -31,7 +32,6 @@ const hienthiOrder = async () => {
         <td>${statusColor}</td> <!-- Trạng thái -->
         <td>
             <button class="btn btn-info btn-sm mt-1" onclick="xemChiTietDon('${_id}')">Chi tiết</button>
-            <button class="btn btn-primary btn-sm mt-1" onclick="confirmOrder('${_id}')">Xác nhận</button>
         </td>
       `;
       tbody.appendChild(tr);
@@ -52,7 +52,7 @@ const xemChiTietDon = async (orderId) => {
     const order = data.find(o => o._id === orderId);
     if (!order) return;
 
-    const { id_user, products, total, address, date, pay, status, cancelReason } = order;
+    const {id_order, id_user, products, total, address, date, pay, status, cancelReason } = order;
 
     const productHtml = products.map(product => {
       const productData = product.id_product || {};
@@ -86,6 +86,7 @@ const xemChiTietDon = async (orderId) => {
     }).join('');
 
     const bodyHtml = `
+      <p><strong>Mã đơn: </strong>${id_order}</p>
       <p><strong>Người đặt:</strong> ${id_user?.name || '---'}</p>
       <p><strong>SĐT:</strong> ${id_user?.phone_number || ''}</p>
       <p><strong>Địa chỉ:</strong> ${address}</p>

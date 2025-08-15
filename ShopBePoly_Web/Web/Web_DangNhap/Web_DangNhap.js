@@ -45,6 +45,16 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
 
         // Kiểm tra role
         if (data.user.role === 1 || data.user.role === 2) {
+            localStorage.setItem('userData', JSON.stringify({
+                username: data.user.username,
+                name: data.user.name,
+                avt_user: data.user.avt_user, // Đảm bảo URL ảnh đầy đủ
+                role: data.user.role,
+                email: data.user.email,
+                birthday: data.user.birthday,
+                gender: data.user.gender,
+                phone_number: data.user.phone_number
+            }));
             if (rememberMe) {
                 localStorage.setItem('rememberedUsername', username);
                 localStorage.setItem('rememberedPassword', password);
@@ -52,7 +62,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
                 localStorage.removeItem('rememberedUsername');
                 localStorage.removeItem('rememberedPassword');
             }
-            localStorage.setItem('userRole', data.user.role);
+           
             alert(`Chào mừng ${data.user.name}, bạn đã đăng nhập thành công.`);
             window.location.href = '../Web_TrangChu/TrangChu.html';
             location.replace("../Web_TrangChu/TrangChu.html");

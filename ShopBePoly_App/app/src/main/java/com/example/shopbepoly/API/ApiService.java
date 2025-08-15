@@ -185,6 +185,12 @@ public interface ApiService {
             @Query("comment") String comment
     );
 
+    @PUT("reviews/{id}")
+    Call<ListReview> updateReview(
+            @Path("id") String reviewId,
+            @Body ReviewUpdateRequest body
+    );
+
     @GET("/reviews")
     Call<List<ListReview>> getAllReviews();
 }
