@@ -10,6 +10,7 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -587,78 +588,193 @@ public class ChiTietSanPham extends AppCompatActivity {
             String code = entry.getKey();
             String name = entry.getValue();
 
-            // Mỗi lần tạo layout MỚI hoàn toàn
+            // Tạo container cho mỗi màu
             LinearLayout itemLayout = new LinearLayout(this);
             itemLayout.setOrientation(LinearLayout.VERTICAL);
             itemLayout.setGravity(Gravity.CENTER);
-            itemLayout.setPadding(16, 0, 16, 0);
+            itemLayout.setPadding(20, 16, 20, 16); // Tăng padding để dễ chạm
 
+            // Tạo container cho vòng tròn màu với viền
+            FrameLayout colorContainer = new FrameLayout(this);
+            int containerSize = getResources().getDimensionPixelSize(R.dimen.color_container_size); // 60dp
+            LinearLayout.LayoutParams containerParams = new LinearLayout.LayoutParams(containerSize, containerSize);
+            containerParams.setMargins(8, 8, 8, 8);
+            colorContainer.setLayoutParams(containerParams);
+
+            // Tạo viền ngoài (border)
+            View borderView = new View(this);
+            FrameLayout.LayoutParams borderParams = new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT
+            );
+            borderView.setLayoutParams(borderParams);
+            borderView.setBackgroundResource(R.drawable.color_border_unselected);
+            borderView.setTag("border_" + code);
+
+            // Tạo vòng tròn màu bên trong
             View colorCircle = new View(this);
-            int size = getResources().getDimensionPixelSize(R.dimen.color_circle_size);
-            LinearLayout.LayoutParams circleParams = new LinearLayout.LayoutParams(size, size);
-            circleParams.setMargins(8, 8, 8, 4);
+            int circleSize = getResources().getDimensionPixelSize(R.dimen.color_circle_inner_size); // 48dp
+            FrameLayout.LayoutParams circleParams = new FrameLayout.LayoutParams(circleSize, circleSize);
+            circleParams.gravity = Gravity.CENTER;
             colorCircle.setLayoutParams(circleParams);
-            colorCircle.setBackgroundResource(R.drawable.color_circle_background);
-            colorCircle.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor(code)));
+            colorCircle.setBackgroundResource(R.drawable.color_circle_inner);
+
+            // Set màu cho vòng tròn
+            try {
+                int color = Color.parseColor(code);
+                colorCircle.setBackgroundTintList(ColorStateList.valueOf(color));
+            } catch (IllegalArgumentException e) {
+                // Nếu không parse được màu, dùng màu mặc định
+                colorCircle.setBackgroundTintList(ColorStateList.valueOf(Color.GRAY));
+                Log.w("ColorParsing", "Cannot parse color: " + code);
+            }
+
             colorCircle.setTag(code);
 
+            // Thêm shadow cho vòng tròn màu
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+                colorCircle.setElevation(4f);
+            }
+
+            // Tạo text tên màu
             TextView tvName = new TextView(this);
             tvName.setText(name);
             tvName.setTextSize(12);
-            tvName.setTextColor(Color.BLACK);
+            tvName.setTextColor(getResources().getColor(R.color.color_name_text));
             tvName.setGravity(Gravity.CENTER);
+            tvName.setTypeface(null, android.graphics.Typeface.NORMAL);
+            LinearLayout.LayoutParams textParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+            );
+            textParams.setMargins(0, 8, 0, 0);
+            tvName.setLayoutParams(textParams);
 
-            // CẬP NHẬT SỰ KIỆN CLICK MÀU MỚI
-            colorCircle.setOnClickListener(v -> {
-                String clickedCode = (String) v.getTag();
+            // Thêm hiệu ứng ripple cho Android 5.0+
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+                colorContainer.setForeground(getDrawable(R.drawable.ripple_effect));
+            }
 
-                if (clickedCode.equals(selectedColorCode)) {
-                    // Bỏ chọn màu - reset về trạng thái ban đầu
-                    selectedColorCode = "";
-                    selectedColorName = "";
-                    selectedSize = null; // Reset size khi bỏ chọn màu
-                    highlightSelectedColor("");
-                    showDefaultProductImages();
-                    resetSizeSelections();
-                } else {
-                    // Chọn màu mới
-                    selectedColorCode = clickedCode;
-                    selectedColorName = name;
-                    selectedSize = null; // Reset size khi chọn màu mới
-                    highlightSelectedColor(clickedCode);
-                    updateImageByColor(clickedCode);
-                    resetSizeSelections(); // Reset size selection UI
-                }
-
-                // Cập nhật size và kho sau khi thay đổi màu
-                showAvailableSizes();
-                updateStockDisplay(); // Quan trọng: cập nhật hiển thị kho
+            // Sự kiện click cho container
+            colorContainer.setOnClickListener(v -> {
+                String clickedCode = (String) colorCircle.getTag();
+                handleColorSelection(clickedCode, name);
             });
 
-            // Add view vào layout cha
-            itemLayout.addView(colorCircle);
+            // Thêm các view vào container
+            colorContainer.addView(borderView);
+            colorContainer.addView(colorCircle);
+
+            itemLayout.addView(colorContainer);
             itemLayout.addView(tvName);
             layoutColorContainer.addView(itemLayout);
         }
+
+        // Highlight màu đã chọn nếu có
+        if (!selectedColorCode.isEmpty()) {
+            highlightSelectedColor(selectedColorCode);
+        }
     }
 
+    // Cải thiện phương thức highlightSelectedColor()
     private void highlightSelectedColor(String selectedCode) {
         for (int i = 0; i < layoutColorContainer.getChildCount(); i++) {
             View itemLayout = layoutColorContainer.getChildAt(i);
             if (itemLayout instanceof LinearLayout) {
                 LinearLayout layout = (LinearLayout) itemLayout;
-                View colorCircle = layout.getChildAt(0);
-                String tagCode = (String) colorCircle.getTag();
+                FrameLayout colorContainer = (FrameLayout) layout.getChildAt(0);
 
-                if (selectedCode != null && selectedCode.equals(tagCode)) {
-                    colorCircle.setBackgroundResource(R.drawable.color_circle_selected);
-                } else {
-                    colorCircle.setBackgroundResource(R.drawable.color_circle_background);
+                // Tìm borderView và colorCircle
+                View borderView = null;
+                View colorCircle = null;
+                TextView nameText = null;
+
+                for (int j = 0; j < colorContainer.getChildCount(); j++) {
+                    View child = colorContainer.getChildAt(j);
+                    String tag = (String) child.getTag();
+                    if (tag != null && tag.startsWith("border_")) {
+                        borderView = child;
+                    } else if (tag != null && !tag.startsWith("border_")) {
+                        colorCircle = child;
+                    }
+                }
+
+                // Tìm nameText
+                if (layout.getChildCount() > 1) {
+                    View secondChild = layout.getChildAt(1);
+                    if (secondChild instanceof TextView) {
+                        nameText = (TextView) secondChild;
+                    }
+                }
+
+                if (colorCircle != null) {
+                    String tagCode = (String) colorCircle.getTag();
+
+                    if (selectedCode != null && selectedCode.equals(tagCode)) {
+                        // Màu được chọn - highlight
+                        if (borderView != null) {
+                            borderView.setBackgroundResource(R.drawable.color_border_selected);
+                        }
+                        if (nameText != null) {
+                            nameText.setTextColor(getResources().getColor(R.color.color_name_selected));
+                            nameText.setTypeface(null, android.graphics.Typeface.BOLD);
+                        }
+
+                        // Thêm hiệu ứng scale nhẹ
+                        colorContainer.animate()
+                                .scaleX(1.1f)
+                                .scaleY(1.1f)
+                                .setDuration(200)
+                                .start();
+
+                    } else {
+                        // Màu không được chọn - bỏ highlight
+                        if (borderView != null) {
+                            borderView.setBackgroundResource(R.drawable.color_border_unselected);
+                        }
+                        if (nameText != null) {
+                            nameText.setTextColor(getResources().getColor(R.color.color_name_text));
+                            nameText.setTypeface(null, android.graphics.Typeface.NORMAL);
+                        }
+
+                        // Reset scale
+                        colorContainer.animate()
+                                .scaleX(1.0f)
+                                .scaleY(1.0f)
+                                .setDuration(200)
+                                .start();
+                    }
                 }
             }
         }
     }
 
+    // Phương thức xử lý chọn màu
+    private void handleColorSelection(String clickedCode, String colorName) {
+        if (clickedCode.equals(selectedColorCode)) {
+            // Bỏ chọn màu - reset về trạng thái ban đầu
+            selectedColorCode = "";
+            selectedColorName = "";
+            selectedSize = null; // Reset size khi bỏ chọn màu
+            highlightSelectedColor("");
+            showDefaultProductImages();
+            resetSizeSelections();
+            Toast.makeText(this, "Đã bỏ chọn màu", Toast.LENGTH_SHORT).show();
+        } else {
+            // Chọn màu mới
+            selectedColorCode = clickedCode;
+            selectedColorName = colorName;
+            selectedSize = null; // Reset size khi chọn màu mới
+            highlightSelectedColor(clickedCode);
+            updateImageByColor(clickedCode);
+            resetSizeSelections(); // Reset size selection UI
+            Toast.makeText(this, "Đã chọn màu: " + colorName, Toast.LENGTH_SHORT).show();
+        }
+
+        // Cập nhật size và kho sau khi thay đổi màu
+        showAvailableSizes();
+        updateStockDisplay(); // Quan trọng: cập nhật hiển thị kho
+    }
     private void updateImageByColor(String code) {
         if (product == null || product.getVariations() == null) return;
 
@@ -737,12 +853,5 @@ public class ChiTietSanPham extends AppCompatActivity {
             imageSliderAdapter.updateImages(finalImages); // chỉ update
             viewPagerProductImages.setCurrentItem(0, false);
         }
-    }
-
-    // THÊM PHƯƠNG THỨC HELPER ĐỂ RESET SIZE SELECTION KHI CẦN
-    private void resetSizeSelection() {
-        selectedSize = null;
-        resetSizeSelections();
-        updateStockDisplay();
     }
 }

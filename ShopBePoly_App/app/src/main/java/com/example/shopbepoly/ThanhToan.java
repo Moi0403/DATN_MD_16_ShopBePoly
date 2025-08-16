@@ -58,7 +58,7 @@ public class ThanhToan extends AppCompatActivity {
     private User currentUser;
     private int quantity = 1;
     private int productPrice = 0;
-    private int shippingFee = 30000;
+    private int shippingFee = 20000; // Mặc định phí giao hàng tiêu chuẩn Hà Nội
     private String selectedSize = "", selectedColor = "", userId;
     private List<String> selectedCartIds = new ArrayList<>();
 
@@ -96,6 +96,8 @@ public class ThanhToan extends AppCompatActivity {
 
         radioStandardShipping.setChecked(true);
 
+        shippingFee = 20000;
+
         getDataFromIntent();
         selectedColor = getIntent().getStringExtra("color");
         setupListeners();
@@ -121,6 +123,12 @@ public class ThanhToan extends AppCompatActivity {
 
             if (name.isEmpty() || phone.isEmpty() || address.isEmpty()) {
                 Toast.makeText(this, "Vui lòng điền đầy đủ thông tin khách hàng", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // Kiểm tra địa chỉ có thuộc Hà Nội không
+            if (!isHanoiAddress(address)) {
+                Toast.makeText(this, "Hiện tại chỉ giao hàng trong nội thành Hà Nội", Toast.LENGTH_LONG).show();
                 return;
             }
 
@@ -427,6 +435,8 @@ public class ThanhToan extends AppCompatActivity {
                     txtCustomerName.setText(address.getName());
                     txtCustomerPhone.setText(address.getPhone());
                     txtCustomerAddress.setText(address.getAddress());
+                    // Kiểm tra địa chỉ sau khi load
+                    updateShippingFeeBasedOnAddress();
                     return;
                 }
             } catch (Exception e) {
@@ -441,6 +451,8 @@ public class ThanhToan extends AppCompatActivity {
             txtCustomerName.setText(firstAddress.getName());
             txtCustomerPhone.setText(firstAddress.getPhone());
             txtCustomerAddress.setText(firstAddress.getAddress());
+            // Kiểm tra địa chỉ sau khi load
+            updateShippingFeeBasedOnAddress();
             return;
         }
 
@@ -500,41 +512,153 @@ public class ThanhToan extends AppCompatActivity {
         txtShippingFee.setText(formatPrice(shippingFee));
         txtTotalPayment.setText(formatPrice(totalProductPrice + shippingFee));
     }
+    private boolean isHanoiInnerCity(String address) {
+        if (address == null || address.isEmpty()) {
+            return false;
+        }
 
+        address = address.toLowerCase().trim();
+
+        // Các quận nội thành Hà Nội
+        String[] innerDistricts = {
+                "ba đình", "hoàn kiếm", "hai bà trưng", "đống đa",
+                "tây hồ", "cầu giấy", "thanh xuân", "hoàng mai",
+                "long biên", "bắc từ liêm", "nam từ liêm", "hà đông"
+        };
+
+        for (String district : innerDistricts) {
+            if (address.contains(district)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+    // Phương thức kiểm tra địa chỉ có thuộc Hà Nội không
+    private boolean isHanoiAddress(String address) {
+        if (address == null || address.isEmpty()) {
+            return false;
+        }
+
+        address = address.toLowerCase().trim();
+
+        // Kiểm tra từ khóa Hà Nội
+        boolean hasHanoiKeyword = address.contains("hà nội") ||
+                address.contains("ha noi") ||
+                address.contains("hanoi") ||
+                address.contains("hn");
+
+        // Kiểm tra có thuộc nội thành hoặc ngoại thành không
+        boolean isInnerOrOuter = isHanoiInnerCity(address) || isHanoiOuterCity(address);
+
+        return hasHanoiKeyword || isInnerOrOuter;
+    }
+
+    // Cập nhật phương thức tính phí vận chuyển theo khu vực Hà Nội
+    private int calculateShippingFeeByAddress(String address, boolean isFastShipping) {
+        if (address == null || address.isEmpty()) {
+            // Mặc định là phí giao hàng nội thành
+            return isFastShipping ? 30000 : 20000;
+        }
+
+        // Kiểm tra nội thành Hà Nội
+        if (isHanoiInnerCity(address)) {
+            // Phí giao hàng nội thành Hà Nội
+            return isFastShipping ? 30000 : 20000; // Giao nhanh: 30k, Tiêu chuẩn: 20k
+        }
+        // Kiểm tra ngoại thành Hà Nội
+        else if (isHanoiOuterCity(address)) {
+            // Phí giao hàng ngoại thành Hà Nội (cao hơn nội thành)
+            return isFastShipping ? 50000 : 35000; // Giao nhanh: 50k, Tiêu chuẩn: 35k
+        }
+        // Kiểm tra có từ khóa Hà Nội nhưng không xác định được quận/huyện
+        else if (address.toLowerCase().contains("hà nội") ||
+                address.toLowerCase().contains("ha noi") ||
+                address.toLowerCase().contains("hanoi")) {
+            // Áp dụng phí nội thành làm mặc định
+            return isFastShipping ? 30000 : 20000;
+        }
+        // Không thuộc Hà Nội
+        else {
+            return 0; // Không giao hàng
+        }
+    }
+    private boolean isHanoiOuterCity(String address) {
+        if (address == null || address.isEmpty()) {
+            return false;
+        }
+
+        address = address.toLowerCase().trim();
+
+        // Các huyện ngoại thành Hà Nội
+        String[] outerDistricts = {
+                "sóc sơn", "đông anh", "gia lâm", "mê linh",
+                "thanh trì", "thường tín", "hoài đức", "đan phượng",
+                "mỹ đức", "ứng hòa", "thạch thất", "quốc oai",
+                "chương mỹ", "thanh oai", "phú xuyên", "ba vì"
+        };
+
+        for (String district : outerDistricts) {
+            if (address.contains(district)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+    // Cập nhật phương thức tính phí vận chuyển theo khu vực Hà Nội
     private void updateShippingFeeBasedOnAddress() {
         String address = txtCustomerAddress.getText().toString();
         boolean isFast = radioFastShipping.isChecked();
+
+        // Kiểm tra xem địa chỉ có thuộc Hà Nội không
+        if (!isHanoiAddress(address)) {
+            // Hiển thị thông báo không giao hàng
+            if (txtShippingNote != null) {
+                txtShippingNote.setText("⚠️ Hiện tại chỉ giao hàng trong địa bàn Hà Nội");
+                txtShippingNote.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
+            }
+
+            // Vô hiệu hóa nút đặt hàng
+            btnDatHang.setEnabled(false);
+            btnDatHang.setText("Không giao hàng đến khu vực này");
+
+            // Set phí vận chuyển = 0
+            shippingFee = 0;
+            txtShippingFee.setText("0₫");
+
+            // Tính lại tổng tiền
+            updateTotalPriceDisplay();
+
+            return;
+        }
+
+        // Nếu là địa chỉ Hà Nội hợp lệ
         shippingFee = calculateShippingFeeByAddress(address, isFast);
 
+        // Kích hoạt lại nút đặt hàng
+        btnDatHang.setEnabled(true);
+        btnDatHang.setText("Đặt hàng");
+
+        // Hiển thị thông báo phí giao hàng dựa trên khu vực
         if (txtShippingNote != null) {
-            txtShippingNote.setText(
-                    address.toLowerCase().contains("hà nội") || address.toLowerCase().contains("hcm")
-                            ? "Áp dụng phí nội thành"
-                            : "Áp dụng phí ngoại thành");
+            String noteText = "";
+            int noteColor = android.R.color.holo_green_dark;
+
+            if (isHanoiInnerCity(address)) {
+                noteText = "✓ Giao hàng nội thành Hà Nội";
+            } else if (isHanoiOuterCity(address)) {
+                noteText = "✓ Giao hàng ngoại thành Hà Nội";
+                noteColor = android.R.color.holo_orange_dark; // Màu cam cho ngoại thành
+            } else {
+                noteText = "✓ Giao hàng trong địa bàn Hà Nội";
+            }
+
+            txtShippingNote.setText(noteText);
+            txtShippingNote.setTextColor(getResources().getColor(noteColor));
         }
 
         updateTotalPriceDisplay();
-    }
-
-    private int calculateShippingFeeByAddress(String address, boolean isFastShipping) {
-        if (address == null || address.isEmpty()) {
-            return isFastShipping ? 50000 : 30000;
-        }
-
-        address = address.toLowerCase();
-
-        boolean isNear = address.contains("hà nội") || address.contains("ha noi") || address.contains("tp.hcm")
-                || address.contains("hồ chí minh") || address.contains("ho chi minh") || address.contains("tphcm")
-                || address.contains("thành phố hồ chí minh") || address.contains("hải phòng")
-                || address.contains("đà nẵng") || address.contains("bình dương") || address.contains("đồng nai");
-
-        boolean isFar = address.contains("sơn la") || address.contains("điện biên") || address.contains("cao bằng")
-                || address.contains("hà giang") || address.contains("lào cai") || address.contains("kon tum")
-                || address.contains("gia lai") || address.contains("phú yên");
-
-        if (isNear) return isFastShipping ? 40000 : 20000;
-        else if (isFar) return isFastShipping ? 60000 : 40000;
-        else return isFastShipping ? 50000 : 30000;
     }
 
     @Override
