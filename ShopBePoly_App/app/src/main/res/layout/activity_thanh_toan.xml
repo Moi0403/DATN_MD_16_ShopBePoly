@@ -293,13 +293,13 @@
                     android:textColor="#222"/>
 
                 <RadioButton
-                    android:id="@+id/radioVietQR"
+                    android:id="@+id/radioZaloPay"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Thanh toán qua VietQR"
+                    android:text="Thanh toán qua ZaloPay"
                     android:textSize="14sp"
                     android:textColor="#222"
-                    android:drawableStart="@drawable/ic_vietqr"
+                    android:drawableStart="@drawable/ic_zalopay"
                     android:drawablePadding="8dp"/>
 
                 <RadioButton
@@ -349,9 +349,9 @@
                 </RadioGroup>
             </LinearLayout>
 
-            <!-- Thông tin VietQR -->
+            <!-- Thông tin ZaloPay -->
             <LinearLayout
-                android:id="@+id/layoutVietQRInfo"
+                android:id="@+id/layoutZaloPayInfo"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
@@ -365,15 +365,15 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Thanh toán an toàn qua VietQR"
+                    android:text="Thanh toán an toàn qua ZaloPay"
                     android:textSize="14sp"
-                    android:textColor="#2196F3"
+                    android:textColor="#007AFF"
                     android:textStyle="bold" />
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="• Quét mã QR để chuyển khoản ngay lập tức\n• Hỗ trợ tất cả ngân hàng Việt Nam\n• Giao dịch được bảo mật cao\n• Phí giao dịch: 0₫"
+                    android:text="• Ví điện tử hàng đầu Việt Nam\n• Thanh toán nhanh chóng, bảo mật\n• Hỗ trợ nhiều ngân hàng liên kết\n• Phí giao dịch: 0₫\n• Được bảo hiểm 100%"
                     android:textSize="12sp"
                     android:textColor="#666"
                     android:layout_marginTop="4dp" />
