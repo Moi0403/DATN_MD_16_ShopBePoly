@@ -32,9 +32,14 @@
 
     <dimen name="color_circle_size">40dp</dimen>
 
-    <color name="primary_color">#FF6200EE</color>
+<!--    <color name="primary_color">#FF6200EE</color>-->
     <color name="gray">#666666</color>
     <color name="gray_light">#E0E0E0</color>
     <color name="black">#000000</color>
     <color name="light_blue">#E3F2FD</color>
+
+    <color name="primary_color">#FF6B35</color> <!-- Màu chủ đạo của app -->
+    <color name="color_name_text">#666666</color> <!-- Màu text tên màu bình thường -->
+    <color name="color_name_selected">#FF6B35</color> <!-- Màu text khi được chọn -->
+    <color name="ripple_color">#33FF6B35</color> <!-- Màu hiệu ứng ripple -->
 </resources>

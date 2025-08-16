@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ... các dimen hiện có ... -->
+
+    <!-- THÊM CÁC DIMEN MỚI CHO COLOR SELECTION (nếu chưa có) -->
+    <dimen name="color_container_size">40dp</dimen>
+    <dimen name="color_circle_inner_size">30dp</dimen>
+
+    <!-- color_circle_size đã có rồi, không cần thêm -->
+</resources>
