@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.util.Log;
 import android.view.View;
 import android.widget.*;
@@ -20,6 +21,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.example.shopbepoly.API.ApiClient;
 import com.example.shopbepoly.API.ApiService;
+import com.example.shopbepoly.API.CreateOrder;
 import com.example.shopbepoly.DTO.Address;
 import com.example.shopbepoly.DTO.Cart;
 import com.example.shopbepoly.DTO.Order;
@@ -27,6 +29,9 @@ import com.example.shopbepoly.DTO.Product;
 import com.example.shopbepoly.DTO.ProductInOrder;
 import com.example.shopbepoly.DTO.User;
 import com.google.gson.Gson;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -40,8 +45,12 @@ import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import vn.zalopay.sdk.Environment;
+import vn.zalopay.sdk.ZaloPayError;
+import vn.zalopay.sdk.ZaloPaySDK;
+import vn.zalopay.sdk.listeners.PayOrderListener;
 
-public class ThanhToan extends AppCompatActivity implements VietQRPaymentHandler.PaymentCallback {
+public class ThanhToan extends AppCompatActivity {
 
     private static final String TAG = "ThanhToan";
 
@@ -53,8 +62,7 @@ public class ThanhToan extends AppCompatActivity implements VietQRPaymentHandler
     private String selectedSize = "", selectedColor = "", userId;
     private List<String> selectedCartIds = new ArrayList<>();
 
-    // VietQR Payment Handler
-    private VietQRPaymentHandler vietQRHandler;
+    // ZaloPay
     private String pendingOrderId;
     private Order pendingOrder;
 
@@ -62,8 +70,8 @@ public class ThanhToan extends AppCompatActivity implements VietQRPaymentHandler
             txtProductTotal, txtShippingFee, txtTotalPayment, txtCustomerName, txtCustomerAddress, txtCustomerPhone, txtShippingNote;
     private ImageView imgProduct, img_next_address;
     private RadioGroup radioGroupShipping, radioGroupPaymentMain;
-    private RadioButton radioStandardShipping, radioFastShipping, radioCOD, radioVietQR, radioAppBank;
-    private LinearLayout layoutVietQRInfo;
+    private RadioButton radioStandardShipping, radioFastShipping, radioCOD, radioZaloPay, radioAppBank;
+    private LinearLayout layoutZaloPayInfo;
     private Button btnDatHang;
 
     private static final int REQ_ADDRESS = 3001;
@@ -76,11 +84,16 @@ public class ThanhToan extends AppCompatActivity implements VietQRPaymentHandler
         SharedPreferences prefs = getSharedPreferences("LoginPrefs", MODE_PRIVATE);
         userId = prefs.getString("userId", "");
 
-        // Initialize VietQR handler
-        vietQRHandler = new VietQRPaymentHandler(this, this);
-
         initViews();
         loadUserInfo();
+
+        StrictMode.ThreadPolicy policy = new
+                StrictMode.ThreadPolicy.Builder().permitAll().build();
+        StrictMode.setThreadPolicy(policy);
+
+        // ZaloPay SDK Init
+        ZaloPaySDK.init(2553, Environment.SANDBOX);
+
         radioStandardShipping.setChecked(true);
 
         getDataFromIntent();
@@ -121,10 +134,10 @@ public class ThanhToan extends AppCompatActivity implements VietQRPaymentHandler
                 return;
             }
 
-            // Check if VietQR is selected
-            if (selectedPaymentId == R.id.radioVietQR) {
-                // Show VietQR payment dialog
-                showVietQRPayment(name, phone, address, selectedPaymentId, selectedBankId);
+            // Check if ZaloPay is selected
+            if (selectedPaymentId == R.id.radioZaloPay) {
+                // Process ZaloPay payment
+                processZaloPayPayment(name, phone, address, selectedPaymentId, selectedBankId);
             } else {
                 // Process normal order
                 createNewOrder(name, phone, address, selectedPaymentId, selectedBankId);
@@ -152,9 +165,9 @@ public class ThanhToan extends AppCompatActivity implements VietQRPaymentHandler
         radioFastShipping = findViewById(R.id.radioFastShipping);
         radioGroupPaymentMain = findViewById(R.id.radioGroupPaymentMain);
         radioCOD = findViewById(R.id.radioCOD);
-        radioVietQR = findViewById(R.id.radioVietQR);
+        radioZaloPay = findViewById(R.id.radioZaloPay);
         radioAppBank = findViewById(R.id.radioAppBank);
-        layoutVietQRInfo = findViewById(R.id.layoutVietQRInfo);
+        layoutZaloPayInfo = findViewById(R.id.layoutZaloPayInfo);
         btnDatHang = findViewById(R.id.btnDatHang);
     }
 
@@ -168,13 +181,13 @@ public class ThanhToan extends AppCompatActivity implements VietQRPaymentHandler
 
             // Hide all optional layouts first
             layoutBankOptions.setVisibility(View.GONE);
-            layoutVietQRInfo.setVisibility(View.GONE);
+            layoutZaloPayInfo.setVisibility(View.GONE);
             ((RadioGroup) findViewById(R.id.radioGroupBank)).clearCheck();
 
             if (checkedId == R.id.radioAppBank) {
                 layoutBankOptions.setVisibility(View.VISIBLE);
-            } else if (checkedId == R.id.radioVietQR) {
-                layoutVietQRInfo.setVisibility(View.VISIBLE);
+            } else if (checkedId == R.id.radioZaloPay) {
+                layoutZaloPayInfo.setVisibility(View.VISIBLE);
             }
         });
 
@@ -182,9 +195,9 @@ public class ThanhToan extends AppCompatActivity implements VietQRPaymentHandler
     }
 
     /**
-     * Show VietQR payment dialog
+     * Process ZaloPay payment
      */
-    private void showVietQRPayment(String name, String phone, String address, int paymentId, int bankId) {
+    private void processZaloPayPayment(String name, String phone, String address, int paymentId, int bankId) {
         try {
             // Create order first to get order ID
             pendingOrder = createOrderObject(name, phone, address, paymentId, bankId);
@@ -193,15 +206,103 @@ public class ThanhToan extends AppCompatActivity implements VietQRPaymentHandler
             // Calculate total amount
             int totalAmount = Integer.parseInt(pendingOrder.getTotal());
 
-            // Show VietQR payment dialog
-            if (vietQRHandler != null) {
-                vietQRHandler.showPaymentDialog(pendingOrderId, totalAmount, name);
-            }
+            // Create ZaloPay order
+            createZaloPayOrder(totalAmount);
 
         } catch (Exception e) {
-            Log.e(TAG, "Error showing VietQR payment", e);
-            Toast.makeText(this, "Lỗi khởi tạo thanh toán: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "Error processing ZaloPay payment", e);
+            Toast.makeText(this, "Lỗi khởi tạo thanh toán ZaloPay: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
+    }
+
+    /**
+     * Create ZaloPay order and initiate payment
+     */
+    private void createZaloPayOrder(int amount) {
+        try {
+            CreateOrder orderApi = new CreateOrder();
+            JSONObject data = orderApi.createOrder(String.valueOf(amount));
+
+            if (data != null) {
+                String code = data.getString("return_code");
+
+                if (code.equals("1")) {
+                    // Success - get token to pay
+                    String token = data.getString("zp_trans_token");
+
+                    // Show progress
+                    btnDatHang.setEnabled(false);
+                    btnDatHang.setText("Đang xử lý ZaloPay...");
+
+                    // Call ZaloPay SDK to pay
+                    ZaloPaySDK.getInstance().payOrder(ThanhToan.this, token, "demozpdk://app", new PayOrderListener() {
+                        @Override
+                        public void onPaymentSucceeded(String s, String s1, String s2) {
+                            Log.d(TAG, "ZaloPay payment succeeded: " + s);
+
+                            runOnUiThread(() -> {
+                                // Update payment status
+                                if (pendingOrder != null) {
+                                    pendingOrder.setPay("ZaloPay - Đã thanh toán");
+                                    createOrderViaAPI(pendingOrder);
+                                }
+                            });
+                        }
+
+                        @Override
+                        public void onPaymentCanceled(String s, String s1) {
+                            Log.d(TAG, "ZaloPay payment cancelled: " + s);
+
+                            runOnUiThread(() -> {
+                                btnDatHang.setEnabled(true);
+                                btnDatHang.setText("Đặt hàng");
+                                Toast.makeText(ThanhToan.this, "Đã hủy thanh toán ZaloPay", Toast.LENGTH_SHORT).show();
+
+                                // Reset pending order
+                                pendingOrder = null;
+                                pendingOrderId = null;
+                            });
+                        }
+
+                        @Override
+                        public void onPaymentError(ZaloPayError zaloPayError, String s, String s1) {
+                            Log.e(TAG, "ZaloPay payment error: " + zaloPayError.toString() + " - " + s);
+
+                            runOnUiThread(() -> {
+                                btnDatHang.setEnabled(true);
+                                btnDatHang.setText("Đặt hàng");
+                                Toast.makeText(ThanhToan.this, "Lỗi thanh toán ZaloPay: " + zaloPayError.toString(), Toast.LENGTH_LONG).show();
+
+                                // Reset pending order
+                                pendingOrder = null;
+                                pendingOrderId = null;
+                            });
+                        }
+                    });
+
+                } else {
+                    // Error from ZaloPay API
+                    String message = data.has("return_message") ? data.getString("return_message") : "Lỗi không xác định";
+                    Toast.makeText(this, "Lỗi tạo đơn hàng ZaloPay: " + message, Toast.LENGTH_LONG).show();
+                    Log.e(TAG, "ZaloPay API Error: " + data.toString());
+                }
+            } else {
+                Toast.makeText(this, "Không thể kết nối đến ZaloPay", Toast.LENGTH_SHORT).show();
+            }
+
+        } catch (JSONException e) {
+            Log.e(TAG, "JSON parsing error", e);
+            Toast.makeText(this, "Lỗi xử lý dữ liệu ZaloPay", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Log.e(TAG, "ZaloPay order creation error", e);
+            Toast.makeText(this, "Lỗi tạo đơn hàng ZaloPay: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        ZaloPaySDK.getInstance().onResult(intent);
     }
 
     /**
@@ -279,48 +380,9 @@ public class ThanhToan extends AppCompatActivity implements VietQRPaymentHandler
         return newOrder;
     }
 
-    // VietQR Payment Callback Methods
-    @Override
-    public void onPaymentConfirmed(String orderId, int amount) {
-        Log.d(TAG, "Payment confirmed for order: " + orderId);
-
-        if (pendingOrder != null) {
-            // Update payment status
-            pendingOrder.setPay("VietQR - Đã thanh toán");
-
-            // Create order via API
-            createOrderViaAPI(pendingOrder);
-        } else {
-            Toast.makeText(this, "Lỗi xử lý đơn hàng", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    @Override
-    public void onPaymentCancelled() {
-        Log.d(TAG, "Payment cancelled by user");
-        Toast.makeText(this, "Đã hủy thanh toán", Toast.LENGTH_SHORT).show();
-
-        // Reset pending order
-        pendingOrder = null;
-        pendingOrderId = null;
-    }
-
-    @Override
-    public void onPaymentTimeout() {
-        Log.d(TAG, "Payment timeout");
-        Toast.makeText(this, "Phiên thanh toán đã hết hạn", Toast.LENGTH_LONG).show();
-
-        // Reset pending order
-        pendingOrder = null;
-        pendingOrderId = null;
-    }
-
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (vietQRHandler != null) {
-            vietQRHandler.cleanup();
-        }
     }
 
     private void getDataFromIntent() {
@@ -534,8 +596,8 @@ public class ThanhToan extends AppCompatActivity implements VietQRPaymentHandler
 
     private String getPaymentMethodText(int paymentId, int bankId){
         try {
-            if (paymentId == R.id.radioVietQR) {
-                return "VietQR - Chuyển khoản";
+            if (paymentId == R.id.radioZaloPay) {
+                return "ZaloPay - Ví điện tử";
             } else if (paymentId == R.id.radioAppBank){
                 RadioButton selectedBank = findViewById(bankId);
                 return "Chuyển khoản - " + (selectedBank != null ? selectedBank.getText().toString() : "Ngân Hàng");
