@@ -36,6 +36,8 @@ const VerifyCode = require('./Database/verifyCode');
 const { userSockets, initWebSocket } = require('./serverWS');
 const Banner = require('./Database/bannerModel');
 const reviewModel = require("./Database/reviewModel");
+const voucherModel = require('./Database/voucherModel');
+
 
 const uri = COMOMJS.uri;
 
@@ -2684,4 +2686,93 @@ router.get('/orders/pending', async (req, res) => {
         res.status(500).json({ error: 'Lỗi server khi lấy đơn hàng cần xác nhận' });
     }
 });
-app.use(express.json()); 
+
+router.get('/list_voucher', async (req, res) => {
+    try {
+        const vouchers = await voucherModel.find();
+        res.json({ success: true, vouchers });
+    } catch (error) {
+        console.error('Lỗi khi lấy danh sách voucher:', error);
+        res.status(500).json({ success: false, message: 'Lỗi server' });
+    }
+});
+
+router.post('/add_voucher', async (req, res) => {
+  try {
+    const {
+      code,
+      description,
+      discountType,
+      discountValue,
+      minOrderValue,
+      usageLimit,
+      startDate,
+      endDate,
+    } = req.body;
+
+    if (!code || !discountType || !discountValue || !startDate || !endDate) {
+      return res.status(400).json({ message: "Vui lòng nhập đầy đủ thông tin!" });
+    }
+
+    const newVoucher = new voucherModel({
+      code,
+      description,
+      discountType,
+      discountValue,
+      minOrderValue,
+      usageLimit,
+      startDate,
+      endDate,
+    });
+
+    await newVoucher.save();
+    res.status(201).json({ message: "Thêm voucher thành công!", voucher: newVoucher });
+  } catch (error) {
+    console.error("Lỗi thêm voucher:", error);
+    res.status(500).json({ message: "Lỗi server", error });
+  }
+});
+router.delete('/del_voucher/:id', async (req, res) => {
+    try {
+        let id = req.params.id;
+        const kq = await voucherModel.deleteOne({ _id: id });
+        if (kq) {
+            console.log('Xóa voucher thành công');
+            let pro = await voucherModel.find();
+            res.send(pro);
+        } else {
+            res.send('Xóa voucher không thành công');
+        }
+    } catch (error) {
+        console.error('Lỗi khi xóa:', error);
+        res.status(500).json({ error: 'Lỗi server khi xóa voucher' });
+    }
+});
+router.put('/update_voucher_status/:id', async (req, res) => {
+    try {
+        const voucherId = req.params.id;
+        const { isActive } = req.body;
+        const result = await voucherModel.findByIdAndUpdate(voucherId, { isActive, updatedAt: new Date() }, { new: true });
+        if (!result) {
+            return res.status(404).json({ success: false, error: 'Voucher không tồn tại' });
+        }
+        res.status(200).json({ success: true, voucher: result });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+router.put('/update_usage_limit/:id', async (req, res) => {
+    try {
+        const voucherId = req.params.id;
+        const { usageLimit } = req.body;
+        const result = await voucherModel.findByIdAndUpdate(voucherId, { usageLimit }, { new: true });
+        if (!result) {
+            return res.status(404).json({ success: false, error: 'Voucher không tồn tại' });
+        }
+        res.status(200).json({ success: true, voucher: result });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+app.use(express.json());

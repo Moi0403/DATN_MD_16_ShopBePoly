@@ -133,12 +133,21 @@
                         String userId = loginResponse.getUser().getId();
                         WebSocketManager.connect(userId);
 
+                        int role = loginResponse.getUser().getRole();
+                        Log.d("LOGIN_DEBUG", "Role nhận được: " + role);
+
+                        if (role == 1) {
+                            Toast.makeText(LoginScreen.this, "Đăng nhập nhân viên", Toast.LENGTH_SHORT).show();
+                            
+                        } else {
+                            Toast.makeText(LoginScreen.this, "Đăng nhập thành công, role = " + role, Toast.LENGTH_SHORT).show();
+                            startActivity(new Intent(LoginScreen.this, HomeNavScreen.class));
+                        }
+
+
 
                         // Log kiểm tra
                         Log.d("LoginScreen", "Saved userId = " + loginResponse.getUser().getId());
-
-                        Toast.makeText(LoginScreen.this, "Đăng nhập thành công", Toast.LENGTH_SHORT).show();
-                        startActivity(new Intent(LoginScreen.this, HomeNavScreen.class));
                         finish();
                     } else {
                         Toast.makeText(LoginScreen.this, "Sai tài khoản hoặc mật khẩu", Toast.LENGTH_SHORT).show();

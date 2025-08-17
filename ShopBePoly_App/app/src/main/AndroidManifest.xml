@@ -20,7 +20,11 @@
         android:roundIcon="@drawable/logo"
         android:supportsRtl="true"
         android:theme="@style/Theme.ShopBePoly"
+        android:usesCleartextTraffic="true"
         tools:targetApi="31">
+        <activity
+            android:name=".Screen.Main_Staff"
+            android:exported="false" />
         <activity
             android:name=".TimDonHang"
             android:exported="false" />
@@ -79,15 +83,17 @@
             android:name=".ThanhToan"
             android:exported="true"
             android:label="Merchant Demo"
-            android:launchMode="singleTask"
-            >
+            android:launchMode="singleTask">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
+
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="demozpdk" android:host="app" />
-            </intent-filter>
 
+                <data
+                    android:host="app"
+                    android:scheme="demozpdk" />
+            </intent-filter>
         </activity>
         <activity
             android:name=".Chitietdonhang"

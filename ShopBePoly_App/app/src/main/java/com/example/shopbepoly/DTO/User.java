@@ -13,6 +13,7 @@ public class User implements Serializable {
     private String password;
     private String name;
     private String address;
+    @SerializedName("role")
     private int role;
     @SerializedName("avt_user")
     private String avatar;
