@@ -115,6 +115,7 @@ public class AddressListActivity extends AppCompatActivity implements AddressAda
         address.setDefault(true);
         saveAddresses();
         prefs.edit().putString("default_address_" + userId, gson.toJson(address)).apply();
+        adapter.updateAddressList(addressList);
         SharedPreferences loginPrefs = getSharedPreferences("LoginPrefs", MODE_PRIVATE);
         String userId = loginPrefs.getString("userId", "");
         ApiService apiService = ApiClient.getApiService();
@@ -140,6 +141,7 @@ public class AddressListActivity extends AppCompatActivity implements AddressAda
         address.setDefault(true);
         saveAddresses();
         prefs.edit().putString("default_address_" + userId, gson.toJson(address)).apply();
+        adapter.updateAddressList(addressList);
 
         // Trả về cho màn thanh toán
         Intent intent = new Intent();
@@ -154,39 +156,53 @@ public class AddressListActivity extends AppCompatActivity implements AddressAda
         if (resultCode == RESULT_OK && data != null) {
             Address address = gson.fromJson(data.getStringExtra("address_result"), Address.class);
             if (requestCode == REQ_ADD) {
-                // Nếu chưa có địa chỉ nào là mặc định, set địa chỉ mới làm mặc định
-                boolean hasDefault = false;
-                for (Address a : addressList) {
-                    if (a.isDefault()) {
-                        hasDefault = true;
-                        break;
+                // Nếu địa chỉ mới được set làm mặc định, bỏ mặc định tất cả địa chỉ khác
+                if (address.isDefault()) {
+                    for (Address a : addressList) {
+                        a.setDefault(false);
                     }
                 }
+                // Nếu chưa có địa chỉ nào là mặc định, set địa chỉ mới làm mặc định
+                boolean hasDefault = addressList.stream().anyMatch(Address::isDefault);
                 if (!hasDefault) {
                     address.setDefault(true);
-                    addressList.add(address);
-                    saveAddresses();
-                    adapter.notifyDataSetChanged();
-                    // Trả về cho màn thanh toán nếu là địa chỉ đầu tiên và là mặc định
+                }
+                addressList.add(address);
+                saveAddresses();
+                // Cập nhật địa chỉ mặc định trong SharedPreferences
+                Address currentDefault = addressList.stream().filter(Address::isDefault).findFirst().orElse(null);
+                if (currentDefault != null) {
+                    prefs.edit().putString("default_address_" + userId, gson.toJson(currentDefault)).apply();
+                }
+                adapter.updateAddressList(addressList);
+                // Trả về cho màn thanh toán nếu là địa chỉ mặc định
+                if (address.isDefault()) {
                     Intent intent = new Intent();
                     intent.putExtra("address_result", gson.toJson(address));
                     setResult(RESULT_OK, intent);
                     finish();
-                } else {
-                    addressList.add(address);
-                    saveAddresses();
-                    adapter.notifyDataSetChanged();
                 }
             } else if (requestCode == REQ_EDIT) {
+                // Tìm địa chỉ cũ để cập nhật
                 for (int i = 0; i < addressList.size(); i++) {
                     if (addressList.get(i).getId().equals(address.getId())) {
-                        if (address.isDefault()) for (Address a : addressList) a.setDefault(false);
+                        // Nếu địa chỉ vừa sửa được set làm mặc định, bỏ mặc định tất cả địa chỉ khác
+                        if (address.isDefault()) {
+                            for (Address a : addressList) {
+                                a.setDefault(false);
+                            }
+                        }
                         addressList.set(i, address);
                         break;
                     }
                 }
                 saveAddresses();
-                adapter.notifyDataSetChanged();
+                // Cập nhật địa chỉ mặc định trong SharedPreferences
+                Address currentDefault = addressList.stream().filter(Address::isDefault).findFirst().orElse(null);
+                if (currentDefault != null) {
+                    prefs.edit().putString("default_address_" + userId, gson.toJson(currentDefault)).apply();
+                }
+                adapter.updateAddressList(addressList);
                 // Nếu địa chỉ vừa sửa là mặc định thì trả về cho màn thanh toán
                 if (address.isDefault()) {
                     Intent intent = new Intent();

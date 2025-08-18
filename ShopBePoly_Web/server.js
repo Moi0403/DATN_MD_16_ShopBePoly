@@ -1366,7 +1366,10 @@ router.put('/updateOrderStatus/:orderId', async (req, res) => {
             return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
         }
 
-        if (status === 'Đang giao hàng') {
+        // Tạo thông báo khi đơn hàng được giao thành công
+        console.log('Order status update:', status);
+        if (status === 'Đã giao' || status === 'delivered' || status === 'Đã giao hàng') {
+            console.log('Creating delivery success notification for order:', orderId);
             const newNotification = new notificationModel({
                 userId: order.id_user._id,
                 title: 'Giao hàng thành công',
@@ -1383,6 +1386,7 @@ router.put('/updateOrderStatus/:orderId', async (req, res) => {
             });
 
             await newNotification.save();
+            console.log('Notification created successfully');
         }
 
         return res.status(200).json({ message: 'Cập nhật trạng thái thành công', order });
@@ -2772,6 +2776,89 @@ router.put('/update_usage_limit/:id', async (req, res) => {
         res.status(200).json({ success: true, voucher: result });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+router.get('/orders/delivering', async (req, res) => {
+    try {
+        console.log('Fetching delivering orders...');
+        const deliveringOrders = await orderModel.find({ status: 'Đang giao hàng' })
+            .populate('id_user', 'name phone_number email avt_user') 
+            .populate({
+                path: 'products.id_product',
+                select: 'nameproduct avt_imgproduct id_category', 
+                populate: { path: 'id_category', select: 'title' }
+            })
+            .sort({ date: -1 }); // Sắp xếp theo ngày tạo mới nhất
+
+        console.log('Found delivering orders:', deliveringOrders.length);
+        console.log('Order IDs:', deliveringOrders.map(o => ({ id: o._id, status: o.status, orderCode: o.id_order })));
+
+        res.json({
+            success: true,
+            count: deliveringOrders.length,
+            orders: deliveringOrders
+        });
+    } catch (error) {
+        console.error('Lỗi khi lấy danh sách đơn hàng đang giao hàng:', error);
+        res.status(500).json({ 
+            success: false,
+            error: 'Lỗi server khi lấy danh sách đơn hàng đang giao hàng' 
+        });
+    }
+});
+
+router.put('/updateOrderStatus/:orderId', async (req, res) => {
+    try {
+        const orderId = req.params.orderId;
+        const { status, cancelReason } = req.body;
+
+        if (!status) {
+            return res.status(400).json({ message: 'Trạng thái không được để trống' });
+        }
+
+        const updateData = { status };
+        if (cancelReason) {
+            updateData.cancelReason = cancelReason;
+        }
+
+        await orderModel.findByIdAndUpdate(
+            orderId,
+            updateData,
+            { new: true, runValidators: true }
+        );
+
+        const order = await orderModel.findById(orderId)
+            .populate('id_user')
+            .populate('products.id_product');
+
+        if (!order) {
+            return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+        }
+
+        if (status === 'Đã giao' || status === 'delivered' || status === 'Đã giao hàng') {
+            const newNotification = new notificationModel({
+                userId: order.id_user._id,
+                title: 'Giao hàng thành công',
+                content: `Đơn hàng <font color='#2196F3'>${order.id_order}</font> của bạn đã được giao thành công. Cảm ơn bạn đã mua sắm tại ShopBePoly!`,
+                type: 'delivery',
+                isRead: false,
+                createdAt: new Date(),
+                orderId: order._id,
+                products: order.products.map(item => ({
+                    id_product: item.id_product?._id,
+                    productName: item.id_product?.nameproduct || '',
+                    img: item.id_product?.avt_imgproduct || ''
+                }))
+            });
+
+            await newNotification.save();
+        }
+
+        return res.status(200).json({ message: 'Cập nhật trạng thái thành công', order });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Lỗi máy chủ nội bộ', error: error.message });
     }
 });
 

@@ -50,7 +50,7 @@ public class DonMua extends AppCompatActivity {
                     switch (position) {
                         case 0: tab.setText("Chờ xác nhận"); break;
                         case 1: tab.setText("Đang giao"); break;
-                        case 2: tab.setText("Đã giao"); break;
+                        case 2: tab.setText("Đã giao hàng"); break;
                         case 3: tab.setText("Đã hủy"); break;
                     }
                 }).attach();

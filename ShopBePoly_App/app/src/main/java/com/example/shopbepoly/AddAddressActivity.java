@@ -226,6 +226,10 @@ public class AddAddressActivity extends AppCompatActivity {
         return addressDetail + ", " + ward + ", " + district + ", " + province;
     }
 
+    private boolean isValidPhoneNumber(String phone) {
+        return phone != null && phone.length() == 10 && phone.matches("\\d+") && phone.startsWith("0");
+    }
+
     private void saveAddress() {
         String name = edtName.getText().toString().trim();
         String phone = edtPhone.getText().toString().trim();
@@ -233,8 +237,16 @@ public class AddAddressActivity extends AppCompatActivity {
         String label = spinnerLabel.getSelectedItem().toString();
         boolean isDefault = checkboxDefault.isChecked();
         String fullAddress = buildFullAddress(addressDetail);
+
+        // Kiểm tra thông tin bắt buộc
         if (name.isEmpty() || phone.isEmpty() || addressDetail.isEmpty() || spinnerProvince.getSelectedItem() == null || spinnerDistrict.getSelectedItem() == null || spinnerWard.getSelectedItem() == null) {
             Toast.makeText(this, "Vui lòng nhập đầy đủ thông tin!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Kiểm tra số điện thoại phải đủ 10 số và bắt đầu bằng 0
+        if (!isValidPhoneNumber(phone)) {
+            Toast.makeText(this, "Số điện thoại phải có đúng 10 chữ số và bắt đầu bằng số 0!", Toast.LENGTH_SHORT).show();
             return;
         }
         Address newAddress = new Address();
@@ -244,6 +256,7 @@ public class AddAddressActivity extends AppCompatActivity {
         newAddress.setAddress(fullAddress);
         newAddress.setLabel(label);
         newAddress.setDefault(isDefault);
+
         Intent resultIntent = new Intent();
         resultIntent.putExtra("address_result", gson.toJson(newAddress));
         setResult(RESULT_OK, resultIntent);

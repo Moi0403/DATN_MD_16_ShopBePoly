@@ -51,6 +51,7 @@ dependencies {
     implementation libs.activity
     implementation fileTree(dir: 'C:\\Users\\Dungg\\Desktop\\Zalopay', include: ['*.aar', '*.jar'], exclude: [])
     implementation fileTree(dir: 'C:\\Users\\DELL\\OneDrive\\Desktop\\Zalopay', include: ['*.aar', '*.jar'], exclude: [])
+    implementation fileTree(dir: 'C:\\Users\\abc\\Desktop\\Zalopay', include: ['*.aar', '*.jar'], exclude: [])
 
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'

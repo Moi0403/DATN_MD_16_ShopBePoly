@@ -12,6 +12,7 @@
     import com.example.shopbepoly.API.ApiClient;
     import com.example.shopbepoly.API.ApiService;
     import com.example.shopbepoly.API.WebSocketManager;
+    import com.example.shopbepoly.AppStaff;
     import com.example.shopbepoly.DTO.LoginRequest;
     import com.example.shopbepoly.DTO.LoginResponse;
     import com.example.shopbepoly.R;
@@ -133,21 +134,19 @@
                         String userId = loginResponse.getUser().getId();
                         WebSocketManager.connect(userId);
 
+                        // Log kiểm tra
+                        Log.d("LoginScreen", "Saved userId = " + loginResponse.getUser().getId());
+
                         int role = loginResponse.getUser().getRole();
                         Log.d("LOGIN_DEBUG", "Role nhận được: " + role);
 
                         if (role == 1) {
                             Toast.makeText(LoginScreen.this, "Đăng nhập nhân viên", Toast.LENGTH_SHORT).show();
-                            
+                            startActivity(new Intent(LoginScreen.this, AppStaff.class));
                         } else {
-                            Toast.makeText(LoginScreen.this, "Đăng nhập thành công, role = " + role, Toast.LENGTH_SHORT).show();
                             startActivity(new Intent(LoginScreen.this, HomeNavScreen.class));
+                            Toast.makeText(LoginScreen.this, "Đăng nhập thành công, role = " + role, Toast.LENGTH_SHORT).show();
                         }
-
-
-
-                        // Log kiểm tra
-                        Log.d("LoginScreen", "Saved userId = " + loginResponse.getUser().getId());
                         finish();
                     } else {
                         Toast.makeText(LoginScreen.this, "Sai tài khoản hoặc mật khẩu", Toast.LENGTH_SHORT).show();
