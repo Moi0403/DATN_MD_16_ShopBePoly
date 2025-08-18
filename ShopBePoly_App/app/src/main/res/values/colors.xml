@@ -42,4 +42,10 @@
     <color name="color_name_text">#666666</color> <!-- Màu text tên màu bình thường -->
     <color name="color_name_selected">#FF6B35</color> <!-- Màu text khi được chọn -->
     <color name="ripple_color">#33FF6B35</color> <!-- Màu hiệu ứng ripple -->
+
+    <color name="orange">#FF6B35</color>
+    <color name="light_orange">#FFF3E0</color>
+    <color name="light_gray">#E0E0E0</color>
+    <color name="dark_gray">#333333</color>
+    <color name="text_hint">#888888</color>
 </resources>

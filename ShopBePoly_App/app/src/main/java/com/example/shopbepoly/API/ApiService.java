@@ -199,4 +199,20 @@ public interface ApiService {
 
     @GET("/reviews")
     Call<List<ListReview>> getAllReviews();
+
+    // Voucher endpoints
+    @GET("vouchers")
+    Call<List<Voucher>> getVouchers();
+
+    @POST("add_voucher")
+    Call<Voucher> addVoucher(@Body Voucher voucher);
+
+    @DELETE("del_voucher/{id}")
+    Call<List<Voucher>> deleteVoucher(@Path("id") String voucherId);
+
+//    @PUT("update_voucher_status/{id}")
+//    Call<Voucher> updateVoucherStatus(@Path("id") String voucherId, @Body VoucherStatusUpdate status);
+//
+//    @PUT("update_usage_limit/{id}")
+//    Call<Voucher> updateUsageLimit(@Path("id") String voucherId, @Body UsageLimitUpdate usageLimit);
 }
