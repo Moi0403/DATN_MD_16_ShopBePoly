@@ -54,12 +54,23 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
     private List<Order> ordList;
     private String userId;
     private Runnable onOrderCancelled;
+    private boolean isStaff; // Thêm tham số để phân biệt staff và user
 
     public OrderAdapter(Context context, List<Order> list, Runnable onOrderCancelled) {
         this.context = context;
         this.ordList = list;
         this.onOrderCancelled = onOrderCancelled;
         this.userId = getUserIdFromPreferences();
+        this.isStaff = false; // Mặc định là user
+    }
+
+    // Constructor mới cho staff
+    public OrderAdapter(Context context, List<Order> list, Runnable onOrderCancelled, boolean isStaff) {
+        this.context = context;
+        this.ordList = list;
+        this.onOrderCancelled = onOrderCancelled;
+        this.userId = getUserIdFromPreferences();
+        this.isStaff = isStaff;
     }
 
     private String getUserIdFromPreferences() {
@@ -152,6 +163,12 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
                 break;
             case "đang giao hàng":
                 holder.btnNhan.setVisibility(View.VISIBLE);
+                // Thay đổi text dựa trên context (staff hoặc user)
+                if (isStaff) {
+                    holder.btnNhan.setText("Xác nhận đơn");
+                } else {
+                    holder.btnNhan.setText("Đã nhận hàng");
+                }
                 break;
             case "đã hủy":
             case "đã giao hàng":
@@ -190,23 +207,45 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
     }
 
     private void showReceiveDialog(Order order) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setIcon(R.drawable.thongbao);
-        builder.setTitle("Thông báo");
-        builder.setMessage("Bạn chắc chắn đã nhận được hàng ?");
-        builder.setPositiveButton("Đúng", (dialog, which) -> {
-            Order order1 = new Order();
-            order1.set_id(order.get_id());
-            order1.setStatus("Đã giao");
-            updateOrder(order1);
+        if (isStaff) {
+            // Dialog cho staff - xác nhận giao hàng
+            AlertDialog.Builder builder = new AlertDialog.Builder(context);
+            builder.setIcon(R.drawable.thongbao);
+            builder.setTitle("Xác nhận giao hàng");
+            builder.setMessage("Bạn có chắc chắn đã giao hàng thành công cho đơn hàng này?");
+            builder.setPositiveButton("Xác nhận", (dialog, which) -> {
+                Order order1 = new Order();
+                order1.set_id(order.get_id());
+                order1.setStatus("Đã giao hàng");
+                Log.d("OrderAdapter", "Staff confirming delivery for order " + order.get_id() + " with status: " + order1.getStatus());
+                updateOrder(order1);
+                
+                Toast.makeText(context, "Đã xác nhận giao hàng và thông báo tới khách hàng", Toast.LENGTH_SHORT).show();
+                
+                // Don't call onOrderCancelled here - updateOrder will handle it after server response
+            });
+            builder.setNegativeButton("Hủy", null);
+            builder.show();
+        } else {
+            // Dialog cho user - xác nhận nhận hàng
+            AlertDialog.Builder builder = new AlertDialog.Builder(context);
+            builder.setIcon(R.drawable.thongbao);
+            builder.setTitle("Thông báo");
+            builder.setMessage("Bạn chắc chắn đã nhận được hàng ?");
+            builder.setPositiveButton("Đúng", (dialog, which) -> {
+                Order order1 = new Order();
+                order1.set_id(order.get_id());
+                order1.setStatus("Đã giao hàng");
+                updateOrder(order1);
 
-            Intent intent = new Intent(context, DanhGia.class);
-            intent.putExtra("orderId", order.get_id());
-            intent.putExtra("listProductInOrder", new ArrayList<>(order.getProducts()));
-            context.startActivity(intent);
-        });
-        builder.setNegativeButton("Hủy", null);
-        builder.show();
+                Intent intent = new Intent(context, DanhGia.class);
+                intent.putExtra("orderId", order.get_id());
+                intent.putExtra("listProductInOrder", new ArrayList<>(order.getProducts()));
+                context.startActivity(intent);
+            });
+            builder.setNegativeButton("Hủy", null);
+            builder.show();
+        }
     }
 
     private void showReorderDialog(Order order) {
@@ -461,9 +500,30 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
         call.enqueue(new Callback<Order>() {
             @Override
             public void onResponse(Call<Order> call, Response<Order> response) {
+                Log.d("OrderAdapter", "Update order response: " + response.code() + " - " + response.message());
                 if (response.isSuccessful()) {
                     Toast.makeText(context, "Cập nhật thành công", Toast.LENGTH_SHORT).show();
-                    notifyDataSetChanged();
+                    
+                    // Nếu là staff và đang cập nhật trạng thái thành "Đã giao hàng", 
+                    // cần refresh danh sách từ server vì đơn hàng sẽ không còn ở trạng thái "đang giao"
+                    Log.d("OrderAdapter", "Checking if staff delivery confirmation: isStaff=" + isStaff + ", status='" + order.getStatus() + "'");
+                    if (isStaff && "Đã giao hàng".equals(order.getStatus())) {
+                        Log.d("OrderAdapter", "Staff confirmed delivery, refreshing order list...");
+                        Log.d("OrderAdapter", "Order status: '" + order.getStatus() + "'");
+                        // Thêm delay nhỏ để đảm bảo server đã xử lý xong
+                        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                            if (onOrderCancelled != null) {
+                                onOrderCancelled.run();
+                            }
+                        }, 500);
+                    } else if ("Đã giao hàng".equals(order.getStatus())) {
+                        // Nếu là user xác nhận nhận hàng, cũng cần refresh vì đơn hàng đã thay đổi trạng thái
+                        Log.d("OrderAdapter", "User confirmed delivery, using notifyDataSetChanged");
+                        notifyDataSetChanged();
+                    } else {
+                        Log.d("OrderAdapter", "Other status update, using notifyDataSetChanged");
+                        notifyDataSetChanged();
+                    }
                 } else {
                     Toast.makeText(context, "Cập nhật thất bại: " + response.message(), Toast.LENGTH_SHORT).show();
                 }
@@ -472,6 +532,7 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
             @Override
             public void onFailure(Call<Order> call, Throwable t) {
                 Log.e(TAG, "Error updating order", t);
+                Log.d("OrderAdapter", "Update order failed: " + t.getMessage());
                 Toast.makeText(context, "Lỗi kết nối", Toast.LENGTH_SHORT).show();
             }
         });

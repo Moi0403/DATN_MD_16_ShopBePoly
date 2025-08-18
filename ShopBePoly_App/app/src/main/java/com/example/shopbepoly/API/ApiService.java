@@ -108,6 +108,12 @@ public interface ApiService {
     @GET("list_order/{userId}")
     Call<List<Order>> getOrderList(@Path("userId") String userId);
 
+    @GET("list_all_orders")
+    Call<List<Order>> getAllOrders();
+
+    @GET("orders/delivering")
+    Call<DeliveringOrdersResponse> getDeliveringOrders();
+
     @DELETE("del_order/{id}")
     Call<Void> deleteOrder(@Path("id") String id);
 

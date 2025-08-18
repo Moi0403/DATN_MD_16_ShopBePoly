@@ -23,7 +23,7 @@
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
         <activity
-            android:name=".Screen.Main_Staff"
+            android:name=".AppStaff"
             android:exported="false" />
         <activity
             android:name=".TimDonHang"
