@@ -28,6 +28,7 @@ import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import retrofit2.Call;
@@ -42,13 +43,14 @@ public class DanhSachDanhGia extends AppCompatActivity {
 
     private String productId;
     private String orderId;
+    private boolean showAllReviews = false;
     private String currentUserId;
 
     private ListReviewAdapter adapter;
-    private List<ListReview> allReviews = new ArrayList<>();
+    private final List<ListReview> allReviews = new ArrayList<>();
 
     private SharedPreferences prefs;
-    private Gson gson = new Gson();
+    private final Gson gson = new Gson();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,18 +69,11 @@ public class DanhSachDanhGia extends AppCompatActivity {
         chipGroupFilter = findViewById(R.id.chip_group_filter);
 
         prefs = getSharedPreferences("ReviewCache", MODE_PRIVATE);
-
-        currentUserId = getSharedPreferences("MyPrefs", MODE_PRIVATE)
-                .getString("userId", null);
+        currentUserId = getSharedPreferences("MyPrefs", MODE_PRIVATE).getString("userId", null);
 
         productId = getIntent().getStringExtra("productId");
         orderId = getIntent().getStringExtra("orderId");
-
-        if ((productId == null || productId.isEmpty()) && (orderId == null || orderId.isEmpty())) {
-            Toast.makeText(this, "Không tìm thấy thông tin để lấy đánh giá", Toast.LENGTH_SHORT).show();
-            finish();
-            return;
-        }
+        showAllReviews = getIntent().getBooleanExtra("showAllReviews", false);
 
         rvReviews.setLayoutManager(new LinearLayoutManager(this));
         adapter = new ListReviewAdapter(this, this::showEditDialog);
@@ -87,78 +82,82 @@ public class DanhSachDanhGia extends AppCompatActivity {
 
         btnBack.setOnClickListener(v -> finish());
 
+        // Bộ lọc theo sao
         chipGroupFilter.setOnCheckedChangeListener((group, checkedId) -> {
             if (checkedId == View.NO_ID) {
-                adapter.setReviews(allReviews);
+                adapter.setReviews(new ArrayList<>(allReviews));
                 return;
             }
             Chip chip = findViewById(checkedId);
-            String text = chip.getText().toString();
+            if (chip == null) return;
 
+            String text = chip.getText().toString();
             if (text.equalsIgnoreCase("Tất cả")) {
-                adapter.setReviews(allReviews);
+                adapter.setReviews(new ArrayList<>(allReviews));
             } else {
                 try {
                     int star = Integer.parseInt(text.replace("★", "").trim());
                     List<ListReview> filtered = new ArrayList<>();
                     for (ListReview r : allReviews) {
-                        if (r.getRating() == star) {
+                        if (r != null && r.getRating() == star) {
                             filtered.add(r);
                         }
                     }
                     adapter.setReviews(filtered);
                 } catch (NumberFormatException e) {
-                    adapter.setReviews(allReviews);
+                    adapter.setReviews(new ArrayList<>(allReviews));
                 }
             }
         });
 
-        // Load dữ liệu từ cache trước
-        loadCachedReviews();
+        // Load cache nhanh nếu không phải vừa thêm review
+        boolean refreshAfterAdd = getIntent().getBooleanExtra("refreshAfterAdd", false);
+        if (!refreshAfterAdd) {
+            loadCachedReviews();
+        }
 
-        // Sau đó load API để cập nhật mới
+        // Luôn gọi API để đồng bộ mới nhất
         loadReviewsFromApi();
     }
 
+    /** Load cache */
     private void loadCachedReviews() {
-        String key = getCacheKey();
-        String json = prefs.getString(key, null);
+        String json = prefs.getString(getCacheKey(), null);
         if (json != null) {
             Type type = new TypeToken<List<ListReview>>() {}.getType();
             List<ListReview> cachedList = gson.fromJson(json, type);
-            allReviews.clear();
-            allReviews.addAll(cachedList);
-            adapter.setReviews(allReviews);
+            if (cachedList != null && !cachedList.isEmpty()) {
+                mergeReviews(cachedList);
+                sortReviews();
+                adapter.setReviews(new ArrayList<>(allReviews));
+            }
         }
     }
 
+    /** Lưu cache */
     private void saveReviewsToCache() {
-        String key = getCacheKey();
-        String json = gson.toJson(allReviews);
-        prefs.edit().putString(key, json).apply();
+        prefs.edit().putString(getCacheKey(), gson.toJson(allReviews)).apply();
     }
 
     private String getCacheKey() {
-//        if (productId != null && !productId.isEmpty()) {
-//            return "reviews_product_" + productId;
-//        } else {
-//            return "reviews_order_" + orderId;
-//        }
+        if (showAllReviews) return "reviews_all";
+        if (productId != null && !productId.isEmpty()) return "reviews_product_" + productId;
+        if (orderId != null && !orderId.isEmpty()) return "reviews_order_" + orderId;
         return "reviews_all";
     }
 
+    /** Fetch API */
     private void loadReviewsFromApi() {
         ApiService apiService = ApiClient.getApiService();
-
         Call<List<ListReview>> call;
-        if (productId != null && !productId.isEmpty()) {
-            // Ưu tiên lấy review theo sản phẩm
+
+        if (showAllReviews) {
+            call = apiService.getAllReviews();
+        } else if (productId != null && !productId.isEmpty()) {
             call = apiService.getReviews(productId);
         } else if (orderId != null && !orderId.isEmpty()) {
-            // Nếu chỉ có orderId, lấy review của order và product của order (nếu có)
             call = apiService.getReviewsByOrder(orderId);
         } else {
-            // Fallback
             call = apiService.getAllReviews();
         }
 
@@ -166,13 +165,10 @@ public class DanhSachDanhGia extends AppCompatActivity {
             @Override
             public void onResponse(Call<List<ListReview>> call, Response<List<ListReview>> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    // Dùng merge thay vì clear
+                    allReviews.clear(); // 🟢 reset trước khi merge API
                     mergeReviews(response.body());
-
-                    // Sort mới nhất lên đầu
-                    allReviews.sort((r1, r2) -> r2.getCreatedAt().compareTo(r1.getCreatedAt()));
-
-                    adapter.setReviews(allReviews);
+                    sortReviews();
+                    adapter.setReviews(new ArrayList<>(allReviews));
                     saveReviewsToCache();
                 } else {
                     Toast.makeText(DanhSachDanhGia.this, "Không lấy được đánh giá", Toast.LENGTH_SHORT).show();
@@ -186,19 +182,49 @@ public class DanhSachDanhGia extends AppCompatActivity {
         });
     }
 
-    private void mergeReviews(List<ListReview> fetched) {
-        for (ListReview review : fetched) {
-            if (!allReviews.contains(review)) {
-                allReviews.add(review); // Thêm mới nếu chưa có
+    /** Merge theo _id */
+    private void mergeReviews(List<ListReview> newReviews) {
+        if (newReviews == null || newReviews.isEmpty()) return;
+        for (ListReview newR : newReviews) {
+            if (newR == null || newR.getId() == null) continue;
+            int idx = findReviewIndexById(newR.getId());
+            if (idx == -1) {
+                allReviews.add(newR);
             } else {
-                // Nếu đã có thì cập nhật nội dung mới
-                int index = allReviews.indexOf(review);
-                allReviews.set(index, review);
+                allReviews.set(idx, newR);
             }
         }
     }
 
+    private int findReviewIndexById(String id) {
+        if (id == null) return -1;
+        for (int i = 0; i < allReviews.size(); i++) {
+            ListReview r = allReviews.get(i);
+            if (r != null && r.getId() != null && r.getId().equals(id)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /** Sort theo thời gian */
+    private void sortReviews() {
+        Collections.sort(allReviews, (r1, r2) -> {
+            if (r1 == null || r1.getCreatedAt() == null) return 1;
+            if (r2 == null || r2.getCreatedAt() == null) return -1;
+            return r2.getCreatedAt().compareTo(r1.getCreatedAt());
+        });
+    }
+
+    /** Cho phép sửa review */
     private void showEditDialog(ListReview review) {
+        if (review == null) return;
+
+        if (currentUserId == null || !currentUserId.equals(review.getUser())) {
+            Toast.makeText(this, "Bạn chỉ có thể sửa đánh giá của chính mình", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_edit_review, null);
         EditText edtComment = dialogView.findViewById(R.id.edt_comment);
         RatingBar ratingBar = dialogView.findViewById(R.id.rating_bar_edit);
@@ -218,13 +244,16 @@ public class DanhSachDanhGia extends AppCompatActivity {
                         return;
                     }
 
-                    ApiClient.getApiService().updateReview(review.get_id(), newRating, newComment)
+                    ApiClient.getApiService().updateReview(review.getId(), newRating, newComment)
                             .enqueue(new Callback<ListReview>() {
                                 @Override
                                 public void onResponse(Call<ListReview> call, Response<ListReview> response) {
                                     if (response.isSuccessful() && response.body() != null) {
                                         Toast.makeText(DanhSachDanhGia.this, "Cập nhật thành công", Toast.LENGTH_SHORT).show();
-                                        loadReviewsFromApi();
+                                        mergeReviews(Collections.singletonList(response.body()));
+                                        sortReviews();
+                                        adapter.setReviews(new ArrayList<>(allReviews));
+                                        saveReviewsToCache();
                                     } else {
                                         Toast.makeText(DanhSachDanhGia.this, "Lỗi khi cập nhật", Toast.LENGTH_SHORT).show();
                                     }

@@ -94,7 +94,20 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
                 }
             }
             holder.tvName.setText(product.getNameproduct() != null ? product.getNameproduct() : "N/A");
-            holder.tvPrice.setText(String.format("Giá: " + "%,d đ", cart.getTotal()));
+
+            int salePrice = product.getPrice_sale();
+            int originalPrice = product.getPrice();
+
+            if (salePrice > 0 && salePrice < originalPrice) {
+                // Có giảm giá → hiển thị giá sale
+                holder.tvPrice.setText(String.format("%,d đ", salePrice * cart.getQuantity()));
+                holder.tvPrice.setTextColor(context.getResources().getColor(android.R.color.holo_red_dark));
+            } else {
+                // Không giảm giá → lấy giá gốc
+                holder.tvPrice.setText(String.format("%,d đ", originalPrice * cart.getQuantity()));
+                holder.tvPrice.setTextColor(context.getResources().getColor(android.R.color.holo_red_dark));
+            }
+
             holder.tvMau.setText("Màu: "+cart.getColor());
             holder.tvSize.setText("Size: "+cart.getSize());
             holder.tvQuantity.setText(cart.getQuantity() > 0 ? String.valueOf(cart.getQuantity()) : "1");
@@ -119,10 +132,15 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
 
                 if (currentQty < stockQty) {
                     cart.setQuantity(currentQty + 1);
-                    int price = product.getPrice();
-                    cart.setTotal(price * cart.getQuantity());
-                    holder.tvPrice.setText(String.format("Giá: %,d đ", cart.getTotal()));
+
+                    int priceToUse = (product.getPrice_sale() > 0 && product.getPrice_sale() < product.getPrice())
+                            ? product.getPrice_sale()
+                            : product.getPrice();
+
+                    cart.setTotal(priceToUse * cart.getQuantity());
+                    holder.tvPrice.setText(String.format("%,d đ", cart.getTotal()));
                     holder.tvQuantity.setText(String.valueOf(cart.getQuantity()));
+
                     update_quantity(cart);
                     updateTotalPrice();
                 } else {
@@ -136,12 +154,17 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
             @Override
             public void onClick(View view) {
                 int slgHT = cart.getQuantity();
-                if (slgHT > 1){
+                if (slgHT > 1) {
                     cart.setQuantity(slgHT - 1);
-                    int gia = product.getPrice();
-                    cart.setTotal(gia * cart.getQuantity());
-                    holder.tvPrice.setText(String.format("Giá: " + "%,d đ", cart.getTotal()));
-                    holder.tvQuantity.setText(cart.getQuantity()+"");
+
+                    int priceToUse = (product.getPrice_sale() > 0 && product.getPrice_sale() < product.getPrice())
+                            ? product.getPrice_sale()
+                            : product.getPrice();
+
+                    cart.setTotal(priceToUse * cart.getQuantity());
+                    holder.tvPrice.setText(String.format("%,d đ", cart.getTotal()));
+                    holder.tvQuantity.setText(String.valueOf(cart.getQuantity()));
+
                     update_quantity(cart);
                     updateTotalPrice();
                 }
@@ -326,10 +349,14 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
         int total = 0;
         for (Cart item : list_cart) {
             if (item.getStatus() == 1) {
-                total += item.getTotal();
+                int priceToUse = (item.getIdProduct().getPrice_sale() > 0
+                        && item.getIdProduct().getPrice_sale() < item.getIdProduct().getPrice())
+                        ? item.getIdProduct().getPrice_sale()
+                        : item.getIdProduct().getPrice();
+                total += priceToUse * item.getQuantity();
             }
         }
-        frag_total.tvTotal.setText(String.format("Thành tiền: " + "%,d đ",total));
+        frag_total.tvTotal.setText(String.format("Thành tiền: %,d đ", total));
     }
     public void selectAll(boolean isChecked) {
         for (Cart cart : list_cart) {

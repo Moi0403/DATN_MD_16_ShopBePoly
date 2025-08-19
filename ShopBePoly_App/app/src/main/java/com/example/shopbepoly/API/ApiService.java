@@ -162,25 +162,15 @@ public interface ApiService {
     @POST("add_review")
     Call<ResponseBody> addReview(@Body Review review);
 
-    // Gửi nhiều đánh giá cùng lúc (cho đơn hàng có nhiều sản phẩm)
     @POST("order_reviews/{orderId}")
     Call<ResponseBody> sendOrderReviews(
             @Path("orderId") String orderId,
             @Body List<Review> reviews
     );
 
-//    @GET("reviews/{productId}")
-//    Call<List<ListReview>> getReviews(@Path("productId") String productId);
-//
-//    @GET("reviews/{productId}")
-//    Call<List<ListReview>> getReviewsByStar(@Path("productId") String productId,
-//                                            @Query("rating") int rating);
-
-    // Lấy review theo sản phẩm
     @GET("reviews/{productId}")
     Call<List<ListReview>> getReviews(@Path("productId") String productId);
 
-    // Lấy review theo đơn hàng (nhiều sản phẩm)
     @GET("reviews/order/{orderId}")
     Call<List<ListReview>> getReviewsByOrder(@Path("orderId") String orderId);
 
@@ -191,13 +181,7 @@ public interface ApiService {
             @Query("comment") String comment
     );
 
-    @PUT("reviews/{id}")
-    Call<ListReview> updateReview(
-            @Path("id") String reviewId,
-            @Body ReviewUpdateRequest body
-    );
-
-    @GET("/reviews")
+    @GET("reviews")
     Call<List<ListReview>> getAllReviews();
 
     // Voucher endpoints
@@ -215,4 +199,43 @@ public interface ApiService {
 //
 //    @PUT("update_usage_limit/{id}")
 //    Call<Voucher> updateUsageLimit(@Path("id") String voucherId, @Body UsageLimitUpdate usageLimit);
+@POST("apply_voucher")
+Call<VoucherUsageResponse> applyVoucher(@Body Map<String, Object> body);
+
+    // Lấy voucher theo user
+    @GET("user_vouchers/{userId}")
+    Call<List<Voucher>> getUserVouchers(@Path("userId") String userId);
+
+    @POST("use_voucher/{id}")
+    Call<VoucherUsageResponse> useVoucher(@Path("id") String voucherId);
+    class VoucherUsageResponse {
+        private boolean success;
+        private String message;
+        private Voucher voucher;
+
+        public boolean isSuccess() {
+            return success;
+        }
+
+        public void setSuccess(boolean success) {
+            this.success = success;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+
+        public void setMessage(String message) {
+            this.message = message;
+        }
+
+        public Voucher getVoucher() {
+            return voucher;
+        }
+
+        public void setVoucher(Voucher voucher) {
+            this.voucher = voucher;
+        }
+    }
+
 }

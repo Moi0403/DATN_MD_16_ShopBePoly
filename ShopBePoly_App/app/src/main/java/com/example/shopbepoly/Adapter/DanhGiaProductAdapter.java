@@ -35,7 +35,7 @@ public class DanhGiaProductAdapter extends RecyclerView.Adapter<DanhGiaProductAd
     public DanhGiaProductAdapter(Context context, List<ProductInOrder> productList) {
         this.context = context;
         this.productList = productList;
-        this.ratings = new ArrayList<>(Collections.nCopies(productList.size(), 5)); // mặc định 5 sao
+        this.ratings = new ArrayList<>(Collections.nCopies(productList.size(), 0));
         this.comments = new ArrayList<>(Collections.nCopies(productList.size(), ""));
     }
 
@@ -80,7 +80,7 @@ public class DanhGiaProductAdapter extends RecyclerView.Adapter<DanhGiaProductAd
 
         void updateStars(int rating) {
             for (int i = 0; i < starViews.length; i++) {
-                starViews[i].setImageResource(i < rating ? R.drawable.star_filled : R.drawable.star);
+                starViews[i].setImageResource(i < rating ? R.drawable.star : R.drawable.star_filled);
             }
         }
     }
@@ -120,13 +120,14 @@ public class DanhGiaProductAdapter extends RecyclerView.Adapter<DanhGiaProductAd
 
         // Set rating hiện tại
         holder.updateStars(ratings.get(position));
-
         // Xử lý click chọn sao
         for (int i = 0; i < holder.starViews.length; i++) {
             final int starIndex = i;
             holder.starViews[i].setOnClickListener(v -> {
-                ratings.set(position, starIndex + 1);
-                holder.updateStars(starIndex + 1);
+                // Đảo ngược thứ tự sao
+                int ratingValue = starIndex + 1; // Nếu muốn 1 sao bên trái → 5 sao bên phải
+                ratings.set(position, ratingValue);
+                holder.updateStars(ratingValue);
             });
         }
 

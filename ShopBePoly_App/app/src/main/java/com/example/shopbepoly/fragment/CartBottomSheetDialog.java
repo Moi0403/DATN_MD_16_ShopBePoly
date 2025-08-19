@@ -91,7 +91,20 @@ public class CartBottomSheetDialog extends BottomSheetDialogFragment {
 
 
 
-        tvGia.setText("Giá: " + String.format("%,d", product.getPrice()) + " đ");
+        int originalPrice = product.getPrice();
+        int salePrice = product.getPrice_sale(); // hoặc product.getSale() nếu bạn lưu theo %
+
+// Nếu có giảm giá
+        if (salePrice > 0 && salePrice < originalPrice) {
+            tvGia.setText("Giá: " + String.format("%,d", salePrice) + " đ");
+            tvGia.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
+        } else {
+            // Không có giảm giá → lấy giá gốc
+            tvGia.setText("Giá: " + String.format("%,d", originalPrice) + " đ");
+            tvGia.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
+        }
+
+
         tvTen.setText(product.getNameproduct());
         tvQuantity.setText(String.valueOf(quantity));
         tv_cate_product.setText("("+product.getCategoryName()+")");
@@ -117,8 +130,11 @@ public class CartBottomSheetDialog extends BottomSheetDialogFragment {
         btnDecrease.setOnClickListener(v -> {
             if (quantity > 1) {
                 quantity--;
+
                 tvQuantity.setText(String.valueOf(quantity));
-                tvGia.setText(String.format("Giá: " + "%,d đ", quantity * product.getPrice()));
+
+                int price = (product.getPrice_sale() > 0) ? product.getPrice_sale() : product.getPrice();
+                tvGia.setText(String.format("Giá: %,d đ", quantity * price));
             }
         });
 
@@ -127,8 +143,11 @@ public class CartBottomSheetDialog extends BottomSheetDialogFragment {
 
             if (quantity < stock) {
                 quantity++;
+
                 tvQuantity.setText(String.valueOf(quantity));
-                tvGia.setText(String.format("Giá: " + "%,d đ", quantity * product.getPrice()));
+
+                int price = (product.getPrice_sale() > 0) ? product.getPrice_sale() : product.getPrice();
+                tvGia.setText(String.format("Giá: %,d đ", quantity * price));
             } else {
                 Toast.makeText(context, "Vượt quá số lượng trong kho", Toast.LENGTH_SHORT).show();
             }

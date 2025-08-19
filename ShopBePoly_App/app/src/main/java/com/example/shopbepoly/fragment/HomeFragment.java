@@ -22,11 +22,8 @@ import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.core.app.NotificationCompat;
-import androidx.core.app.NotificationManagerCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager2.widget.ViewPager2;
 
@@ -41,6 +38,7 @@ import com.example.shopbepoly.DTO.Voucher;
 import com.example.shopbepoly.R;
 import com.example.shopbepoly.Screen.ThongBao;
 import com.example.shopbepoly.Screen.TimKiem;
+import com.example.shopbepoly.Screen.LoginScreen;
 import com.example.shopbepoly.VoucherActivity;
 
 import java.util.ArrayList;
@@ -76,9 +74,10 @@ public class HomeFragment extends Fragment {
     private List<Banner> bannerList = new ArrayList<>();
     private List<Voucher> voucherList = new ArrayList<>();
 
-    // Thống nhất với VoucherAdapter
+    // Thống nhất với VoucherActivity - sử dụng userId
     private SharedPreferences voucherPrefs;
-    private static final String SAVED_VOUCHERS_KEY = "saved_vouchers";
+    private SharedPreferences loginPrefs;
+    private String currentUserId;
 
     private final ActivityResultLauncher<Intent> thongBaoLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
@@ -94,8 +93,12 @@ public class HomeFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_home, container, false);
         FavoriteFragment.loadFavoritesFromPrefs(requireContext());
 
-        // Initialize SharedPreferences - thống nhất với VoucherAdapter
+        // Initialize SharedPreferences
         voucherPrefs = requireContext().getSharedPreferences("VoucherPrefs", Context.MODE_PRIVATE);
+        loginPrefs = requireContext().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
+
+        // Lấy userId hiện tại
+        currentUserId = loginPrefs.getString("userId", "");
 
         // Initialize views
         initializeViews(view);
@@ -132,26 +135,25 @@ public class HomeFragment extends Fragment {
     private void setupListeners() {
         // Setup notification click
         img_notify.setOnClickListener(v -> {
-            SharedPreferences prefs = requireContext().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
-            String userId = prefs.getString("userId", null);
-
-            if (userId != null) {
-                apiService.getNotifications(userId).enqueue(new Callback<List<Notification>>() {
-                    @Override
-                    public void onResponse(Call<List<Notification>> call, Response<List<Notification>> response) {
-                        Intent intent = new Intent(getActivity(), ThongBao.class);
-                        thongBaoLauncher.launch(intent);
-                    }
-
-                    @Override
-                    public void onFailure(Call<List<Notification>> call, Throwable t) {
-                        t.printStackTrace();
-                        startActivity(new Intent(getActivity(), ThongBao.class));
-                    }
-                });
-            } else {
-                startActivity(new Intent(getActivity(), ThongBao.class));
+            if (currentUserId.isEmpty()) {
+                Toast.makeText(getContext(), "Vui lòng đăng nhập để xem thông báo", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(getActivity(), LoginScreen.class));
+                return;
             }
+
+            apiService.getNotifications(currentUserId).enqueue(new Callback<List<Notification>>() {
+                @Override
+                public void onResponse(Call<List<Notification>> call, Response<List<Notification>> response) {
+                    Intent intent = new Intent(getActivity(), ThongBao.class);
+                    thongBaoLauncher.launch(intent);
+                }
+
+                @Override
+                public void onFailure(Call<List<Notification>> call, Throwable t) {
+                    t.printStackTrace();
+                    startActivity(new Intent(getActivity(), ThongBao.class));
+                }
+            });
         });
 
         // Setup search click
@@ -162,11 +164,23 @@ public class HomeFragment extends Fragment {
 
         // Setup voucher section clicks
         tvViewAllVouchers.setOnClickListener(v -> {
+            if (currentUserId.isEmpty()) {
+                Toast.makeText(getContext(), "Vui lòng đăng nhập để sử dụng tính năng voucher", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(getActivity(), LoginScreen.class));
+                return;
+            }
+
             Intent intent = new Intent(getActivity(), VoucherActivity.class);
             startActivity(intent);
         });
 
         btnMoreVouchers.setOnClickListener(v -> {
+            if (currentUserId.isEmpty()) {
+                Toast.makeText(getContext(), "Vui lòng đăng nhập để sử dụng tính năng voucher", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(getActivity(), LoginScreen.class));
+                return;
+            }
+
             Intent intent = new Intent(getActivity(), VoucherActivity.class);
             startActivity(intent);
         });
@@ -200,12 +214,12 @@ public class HomeFragment extends Fragment {
     }
 
     private void updateNotificationCount() {
-        SharedPreferences prefs = requireContext().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
-        String userId = prefs.getString("userId", null);
+        if (currentUserId.isEmpty()) {
+            tvNotificationCount.setVisibility(View.GONE);
+            return;
+        }
 
-        if (userId == null) return;
-
-        apiService.getNotifications(userId).enqueue(new Callback<List<Notification>>() {
+        apiService.getNotifications(currentUserId).enqueue(new Callback<List<Notification>>() {
             @Override
             public void onResponse(Call<List<Notification>> call, Response<List<Notification>> response) {
                 if (response.isSuccessful() && response.body() != null) {
@@ -451,36 +465,45 @@ public class HomeFragment extends Fragment {
                 LinearLayout.LayoutParams.WRAP_CONTENT
         ));
 
-        // Kiểm tra voucher đã được lưu chưa
-        boolean isSaved = isVoucherSaved(voucher.getId());
-
-        if (isSaved) {
-            saveButton.setText("Đã lưu");
-            saveButton.setTextColor(getResources().getColor(R.color.gray));
-            saveButton.setBackground(getResources().getDrawable(R.drawable.saved_button_bg));
-            saveButton.setEnabled(false);
-        } else {
-            saveButton.setText("Lưu");
+        // Kiểm tra user đã đăng nhập chưa
+        if (currentUserId.isEmpty()) {
+            saveButton.setText("Đăng nhập");
             saveButton.setTextColor(Color.WHITE);
             saveButton.setBackground(getResources().getDrawable(R.drawable.save_voucher_bg));
+            saveButton.setOnClickListener(v -> {
+                Toast.makeText(getContext(), "Vui lòng đăng nhập để lưu voucher", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(getActivity(), LoginScreen.class));
+            });
+        } else {
+            // Kiểm tra voucher đã được lưu chưa
+            boolean isSaved = isVoucherSaved(voucher.getId());
+
+            if (isSaved) {
+                saveButton.setText("Đã lưu");
+                saveButton.setTextColor(getResources().getColor(R.color.gray));
+                saveButton.setBackground(getResources().getDrawable(R.drawable.saved_button_bg));
+                saveButton.setEnabled(false);
+            } else {
+                saveButton.setText("Lưu");
+                saveButton.setTextColor(Color.WHITE);
+                saveButton.setBackground(getResources().getDrawable(R.drawable.save_voucher_bg));
+
+                // Add click listener cho save button
+                saveButton.setOnClickListener(v -> {
+                    saveVoucher(voucher);
+                    saveButton.setText("Đã lưu");
+                    saveButton.setTextColor(getResources().getColor(R.color.gray));
+                    saveButton.setBackground(getResources().getDrawable(R.drawable.saved_button_bg));
+                    saveButton.setEnabled(false);
+                    Toast.makeText(getContext(), "Đã lưu mã giảm giá!", Toast.LENGTH_SHORT).show();
+                });
+            }
         }
 
         saveButton.setTypeface(null, android.graphics.Typeface.BOLD);
         int buttonPadding = (int) (8 * getResources().getDisplayMetrics().density);
         saveButton.setPadding(buttonPadding, buttonPadding, buttonPadding, buttonPadding);
         saveButton.setTextSize(12);
-
-        // Add click listener cho save button
-        saveButton.setOnClickListener(v -> {
-            if (!isSaved) {
-                saveVoucher(voucher);
-                saveButton.setText("Đã lưu");
-                saveButton.setTextColor(getResources().getColor(R.color.gray));
-                saveButton.setBackground(getResources().getDrawable(R.drawable.saved_button_bg));
-                saveButton.setEnabled(false);
-                Toast.makeText(getContext(), "Đã lưu mã giảm giá!", Toast.LENGTH_SHORT).show();
-            }
-        });
 
         return saveButton;
     }
@@ -509,20 +532,33 @@ public class HomeFragment extends Fragment {
         }
     }
 
-    // Method kiểm tra voucher đã được lưu chưa - THỐNG NHẤT với VoucherAdapter
+    // Method kiểm tra voucher đã được lưu chưa - THỐNG NHẤT với VoucherActivity
     private boolean isVoucherSaved(String voucherId) {
-        Set<String> savedVouchers = voucherPrefs.getStringSet(SAVED_VOUCHERS_KEY, new HashSet<>());
+        if (currentUserId.isEmpty()) {
+            return false;
+        }
+
+        // Sử dụng key với userId giống như VoucherActivity
+        String key = "saved_vouchers_" + currentUserId;
+        Set<String> savedVouchers = voucherPrefs.getStringSet(key, new HashSet<>());
         return savedVouchers.contains(voucherId);
     }
 
-    // Method lưu voucher - THỐNG NHẤT với VoucherAdapter
+    // Method lưu voucher - THỐNG NHẤT với VoucherActivity
     private void saveVoucher(Voucher voucher) {
-        Set<String> savedVouchers = voucherPrefs.getStringSet(SAVED_VOUCHERS_KEY, new HashSet<>());
+        if (currentUserId.isEmpty()) {
+            Toast.makeText(getContext(), "Vui lòng đăng nhập để lưu voucher", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Sử dụng key với userId giống như VoucherActivity
+        String key = "saved_vouchers_" + currentUserId;
+        Set<String> savedVouchers = voucherPrefs.getStringSet(key, new HashSet<>());
         savedVouchers = new HashSet<>(savedVouchers); // Create new set to avoid modification issues
         savedVouchers.add(voucher.getId());
-        voucherPrefs.edit().putStringSet(SAVED_VOUCHERS_KEY, savedVouchers).apply();
+        voucherPrefs.edit().putStringSet(key, savedVouchers).apply();
 
-        Log.d("HomeFragment", "Saved voucher: " + voucher.getCode() + " with ID: " + voucher.getId());
+        Log.d("HomeFragment", "Saved voucher: " + voucher.getCode() + " with ID: " + voucher.getId() + " for user: " + currentUserId);
     }
 
     // Helper method format currency
@@ -538,6 +574,10 @@ public class HomeFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+
+        // Cập nhật lại userId khi resume
+        currentUserId = loginPrefs.getString("userId", "");
+
         if (handler != null && runnable != null && !bannerList.isEmpty()) {
             handler.postDelayed(runnable, DELAY_MS);
         }

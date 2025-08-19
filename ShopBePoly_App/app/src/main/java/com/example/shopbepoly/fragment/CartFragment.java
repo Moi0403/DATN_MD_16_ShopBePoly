@@ -199,7 +199,12 @@ public class CartFragment extends Fragment implements CartBottomSheetDialog.Cart
                     && item.getColor().equalsIgnoreCase(newCartItem.getColor())
                     && item.getSize() == newCartItem.getSize()) {
                 int newQuantity = item.getQuantity() + newCartItem.getQuantity();
-                item.setQuantity(newQuantity);
+                int priceToUse = (item.getIdProduct().getPrice_sale() > 0
+                        && item.getIdProduct().getPrice_sale() < item.getIdProduct().getPrice())
+                        ? item.getIdProduct().getPrice_sale()
+                        : item.getIdProduct().getPrice();
+
+                item.setTotal(priceToUse * newQuantity);
                 item.setTotal(item.getIdProduct().getPrice() * newQuantity);
                 cartAdapter.updateCartOnServer(item);
                 cartAdapter.notifyDataSetChanged();
