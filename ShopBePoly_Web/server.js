@@ -1341,7 +1341,7 @@ router.put('/cancel_order/:id', async (req, res) => {
 router.put('/updateOrderStatus/:orderId', async (req, res) => {
     try {
         const orderId = req.params.orderId;
-        const { status, cancelReason } = req.body;
+        const { status, cancelReason, checkedBy } = req.body; // Thêm checkedBy từ request
 
         if (!status) {
             return res.status(400).json({ message: 'Trạng thái không được để trống' });
@@ -1352,19 +1352,26 @@ router.put('/updateOrderStatus/:orderId', async (req, res) => {
             updateData.cancelReason = cancelReason;
         }
 
-        await orderModel.findByIdAndUpdate(
+        // Nếu có checkedBy, cập nhật thông tin kiểm tra
+        if (checkedBy) {
+            updateData.checkedAt = new Date(); // Cập nhật thời gian kiểm tra
+            updateData.checkedBy = checkedBy;  // Cập nhật người kiểm tra
+        }
+
+        const updatedOrder = await orderModel.findByIdAndUpdate(
             orderId,
             updateData,
             { new: true, runValidators: true }
         );
 
+        if (!updatedOrder) {
+            return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+        }
+
+        // Populate dữ liệu liên quan
         const order = await orderModel.findById(orderId)
             .populate('id_user')
             .populate('products.id_product');
-
-        if (!order) {
-            return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
-        }
 
         // Tạo thông báo khi đơn hàng được giao thành công
         console.log('Order status update:', status);
@@ -1389,7 +1396,7 @@ router.put('/updateOrderStatus/:orderId', async (req, res) => {
             console.log('Notification created successfully');
         }
 
-        return res.status(200).json({ message: 'Cập nhật trạng thái thành công', order });
+        return res.status(200).json({ message: 'Cập nhật trạng thái thành công', order: updatedOrder });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: 'Lỗi máy chủ nội bộ', error: error.message });
@@ -3083,6 +3090,75 @@ router.put('/update_usage_limit/:id', async (req, res) => {
     }
 });
 
+router.get('/get-voucher/:voucherId', async (req, res) => {
+    const { voucherId } = req.params;
+
+    try {
+        const voucher = await voucherModel.findById(voucherId);
+        if (!voucher) {
+            return res.status(404).json({ success: false, message: 'Voucher không tồn tại.' });
+        }
+        // Đảm bảo trả về full datetime
+        res.status(200).json({ success: true, data: {
+            ...voucher.toObject(),
+            startDate: voucher.startDate.toISOString(),
+            endDate: voucher.endDate.toISOString()
+        } });
+    } catch (err) {
+        console.error('Lỗi khi lấy voucher:', err);
+        res.status(500).json({ success: false, message: 'Lỗi máy chủ: ' + err.message });
+    }
+});
+router.put('/extend-voucher', async (req, res) => {
+    const { voucherId, startDate, endDate } = req.body;
+
+    try {
+        const voucher = await voucherModel.findById(voucherId);
+        if (!voucher) {
+            return res.status(404).json({ success: false, message: 'Voucher không tồn tại.' });
+        }
+
+        voucher.startDate = new Date(startDate);
+        voucher.endDate = new Date(endDate);
+        voucher.isActive = true;
+        await voucher.save();
+
+        res.status(200).json({ success: true, message: 'Voucher đã được gia hạn thành công.', data: voucher });
+    } catch (err) {
+        console.error('Lỗi khi gia hạn voucher:', err);
+        res.status(500).json({ success: false, message: 'Lỗi máy chủ: ' + err.message });
+    }
+});
+
+router.get('/orders/delivering', async (req, res) => {
+    try {
+        console.log('Fetching delivering orders...');
+        const deliveringOrders = await orderModel.find({ status: 'Đang giao hàng' })
+            .populate('id_user', 'name phone_number email avt_user') 
+            .populate({
+                path: 'products.id_product',
+                select: 'nameproduct avt_imgproduct id_category', 
+                populate: { path: 'id_category', select: 'title' }
+            })
+            .sort({ date: -1 }); // Sắp xếp theo ngày tạo mới nhất
+
+        console.log('Found delivering orders:', deliveringOrders.length);
+        console.log('Order IDs:', deliveringOrders.map(o => ({ id: o._id, status: o.status, orderCode: o.id_order })));
+
+        res.json({
+            success: true,
+            count: deliveringOrders.length,
+            orders: deliveringOrders
+        });
+    } catch (error) {
+        console.error('Lỗi khi lấy danh sách đơn hàng đang giao hàng:', error);
+        res.status(500).json({ 
+            success: false,
+            error: 'Lỗi server khi lấy danh sách đơn hàng đang giao hàng' 
+        });
+    }
+});
+
 // Apply voucher to order
 router.post('/apply_voucher', async (req, res) => {
     try {
@@ -3182,6 +3258,90 @@ router.get('/user_vouchers/:userId', async (req, res) => {
     } catch (error) {
         console.error("Lỗi khi lấy voucher của user:", error);
         res.status(500).json({ message: "Lỗi server", error });
+    }
+});
+
+
+// check ten user đơn hàng
+router.get('/user/:id/statistics', async (req, res) => {
+    try {
+        const userId = req.params.id;
+
+        // Lấy các đơn hàng đã giao thành công của user
+        const orders = await orderModel.find({ 
+            id_user: userId, 
+            status: "Đã giao hàng" 
+        });
+
+        if (!orders || orders.length === 0) {
+            return res.status(200).json({
+                totalOrders: 0,
+                totalAmount: 0
+            });
+        }
+
+        // Tổng số đơn đã giao
+        const totalOrders = orders.length;
+
+        // Tổng tiền đã giao (ép kiểu sang số vì total là String)
+        const totalAmount = orders.reduce((sum, order) => sum + Number(order.total || 0), 0);
+
+        res.status(200).json({
+            totalOrders,
+            totalAmount
+        });
+    } catch (err) {
+        res.status(500).json({ message: "Lỗi server", error: err.message });
+    }
+});
+
+// ✅ API: Lấy top 10 khách hàng (chỉ tính đơn hàng "Đã giao hàng")
+router.get('/top-buyers', async (req, res) => {
+    const { time, startDate, endDate } = req.query;
+    const now = new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }); // Lấy thời gian theo múi giờ Việt Nam
+    const nowDate = new Date(now); // Bản sao của thời gian hiện tại
+
+    try {
+        let matchStage = { status: "Đã giao hàng" };
+
+        if (time) {
+            if (time === 'week') {
+                const startOfWeek = new Date(nowDate); // Tạo bản sao mới
+                startOfWeek.setDate(nowDate.getDate() - nowDate.getDay() + (nowDate.getDay() === 0 ? -6 : 1)); // Tính từ thứ Hai
+                startOfWeek.setHours(0, 0, 0, 0); // Đặt giờ về 00:00
+                matchStage.date = { $gte: startOfWeek, $lte: nowDate };
+                console.log('Week filter:', { start: startOfWeek, end: nowDate }); // Debug: Xem khoảng thời gian
+            } else if (time === 'month') {
+                const startOfMonth = new Date(nowDate.getFullYear(), nowDate.getMonth(), 1); // 01/08/2025
+                matchStage.date = { $gte: startOfMonth, $lte: nowDate };
+            } else if (time === 'year') {
+                const startOfYear = new Date(nowDate.getFullYear(), 0, 1); // 01/01/2025
+                matchStage.date = { $gte: startOfYear, $lte: nowDate };
+            }
+        } else if (startDate || endDate) {
+            const start = startDate ? new Date(startDate) : new Date(0);
+            const end = endDate ? new Date(endDate) : nowDate;
+            matchStage.date = { $gte: start, $lte: end };
+        }
+
+        const topUsers = await orderModel.aggregate([
+            { $match: matchStage },
+            { $group: { _id: "$id_user", totalOrders: { $sum: 1 }, totalAmount: { $sum: { $toDouble: "$total" } } } },
+            { $sort: { totalAmount: -1 } },
+            { $limit: 10 },
+            { $lookup: { from: "users", localField: "_id", foreignField: "_id", as: "userInfo" } },
+            { $unwind: "$userInfo" },
+            { $project: { userId: "$_id", userName: "$userInfo.name", totalOrders: 1, totalAmount: 1 } }
+        ]);
+
+        if (topUsers.length === 0) {
+            return res.status(200).json({ message: "Không có dữ liệu khách hàng nào.", data: [] });
+        }
+
+        res.status(200).json({ success: true, count: topUsers.length, data: topUsers });
+    } catch (err) {
+        console.error('Lỗi khi lấy top buyers:', err);
+        res.status(500).json({ success: false, message: 'Lỗi máy chủ: ' + err.message });
     }
 });
 

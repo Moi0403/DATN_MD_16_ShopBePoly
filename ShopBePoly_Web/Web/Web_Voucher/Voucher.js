@@ -17,11 +17,10 @@ const ThemVoucher = () => {
             discountValue: parseFloat(form.discountValue.value),
             minOrderValue: parseFloat(form.minOrderValue.value),
             usageLimit: parseInt(form.usageLimit.value),
-            startDate: new Date(form.startDate.value).toISOString(), // Chuyển sang UTC
-            endDate: new Date(form.endDate.value).toISOString(),     // Chuyển sang UTC
+            startDate: new Date(form.startDate.value).toISOString(),
+            endDate: new Date(form.endDate.value).toISOString(),
         };
 
-        // Kiểm tra dữ liệu đầu vào
         if (!formData.code || !formData.description) {
             alert('Vui lòng nhập đầy đủ mã và mô tả voucher');
             return;
@@ -68,7 +67,6 @@ const ThemVoucher = () => {
         }
     });
 };
-// Gọi hàm để gắn sự kiện
 ThemVoucher();
 
 const hienThiVoucher = async () => {
@@ -79,20 +77,20 @@ const hienThiVoucher = async () => {
             throw new Error(`HTTP error! Status: ${response.status}`);
         }
         const result = await response.json();
-        console.log('Dữ liệu từ API:', result); // Debug để kiểm tra dữ liệu
-        const data = result.vouchers; // Truy cập mảng vouchers
+        console.log('Dữ liệu từ API:', result);
+        const data = result.vouchers;
         if (!Array.isArray(data)) {
             throw new Error('Dữ liệu từ API không phải là mảng');
         }
-        tbody.innerHTML = ''; // Xóa nội dung cũ
+        tbody.innerHTML = '';
         if (data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3" style="text-align: center;">Không có voucher nào</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="10" style="text-align: center;">Không có voucher nào</td></tr>';
             return;
         }
-        const now = new Date(); // Lấy ngày giờ hiện tại (10:13 PM +07, 17/08/2025)
+        const now = new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }); // Đảm bảo múi giờ Việt Nam
         for (const item of data) {
-            if (new Date(item.endDate) < now && item.isActive) {
-                await updateVoucherStatus(item._id, false); // Cập nhật trạng thái thành false nếu hết hạn
+            if (new Date(item.endDate) < new Date(now) && item.isActive) {
+                await updateVoucherStatus(item._id, false);
             }
         }
         data.forEach((item, index) => {
@@ -102,31 +100,25 @@ const hienThiVoucher = async () => {
             const tdSTT = document.createElement('td');
             tdSTT.textContent = index + 1;
             tdSTT.style.textAlign = 'center';
-            tdSTT.style.alignContent = 'center';
 
             const tdMa = document.createElement('td');
             tdMa.textContent = item.code;
             tdMa.style.textAlign = 'center';
-            tdMa.style.alignContent = 'center';
 
             const tdGTG = document.createElement('td');
             tdGTG.textContent = item.discountValue.toLocaleString('vi-VN') + (item.discountType === 'percent' ? '%' : ' đ');
             tdGTG.style.textAlign = 'center';
-            tdGTG.style.alignContent = 'center';
 
             const tdDTT = document.createElement('td');
             tdDTT.textContent = item.minOrderValue.toLocaleString('vi-VN') + ' đ';
             tdDTT.style.textAlign = 'center';
-            tdDTT.style.alignContent = 'center';
 
             const tdTLD = document.createElement('td');
-
             const wrapper = document.createElement('div');
             wrapper.style.display = 'flex';
             wrapper.style.justifyContent = 'space-between';
-            wrapper.style.alignItems = 'center';  
-            wrapper.style.width = '100%';           
-            wrapper.style.height = '100%';
+            wrapper.style.alignItems = 'center';
+            wrapper.style.width = '100%';
 
             const usageText = document.createElement('span');
             usageText.textContent = item.usageLimit;
@@ -135,8 +127,7 @@ const hienThiVoucher = async () => {
             btnSua.textContent = 'Sửa';
             btnSua.className = 'btn btn-sm btn-outline-primary';
             btnSua.style.minWidth = '50px';
-
-            btnSua.addEventListener('click', () => editUsageLimit(item._id, item.usageLimit()));
+            btnSua.addEventListener('click', () => editUsageLimit(item._id, item.usageLimit));
 
             wrapper.appendChild(usageText);
             wrapper.appendChild(btnSua);
@@ -145,15 +136,12 @@ const hienThiVoucher = async () => {
             const tdLDD = document.createElement('td');
             tdLDD.textContent = item.usedCount;
             tdLDD.style.textAlign = 'center';
-            tdLDD.style.alignContent = 'center';
 
             const tdMota = document.createElement('td');
             tdMota.textContent = item.description;
             tdMota.style.textAlign = 'center';
-            tdMota.style.alignContent = 'center';
 
             const tdHSD = document.createElement('td');
-            // Định dạng ngày giờ
             const startDate = new Date(item.startDate);
             const endDate = new Date(item.endDate);
             const formatDate = (date) => {
@@ -166,17 +154,17 @@ const hienThiVoucher = async () => {
             };
             tdHSD.textContent = `${formatDate(startDate)} - ${formatDate(endDate)}`;
             tdHSD.style.textAlign = 'center';
-            tdHSD.style.alignContent = 'center';
 
             const tdTT = document.createElement('td');
             tdTT.textContent = item.isActive ? 'Hoạt động' : 'Ngừng hoạt động';
             tdTT.style.textAlign = 'center';
-            tdTT.style.alignContent = 'center';
 
-            const tdXoa = document.createElement('td');
+            const tdXL = document.createElement('td');
+            tdXL.style.justifyContent = 'center';
+
             const btnXoa = document.createElement('button');
             btnXoa.textContent = 'Xóa';
-            btnXoa.className = 'btn btn-danger btn-sm';
+            btnXoa.className = 'btn btn-outline-danger btn-sm';
             btnXoa.addEventListener('click', async () => {
                 try {
                     const conf = confirm(`Bạn muốn xóa voucher ${item.code} này ?`);
@@ -184,7 +172,6 @@ const hienThiVoucher = async () => {
                         const response = await fetch(`http://${config.host}:${config.port}/api/del_voucher/${item._id}`, {
                             method: 'DELETE'
                         });
-
                         if (!response.ok) {
                             throw new Error(`HTTP error! Status: ${response.status}`);
                         }
@@ -195,9 +182,14 @@ const hienThiVoucher = async () => {
                 } catch (error) {
                     console.error('Lỗi khi xóa thể loại:', error);
                 }
-            })
-            tdXoa.style.textAlign = 'center';
-            tdXoa.appendChild(btnXoa);
+            });
+
+            const btnGH = document.createElement('button');
+            btnGH.textContent = 'Gia hạn';
+            btnGH.className = 'btn btn-outline-success btn-sm';
+            btnGH.addEventListener('click', () => showExtendModal(item._id)); // Sử dụng voucherId thay vì userId
+            tdXL.appendChild(btnGH);
+            tdXL.appendChild(btnXoa);
 
             tr.appendChild(tdSTT);
             tr.appendChild(tdMa);
@@ -208,12 +200,12 @@ const hienThiVoucher = async () => {
             tr.appendChild(tdMota);
             tr.appendChild(tdHSD);
             tr.appendChild(tdTT);
-            tr.appendChild(tdXoa);
+            tr.appendChild(tdXL);
             tbody.appendChild(tr);
         });
     } catch (error) {
         console.error('Lỗi khi lấy danh sách voucher:', error);
-        tbody.innerHTML = '<tr><td colspan="3" style="text-align: center;">Lỗi khi tải dữ liệu</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align: center;">Lỗi khi tải dữ liệu</td></tr>';
     }
 };
 hienThiVoucher();
@@ -222,9 +214,7 @@ const updateVoucherStatus = async (voucherId, isActive) => {
     try {
         const response = await fetch(`http://${config.host}:${config.port}/api/update_voucher_status/${voucherId}`, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ isActive })
         });
 
@@ -244,9 +234,7 @@ const updateUsageLimit = async (voucherId, usageLimit) => {
     try {
         const response = await fetch(`http://${config.host}:${config.port}/api/update_usage_limit/${voucherId}`, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ usageLimit })
         });
 
@@ -257,7 +245,7 @@ const updateUsageLimit = async (voucherId, usageLimit) => {
         const result = await response.json();
         console.log('Cập nhật usageLimit thành công:', result);
         alert('Cập nhật số lần sử dụng thành công!');
-        await hienThiVoucher(); // Làm mới danh sách
+        await hienThiVoucher();
     } catch (error) {
         console.error('Lỗi khi cập nhật usageLimit:', error);
         alert('Lỗi khi cập nhật số lần sử dụng: ' + error.message);
@@ -266,7 +254,7 @@ const updateUsageLimit = async (voucherId, usageLimit) => {
 
 const editUsageLimit = (voucherId, currentUsageLimit) => {
     const newUsageLimit = prompt(`Nhập số lần sử dụng mới cho voucher (hiện tại: ${currentUsageLimit}):`, currentUsageLimit);
-    if (newUsageLimit === null) return; // Người dùng nhấn Cancel
+    if (newUsageLimit === null) return;
 
     const usageLimit = parseInt(newUsageLimit);
     if (isNaN(usageLimit) || usageLimit <= 0) {
@@ -296,3 +284,104 @@ document.getElementById('pl_voucher').addEventListener('change', function () {
     });
 });
 
+async function showExtendModal(voucherId) {
+    const modal = new bootstrap.Modal(document.getElementById('extendVoucherModal'));
+    
+    // Lấy thông tin voucher hiện tại dựa trên voucherId
+    try {
+        const response = await fetch(`http://${config.host}:${config.port}/api/get-voucher/${voucherId}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        const result = await response.json();
+        console.log('API Response for voucher:', result); // Debug để kiểm tra dữ liệu
+        if (!result.success || !result.data) {
+            alert('Không tìm thấy voucher.');
+            return;
+        }
+        const voucher = result.data;
+
+        // Chuyển đổi sang định dạng datetime-local (YYYY-MM-DDTHH:MM)
+        const formatToDatetimeLocal = (dateStr) => {
+            const date = new Date(dateStr); // Chuyển đổi từ ISO string hoặc Date object
+            if (isNaN(date.getTime())) {
+                console.error('Ngày không hợp lệ:', dateStr);
+                return getTodayWithCurrentTime(); // Nếu không hợp lệ, dùng ngày hiện tại với giờ hiện tại
+            }
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+        };
+
+        // Hàm lấy ngày hiện tại với giờ hiện tại theo múi giờ Việt Nam
+        const getTodayWithCurrentTime = () => {
+            const now = new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" });
+            const [datePart] = now.split(", ");
+            const [month, day, year] = datePart.split("/");
+            const hours = String(new Date().getHours()).padStart(2, '0');
+            const minutes = String(new Date().getMinutes()).padStart(2, '0');
+            return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${hours}:${minutes}`;
+        };
+
+        // Hiển thị thông tin cũ trong input datetime-local
+        document.getElementById('newStartDate').value = formatToDatetimeLocal(voucher.startDate);
+        document.getElementById('newEndDate').value = formatToDatetimeLocal(voucher.endDate);
+
+        // Xử lý khi nhấn "Xác nhận"
+        document.getElementById('confirmExtend').onclick = () => {
+            const newStartDate = document.getElementById('newStartDate').value;
+            const newEndDate = document.getElementById('newEndDate').value;
+
+            if (!newStartDate || !newEndDate) {
+                alert('Vui lòng chọn đầy đủ ngày bắt đầu và ngày kết thúc!');
+                return;
+            }
+
+            // Chuyển đổi sang định dạng ISO để gửi API
+            const startDateISO = new Date(newStartDate).toISOString();
+            const endDateISO = new Date(newEndDate).toISOString();
+
+            if (new Date(startDateISO) > new Date(endDateISO)) {
+                alert('Ngày bắt đầu không thể sau ngày kết thúc!');
+                return;
+            }
+
+            extendVoucher(voucher._id, startDateISO, endDateISO);
+            modal.hide();
+        };
+
+        modal.show();
+    } catch (error) {
+        console.error('Lỗi khi lấy thông tin voucher:', error);
+        alert('Lỗi khi lấy thông tin voucher: ' + error.message);
+    }
+}
+
+async function extendVoucher(voucherId, startDate, endDate) {
+    if (confirm('Bạn có muốn gia hạn voucher này không?')) {
+        try {
+            const response = await fetch(`http://${config.host}:${config.port}/api/extend-voucher`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ voucherId, startDate, endDate })
+            });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
+            }
+            const result = await response.json();
+            if (result.success) {
+                alert('Voucher đã được gia hạn thành công!');
+                hienThiVoucher(); // Làm mới bảng
+            } else {
+                alert('Gia hạn voucher thất bại: ' + result.message);
+            }
+        } catch (error) {
+            console.error('Lỗi khi gia hạn voucher:', error);
+            alert('Đã xảy ra lỗi khi gia hạn voucher: ' + error.message);
+        }
+    }
+}

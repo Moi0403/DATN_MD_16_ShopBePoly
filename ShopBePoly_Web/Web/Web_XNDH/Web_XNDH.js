@@ -111,7 +111,7 @@ const xemChiTietDon = async (orderId) => {
   }
 };
 
-
+let userData = {};
 // Hàm xác nhận và cập nhật trạng thái
 async function confirmOrder(orderId) {
   try {
@@ -129,20 +129,15 @@ async function confirmOrder(orderId) {
       return;
     }
 
+    const storedData = localStorage.getItem('userData');
+    userData = storedData ? JSON.parse(storedData) : {};
+    const roleText = userData.role === 1 ? "Nhân viên" : "Người dùng";
     const response = await fetch(`http://${config.host}:${config.port}/api/updateOrderStatus/${orderId}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         status: "Đang giao hàng",
-        confirmedBy: (() => {
-          try {
-            const user = JSON.parse(localStorage.getItem('userData') || '{}');
-            return user.name || user.username || '';
-          } catch (_) { return ''; }
-        })(),
-        confirmedAt: new Date().toISOString()
+        checkedBy: `${userData.name} - ${roleText}`
       })
     });
 
@@ -150,7 +145,7 @@ async function confirmOrder(orderId) {
 
     if (response.ok) {
       alert(result.message);
-      hienthiOrder(); // Tải lại danh sách để cập nhật giao diện
+      hienthiOrder(); // reload danh sách
     } else {
       alert('Lỗi: ' + result.message);
     }
@@ -181,18 +176,3 @@ document.getElementById('btnDeleteAll').addEventListener('click', async () => {
     alert('Lỗi khi xóa đơn hàng');
   }
 });
-
-fetch('../Style_Sidebar/Sidebar.html')
-  .then(res => res.text())
-  .then(data => {
-    document.getElementById('sidebar-container').innerHTML = data;
-    const dangxuat = document.getElementById('dangxuat');
-    if (dangxuat) {
-      dangxuat.addEventListener('click', () => {
-        const confirmLogout = confirm('Bạn có chắc chắn muốn đăng xuất không?');
-        if (confirmLogout) {
-          window.location.href = '../Web_TrangChu/TrangChu.html';
-        }
-      });
-    }
-  });

@@ -12,7 +12,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class ApiClient {
     private static final String TAG = "ApiClient";
 
-    public static final String IPV4 = "192.168.1.13";
+    public static final String IPV4 = "192.168.0.42";
 
 //    public static final String IPV4 = "10.0.3.2";
 

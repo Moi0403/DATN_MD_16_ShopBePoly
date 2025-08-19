@@ -115,10 +115,15 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
         } catch (NumberFormatException e) {
             Log.e(TAG, "Error parsing total: " + totalStr, e);
         }
-        holder.tvthanhTien.setText(String.format("Giá: %,d đ", amountToDisplay));
+        holder.tvthanhTien.setText(String.format("Thành tiền: %,d đ", amountToDisplay));
         holder.tvSoLuongSP.setText("Tổng số lượng sản phẩm: " + order.getQuantity_order());
-        holder.tvngayMua.setText("Ngày: " + formatDate(order.getDate()));
+        holder.tvngayMua.setText("Thời gian mua: " + formatDate(order.getDate()));
         holder.tvTT.setText("Trạng thái: " + order.getStatus());
+        if (order.getStatus().equals("Đang xử lý")){
+            holder.tvTimeUp.setVisibility(View.GONE);
+        } else {
+            holder.tvTimeUp.setText(formatDate(order.getCheckedAt())+"");
+        }
 
         // Hiển thị thông tin khách hàng nếu là staff
         if (isStaff) {
@@ -645,7 +650,7 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
     }
 
     public static class OrderViewHolder extends RecyclerView.ViewHolder {
-        TextView tvmaDH, tvthanhTien, tvngayMua, tvTT, tvLydo, tvSoLuongSP;
+        TextView tvmaDH, tvthanhTien, tvngayMua, tvTT, tvLydo, tvSoLuongSP, tvTimeUp;
         Button btnHuy, btnChiTiet, btnNhan, btnMuaLai;
         View layoutCustomerInfo;
         TextView tvCustomerName, tvCustomerPhone, tvCustomerAddress;
@@ -658,6 +663,7 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
             tvSoLuongSP = itemView.findViewById(R.id.tvSoLuongSP);
             tvngayMua = itemView.findViewById(R.id.tvngayMua);
             tvTT = itemView.findViewById(R.id.tvTT);
+            tvTimeUp = itemView.findViewById(R.id.tvTimeUp);
             tvLydo = itemView.findViewById(R.id.tvLydo);
             btnHuy = itemView.findViewById(R.id.btnHuy);
             btnChiTiet = itemView.findViewById(R.id.btnChitiet);

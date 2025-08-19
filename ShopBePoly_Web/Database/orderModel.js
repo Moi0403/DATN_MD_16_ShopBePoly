@@ -35,8 +35,17 @@ const orderSchema = new mongoose.Schema({
     cancelReason: {
         type: String,
         default: ""
+    },
+    checkedAt: {
+        type: Date, // Sử dụng Date để đồng bộ với timestamps
+        default: "" // Mặc định là null, chỉ cập nhật khi check
+    },
+    checkedBy: {
+        type: String,
+        default: ""
     }
-});
+    
+ }, { timestamps: true });
 
 const orderModel = mongoose.model('order', orderSchema);
 module.exports = orderModel;

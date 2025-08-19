@@ -52,7 +52,7 @@ const xemChiTietDon = async (orderId) => {
     const order = data.find(o => o._id === orderId);
     if (!order) return;
 
-    const {id_order, id_user, products, total, address, date, pay, status } = order;
+    const {id_order, id_user, products, total, address, date, pay, status, checkedAt, checkedBy } = order;
 
     const productHtml = products.map(product => {
       const productData = product.id_product || {};
@@ -94,6 +94,8 @@ const xemChiTietDon = async (orderId) => {
       <p><strong>Thanh toán:</strong> ${pay}</p>
       <p><strong>Tổng tiền:</strong> ${Number(total).toLocaleString('vi-VN')} ₫</p>
       <p><strong>Trạng thái:</strong> ${status}</p>
+      <p><strong>Thời gian cập nhật:</strong> ${new Date(checkedAt).toLocaleString("vi-VN")}</p>
+      <p><strong>Người xác nhận:</strong> ${checkedBy}</p>
       <hr>
       <h6>Sản phẩm:</h6>
       ${productHtml}

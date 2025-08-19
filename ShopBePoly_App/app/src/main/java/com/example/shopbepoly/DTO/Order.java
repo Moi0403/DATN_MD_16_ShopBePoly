@@ -26,6 +26,7 @@ public class Order implements Serializable {
     private String cancelReason;
     private String address;
     private String pay;
+    private String checkedAt;
 
     public Order() {
     }
@@ -116,5 +117,21 @@ public class Order implements Serializable {
 
     public void setPay(String pay) {
         this.pay = pay;
+    }
+
+    public String getId_order() {
+        return id_order;
+    }
+
+    public void setId_order(String id_order) {
+        this.id_order = id_order;
+    }
+
+    public String getCheckedAt() {
+        return checkedAt;
+    }
+
+    public void setCheckedAt(String checkedAt) {
+        this.checkedAt = checkedAt;
     }
 }
