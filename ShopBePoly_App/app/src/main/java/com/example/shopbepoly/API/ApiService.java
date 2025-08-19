@@ -215,4 +215,43 @@ public interface ApiService {
 //
 //    @PUT("update_usage_limit/{id}")
 //    Call<Voucher> updateUsageLimit(@Path("id") String voucherId, @Body UsageLimitUpdate usageLimit);
+@POST("apply_voucher")
+Call<VoucherUsageResponse> applyVoucher(@Body Map<String, Object> body);
+
+    // Lấy voucher theo user
+    @GET("user_vouchers/{userId}")
+    Call<List<Voucher>> getUserVouchers(@Path("userId") String userId);
+
+    @POST("use_voucher/{id}")
+    Call<VoucherUsageResponse> useVoucher(@Path("id") String voucherId);
+    class VoucherUsageResponse {
+        private boolean success;
+        private String message;
+        private Voucher voucher;
+
+        public boolean isSuccess() {
+            return success;
+        }
+
+        public void setSuccess(boolean success) {
+            this.success = success;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+
+        public void setMessage(String message) {
+            this.message = message;
+        }
+
+        public Voucher getVoucher() {
+            return voucher;
+        }
+
+        public void setVoucher(Voucher voucher) {
+            this.voucher = voucher;
+        }
+    }
+
 }

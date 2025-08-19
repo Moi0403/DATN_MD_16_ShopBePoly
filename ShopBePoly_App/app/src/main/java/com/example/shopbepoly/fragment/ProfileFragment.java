@@ -32,6 +32,7 @@ import com.example.shopbepoly.MainActivity;
 import com.example.shopbepoly.R;
 import com.example.shopbepoly.Screen.LoginScreen;
 import com.example.shopbepoly.ThongTinCaNhan;
+import com.example.shopbepoly.VoucherActivity;
 import com.example.shopbepoly.API.ApiClient;
 import com.example.shopbepoly.API.ApiService;
 import com.example.shopbepoly.DTO.User;
@@ -44,7 +45,7 @@ import retrofit2.Response;
 
 public class ProfileFragment extends Fragment {
 
-    private TextView txtThongtincanhan, txtLichsugiaodich, txtGioiThieu, txtDoimatkhau, txtLienhe, txtDieuKhoan, txtChinhsach, txtLogout, txtDonmua;
+    private TextView txtThongtincanhan, txtLichsugiaodich, txtGioiThieu, txtDoimatkhau, txtLienhe, txtDieuKhoan, txtChinhsach, txtLogout, txtDonmua,txtVoucher;
     private ImageView imgAvatar;
     private TextView txtName, txtEmail;
 
@@ -64,6 +65,7 @@ public class ProfileFragment extends Fragment {
         txtName = view.findViewById(R.id.txtName);
         txtEmail = view.findViewById(R.id.txtEmail);
         txtDonmua = view.findViewById(R.id.txtDonmua);
+        txtVoucher = view.findViewById(R.id.txtVoucher);
 
         loadUserProfile();
 
@@ -80,7 +82,15 @@ public class ProfileFragment extends Fragment {
                 startActivity(new Intent(getActivity(), DonMua.class));
             }
         });
-
+        txtVoucher.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Chuyển sang VoucherActivity với tab "Đã lưu" (tab index = 1)
+                Intent intent = new Intent(getActivity(), VoucherActivity.class);
+                intent.putExtra("selectedTab", 1); // 0: Available, 1: Saved, 2: Used
+                startActivity(intent);
+            }
+        });
         txtLichsugiaodich.setOnClickListener(v -> {
             Intent intent = new Intent(getActivity(), DonMua.class);
             intent.putExtra("selectedTab", "dagiao"); // Truyền key để mở tab Đã Giao
