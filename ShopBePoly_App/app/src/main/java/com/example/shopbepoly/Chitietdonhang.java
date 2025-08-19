@@ -19,6 +19,7 @@ import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
+import java.util.Locale;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -30,6 +31,7 @@ public class Chitietdonhang extends AppCompatActivity {
     private RecyclerView rc_orderpro;
     private Order order;
     private ProOrderAdapter orderAdapter;
+    private boolean isStaff;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,6 +51,7 @@ public class Chitietdonhang extends AppCompatActivity {
         btnBack.setOnClickListener(v -> finish());
 
         boolean fromNotification = getIntent().getBooleanExtra("fromNotification", false);
+        isStaff = getIntent().getBooleanExtra("isStaff", false);
         orderId = getIntent().getStringExtra("orderId");
 
         if (fromNotification && orderId != null) {
@@ -92,7 +95,17 @@ public class Chitietdonhang extends AppCompatActivity {
         txtTT.setText(order.getStatus());
         txtDC.setText(order.getAddress());
         txtSL.setText(String.valueOf(order.getQuantity_order()));
-        txtTTien.setText(formatCurrency(Integer.parseInt(order.getTotal())));
+        int amountToDisplay = 0;
+        try {
+            if (isStaff && isZaloPayPaid(order.getPay())) {
+                amountToDisplay = 0;
+            } else {
+                amountToDisplay = Integer.parseInt(order.getTotal());
+            }
+        } catch (Exception e) {
+            amountToDisplay = 0;
+        }
+        txtTTien.setText(formatCurrency(amountToDisplay));
         txtDay.setText(formatDate(order.getDate()));
         txtPay.setText(order.getPay());
 
@@ -118,5 +131,11 @@ public class Chitietdonhang extends AppCompatActivity {
         } catch (Exception e) {
             return dateStr;
         }
+    }
+
+    private boolean isZaloPayPaid(String payInfo) {
+        if (payInfo == null) return false;
+        String normalized = payInfo.trim().toLowerCase(Locale.getDefault());
+        return normalized.contains("zalopay") && (normalized.contains("đã thanh toán") || normalized.contains("da thanh toan") || normalized.contains("paid"));
     }
 }
