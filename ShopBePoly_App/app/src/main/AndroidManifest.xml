@@ -3,11 +3,13 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
+        android:name=".Screen.MyApp"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:enableOnBackInvokedCallback="true"
@@ -18,7 +20,20 @@
         android:roundIcon="@drawable/logo"
         android:supportsRtl="true"
         android:theme="@style/Theme.ShopBePoly"
+        android:usesCleartextTraffic="true"
         tools:targetApi="31">
+        <activity
+            android:name=".VoucherActivity"
+            android:exported="false" />
+        <activity
+            android:name=".AppStaff"
+            android:exported="false" />
+        <activity
+            android:name=".TimDonHang"
+            android:exported="false" />
+        <activity
+            android:name=".VerifyCodeScreen"
+            android:exported="false" />
         <activity
             android:name=".DonMua"
             android:exported="false" />
@@ -69,7 +84,20 @@
             android:exported="false" />
         <activity
             android:name=".ThanhToan"
-            android:exported="false" />
+            android:exported="true"
+            android:label="Merchant Demo"
+            android:launchMode="singleTask">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="app"
+                    android:scheme="demozpdk" />
+            </intent-filter>
+        </activity>
         <activity
             android:name=".Chitietdonhang"
             android:exported="false" />
@@ -111,6 +139,9 @@
             android:exported="false" />
         <activity
             android:name=".EditAddressActivity"
+            android:exported="false" />
+        <activity
+            android:name=".DanhSachDanhGia"
             android:exported="false" />
     </application>
 

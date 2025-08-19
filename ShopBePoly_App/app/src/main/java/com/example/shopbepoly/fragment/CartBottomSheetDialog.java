@@ -90,17 +90,17 @@ public class CartBottomSheetDialog extends BottomSheetDialogFragment {
         Button btnAdd = view.findViewById(R.id.btnAddToCart);
 
 
-        // Cập nhật giá
+
         tvGia.setText("Giá: " + String.format("%,d", product.getPrice()) + " đ");
         tvTen.setText(product.getNameproduct());
         tvQuantity.setText(String.valueOf(quantity));
         tv_cate_product.setText("("+product.getCategoryName()+")");
-        // Tính tổng kho từ các variations
-                int totalStock = 0;
-                for (Variation v : product.getVariations()) {
-                    totalStock += v.getStock();
-                }
-                tvKho.setText("Kho: " + totalStock);
+
+        int totalStock = 0;
+        for (Variation v : product.getVariations()) {
+            totalStock += v.getStock();
+        }
+        tvKho.setText("Kho: " + totalStock);
 
 
 

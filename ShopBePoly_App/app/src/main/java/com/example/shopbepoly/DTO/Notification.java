@@ -11,13 +11,13 @@ public class Notification implements Serializable {
     private String createdAt;
     private boolean isRead;
     private String type;
+    private String orderId;
     private List<ProductInfo> products;
 
     public Notification() {
     }
 
-    public Notification(String _id, String userId, String title, String content, String createdAt,
-                        boolean isRead, String type, List<ProductInfo> products) {
+    public Notification(String _id, String userId, String title, String content, String createdAt, boolean isRead, String type, String orderId, List<ProductInfo> products) {
         this._id = _id;
         this.userId = userId;
         this.title = title;
@@ -25,6 +25,7 @@ public class Notification implements Serializable {
         this.createdAt = createdAt;
         this.isRead = isRead;
         this.type = type;
+        this.orderId = orderId;
         this.products = products;
     }
 
@@ -82,6 +83,14 @@ public class Notification implements Serializable {
 
     public void setType(String type) {
         this.type = type;
+    }
+
+    public String getOrderId() {
+        return orderId;
+    }
+
+    public void setOrderId(String orderId) {
+        this.orderId = orderId;
     }
 
     public List<ProductInfo> getProducts() {

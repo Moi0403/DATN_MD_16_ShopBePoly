@@ -214,6 +214,18 @@
                     android:layout_marginBottom="24dp">
 
                     <TextView
+                        android:id="@+id/size36"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_marginEnd="12dp"
+                        android:background="@drawable/size_selector"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:text="36"
+                        android:textColor="#666666"
+                        android:textSize="16sp" />
+                    <TextView
                         android:id="@+id/size37"
                         android:layout_width="48dp"
                         android:layout_height="48dp"
@@ -269,6 +281,7 @@
                         android:id="@+id/size41"
                         android:layout_width="48dp"
                         android:layout_height="48dp"
+                        android:layout_marginEnd="12dp"
                         android:background="@drawable/size_selector"
                         android:clickable="true"
                         android:focusable="true"
@@ -276,7 +289,53 @@
                         android:text="41"
                         android:textColor="#666666"
                         android:textSize="16sp" />
-
+                    <TextView
+                        android:id="@+id/size42"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_marginEnd="12dp"
+                        android:background="@drawable/size_selector"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:text="42"
+                        android:textColor="#666666"
+                        android:textSize="16sp" />
+                    <TextView
+                        android:id="@+id/size43"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_marginEnd="12dp"
+                        android:background="@drawable/size_selector"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:text="37"
+                        android:textColor="#666666"
+                        android:textSize="16sp" />
+                    <TextView
+                        android:id="@+id/size44"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_marginEnd="12dp"
+                        android:background="@drawable/size_selector"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:text="37"
+                        android:textColor="#666666"
+                        android:textSize="16sp" />
+                    <TextView
+                        android:id="@+id/size45"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="@drawable/size_selector"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:text="45"
+                        android:textColor="#666666"
+                        android:textSize="16sp" />
                 </LinearLayout>
 
                 <!-- Mô tả -->

@@ -66,6 +66,93 @@
                 android:layout_marginBottom="8dp"
                 android:nestedScrollingEnabled="false" />
 
+            <!-- Thông tin sản phẩm đơn lẻ -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cardProductInfo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="8dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="#FFF"
+                app:cardUseCompatPadding="true"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+
+                    <ImageView
+                        android:id="@+id/imgProduct"
+                        android:layout_width="80dp"
+                        android:layout_height="80dp"
+                        android:scaleType="centerCrop"
+                        android:background="@drawable/rounded_image_bg" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="12dp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/txtProductName"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Tên sản phẩm"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:textColor="#222" />
+
+                        <TextView
+                            android:id="@+id/txtProductColor"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Màu sắc"
+                            android:textSize="14sp"
+                            android:textColor="#666"
+                            android:layout_marginTop="4dp" />
+
+                        <TextView
+                            android:id="@+id/txtProductSize"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Size"
+                            android:textSize="14sp"
+                            android:textColor="#666" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:layout_marginTop="8dp">
+
+                            <TextView
+                                android:id="@+id/txtProductQuantity"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Số lượng: 1"
+                                android:textSize="14sp"
+                                android:textColor="#666" />
+
+                            <TextView
+                                android:id="@+id/txtProductPrice"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0₫"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:textColor="#FF3D00" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
             <!-- Thông tin khách hàng -->
             <TextView
                 android:id="@+id/txtCustomerInfoLabel"
@@ -155,7 +242,7 @@
                     android:id="@+id/radioStandardShipping"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Giao hàng tiêu chuẩn (30.000₫)" />
+                    android:text="Giao hàng tiêu chuẩn (20.000₫)" />
 
                 <RadioButton
                     android:id="@+id/radioFastShipping"
@@ -206,6 +293,16 @@
                     android:textColor="#222"/>
 
                 <RadioButton
+                    android:id="@+id/radioZaloPay"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Thanh toán qua ZaloPay"
+                    android:textSize="14sp"
+                    android:textColor="#222"
+                    android:drawableStart="@drawable/ic_zalopay"
+                    android:drawablePadding="8dp"/>
+
+                <RadioButton
                     android:id="@+id/radioAppBank"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -236,17 +333,50 @@
                         android:layout_height="wrap_content"
                         android:text="Momo"
                         android:drawableStart="@drawable/ic_momo"
+                        android:drawablePadding="8dp"
                         android:textSize="14sp"
                         android:textColor="#222"/>
+
                     <RadioButton
                         android:id="@+id/radioAgribank"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Agribank"
                         android:drawableStart="@drawable/ic_agribank"
+                        android:drawablePadding="8dp"
                         android:textSize="14sp"
                         android:textColor="#222"/>
                 </RadioGroup>
+            </LinearLayout>
+
+            <!-- Thông tin ZaloPay -->
+            <LinearLayout
+                android:id="@+id/layoutZaloPayInfo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone"
+                android:layout_marginTop="8dp"
+                android:layout_marginStart="20dp"
+                android:layout_marginEnd="20dp"
+                android:background="@drawable/rounded_border"
+                android:padding="12dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Thanh toán an toàn qua ZaloPay"
+                    android:textSize="14sp"
+                    android:textColor="#007AFF"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="• Ví điện tử hàng đầu Việt Nam\n• Thanh toán nhanh chóng, bảo mật\n• Hỗ trợ nhiều ngân hàng liên kết\n• Phí giao dịch: 0₫\n• Được bảo hiểm 100%"
+                    android:textSize="12sp"
+                    android:textColor="#666"
+                    android:layout_marginTop="4dp" />
             </LinearLayout>
         </LinearLayout>
     </ScrollView>
@@ -264,7 +394,8 @@
         android:paddingEnd="16dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintEnd_toEndOf="parent"
+        android:elevation="8dp">
 
         <LinearLayout
             android:id="@+id/layoutTotal"

@@ -5,4 +5,83 @@
     <string name="hello_blank_fragment">Hello blank fragment</string>
 
     <string name="product_image">Hình ảnh sản phẩm</string>
+
+    <string name="vietqr_payment_title">Thanh toán VietQR</string>
+    <string name="vietqr_payment_description">Thanh toán an toàn qua VietQR</string>
+    <string name="vietqr_scan_instruction">Quét mã QR để thanh toán</string>
+    <string name="vietqr_creating_qr">Đang tạo mã QR...</string>
+    <string name="vietqr_qr_ready">Quét mã QR để thanh toán</string>
+    <string name="vietqr_qr_failed">Không thể tạo mã QR. Nhấn để thử lại.</string>
+    <string name="vietqr_refresh_qr">Làm mới QR</string>
+
+    <!-- Payment Information -->
+    <string name="vietqr_payment_info">Thông tin thanh toán</string>
+    <string name="vietqr_amount_label">Số tiền:</string>
+    <string name="vietqr_content_label">Nội dung CK:</string>
+    <string name="vietqr_account_info_label">Thông tin tài khoản nhận:</string>
+
+    <!-- Instructions -->
+    <string name="vietqr_instruction_title">Hướng dẫn thanh toán:</string>
+    <string name="vietqr_instruction_content">1. Mở app ngân hàng hoặc ví điện tử\n2. Chọn chức năng quét QR Code\n3. Quét mã QR bên trên\n4. Kiểm tra thông tin và xác nhận thanh toán\n5. Chụp ảnh bill và nhấn \'Đã thanh toán\'</string>
+
+    <!-- Timer -->
+    <string name="vietqr_timer_label">Thời gian còn lại: %1$02d:%2$02d</string>
+    <string name="vietqr_timer_expired">Hết thời gian!</string>
+
+    <!-- Buttons -->
+    <string name="vietqr_btn_cancel">Hủy thanh toán</string>
+    <string name="vietqr_btn_confirm">Đã thanh toán</string>
+    <string name="vietqr_btn_processing">Đang xử lý...</string>
+
+    <!-- Confirmation Dialog -->
+    <string name="vietqr_confirm_title">Xác nhận thanh toán</string>
+    <string name="vietqr_confirm_message">Bạn có chắc chắn đã chuyển khoản thành công?\n\nSố tiền: %1$s\nNội dung: %2$s</string>
+    <string name="vietqr_confirm_yes">Đã thanh toán</string>
+    <string name="vietqr_confirm_no">Chưa thanh toán</string>
+
+    <!-- Success Messages -->
+    <string name="vietqr_payment_success">Đơn hàng của bạn đang được xử lý!</string>
+    <string name="vietqr_order_pending">Đơn hàng đã được tạo và chờ xác nhận thanh toán</string>
+
+    <!-- Error Messages -->
+    <string name="vietqr_error_network">Không có kết nối internet. Vui lòng kiểm tra và thử lại.</string>
+    <string name="vietqr_error_create_qr">Lỗi tạo mã QR: %1$s</string>
+    <string name="vietqr_error_invalid_amount">Số tiền không hợp lệ</string>
+    <string name="vietqr_error_invalid_account">Thông tin tài khoản không hợp lệ</string>
+    <string name="vietqr_error_timeout">Phiên thanh toán đã hết hạn!</string>
+    <string name="vietqr_error_processing">Lỗi xử lý thanh toán: %1$s</string>
+
+    <!-- Warnings -->
+    <string name="vietqr_warning_timeout_soon">Phiên thanh toán sắp hết hạn!</string>
+    <string name="vietqr_warning_verify_info">Vui lòng kiểm tra kỹ thông tin trước khi chuyển khoản</string>
+
+    <!-- Status Messages -->
+    <string name="vietqr_status_pending_payment">Chờ xác nhận thanh toán</string>
+    <string name="vietqr_status_processing">Đang xử lý</string>
+    <string name="vietqr_status_confirmed">Đã xác nhận</string>
+
+    <!-- Bank Names -->
+    <string name="bank_vietinbank">Vietinbank</string>
+    <string name="bank_bidv">BIDV</string>
+    <string name="bank_mbbank">MB Bank</string>
+    <string name="bank_techcombank">Techcombank</string>
+    <string name="bank_acb">ACB</string>
+    <string name="bank_vpbank">VPBank</string>
+    <string name="bank_sacombank">Sacombank</string>
+    <string name="bank_ocb">OCB</string>
+    <string name="bank_tpbank">TPBank</string>
+    <string name="bank_shb">SHB</string>
+
+    <!-- Additional Notes -->
+    <string name="vietqr_note_verification">* Đơn hàng sẽ được xử lý sau khi xác minh thanh toán thành công</string>
+    <string name="vietqr_note_support">Hỗ trợ tất cả ngân hàng Việt Nam</string>
+    <string name="vietqr_note_security">Giao dịch được bảo mật cao</string>
+    <string name="vietqr_note_fee">Phí giao dịch: 0₫</string>
+
+    <!-- Content Descriptions for Accessibility -->
+    <string name="vietqr_cd_qr_code">QR Code thanh toán</string>
+    <string name="vietqr_cd_close_dialog">Đóng dialog thanh toán</string>
+    <string name="vietqr_cd_refresh_qr">Làm mới mã QR</string>
+    <string name="vietqr_cd_timer_icon">Icon đồng hồ</string>
+    <string name="vietqr_cd_info_icon">Icon thông tin</string>
 </resources>

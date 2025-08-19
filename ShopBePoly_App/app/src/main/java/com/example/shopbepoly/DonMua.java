@@ -38,21 +38,26 @@ public class DonMua extends AppCompatActivity {
         pagerAdapter = new DonMuaPagerAdapter(this);
         viewPager.setAdapter(pagerAdapter);
 
+        ImageView imgSearch = findViewById(R.id.imgsearch);
+        imgSearch.setOnClickListener(v -> {
+            Intent intent = new Intent(DonMua.this, TimDonHang.class);
+            startActivity(intent);
+        });
+
+
         new TabLayoutMediator(tabLayout, viewPager,
                 (tab, position) -> {
                     switch (position) {
                         case 0: tab.setText("Chờ xác nhận"); break;
-                        case 1: tab.setText("Đang lấy hàng"); break;
-                        case 2: tab.setText("Lấy hàng thành công"); break;
-                        case 3: tab.setText("Đang giao"); break;
-                        case 4: tab.setText("Đã giao"); break;
-                        case 5: tab.setText("Đã hủy"); break;
+                        case 1: tab.setText("Đang giao"); break;
+                        case 2: tab.setText("Đã giao hàng"); break;
+                        case 3: tab.setText("Đã hủy"); break;
                     }
                 }).attach();
         String selectedTab = getIntent().getStringExtra("selectedTab");
         if (selectedTab != null) {
             if (selectedTab.equals("dagiao")) {
-                viewPager.setCurrentItem(4, false); // 1 = Tab "Đã Giao", index bạn tự kiểm tra
+                viewPager.setCurrentItem(2, false); // 1 = Tab "Đã Giao", index bạn tự kiểm tra
             }
         }
         btn_back.setOnClickListener(new View.OnClickListener() {

@@ -13,16 +13,20 @@ public class User implements Serializable {
     private String password;
     private String name;
     private String address;
+    @SerializedName("role")
     private int role;
     @SerializedName("avt_user")
     private String avatar;
     private String gender;
     private String birthday;
 
+    private boolean isOnline;
+
+
     public User() {
     }
 
-    public User(String id, String username, String email, String phone_number, String password, String name, String address, int role, String avatar, String gender, String birthday) {
+    public User(String id, String username, String email, String phone_number, String password, String name, String address, int role, String avatar, String gender, String birthday, boolean isOnline) {
         this.id = id;
         this.username = username;
         this.email = email;
@@ -34,6 +38,7 @@ public class User implements Serializable {
         this.avatar = avatar;
         this.gender = gender;
         this.birthday = birthday;
+        this.isOnline = isOnline;
     }
 
     public String getId() {
@@ -122,5 +127,13 @@ public class User implements Serializable {
 
     public void setBirthday(String birthday) {
         this.birthday = birthday;
+    }
+
+    public boolean isOnline() {
+        return isOnline;
+    }
+
+    public void setOnline(boolean online) {
+        isOnline = online;
     }
 }

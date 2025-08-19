@@ -1,121 +1,134 @@
 package com.example.shopbepoly;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 
 import com.example.shopbepoly.API.ApiClient;
 import com.example.shopbepoly.API.ApiService;
-import com.example.shopbepoly.DTO.User;
-import java.util.List;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
+import com.example.shopbepoly.Screen.LoginScreen;
+import com.google.android.material.textfield.TextInputLayout;
+
+import org.json.JSONObject;
+
 import okhttp3.MediaType;
 import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
-import org.json.JSONObject;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class DoiMatKhau extends AppCompatActivity {
-
-    EditText edtOldPassword, edtNewPassword, edtConfirmPassword;
-    Button btnUpdate;
-    ImageView btnback;
+    private EditText edtOldPassword, edtNewPassword, edtConfirmPassword;
+    private TextInputLayout layoutOldPassword;
+    private Button btnSave;
+    private ImageView btnBack;
+    private boolean isForgotPassword = false;
+    private String emailFromIntent = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
         setContentView(R.layout.doimatkhau);
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
 
         edtOldPassword = findViewById(R.id.edtOldPassword);
         edtNewPassword = findViewById(R.id.edtNewPassword);
         edtConfirmPassword = findViewById(R.id.edtConfirmPassword);
-        btnUpdate = findViewById(R.id.btnUpdate);
-        btnback = findViewById(R.id.btnBack);
+        layoutOldPassword = findViewById(R.id.layoutOldPassword);
+        btnSave = findViewById(R.id.btnUpdate);
+        btnBack = findViewById(R.id.btnBackdmk);
 
-        btnback.setOnClickListener(v -> finish());
+        Intent intent = getIntent();
+        isForgotPassword = intent.getBooleanExtra("isForgotPassword", false);
+        emailFromIntent = intent.getStringExtra("email");
 
-        btnUpdate.setOnClickListener(v -> {
+        if (isForgotPassword) {
+            layoutOldPassword.setVisibility(View.GONE);
+        }
+
+        btnBack.setOnClickListener(v -> onBackPressed());
+
+        btnSave.setOnClickListener(v -> {
             String oldPass = edtOldPassword.getText().toString().trim();
             String newPass = edtNewPassword.getText().toString().trim();
             String confirmPass = edtConfirmPassword.getText().toString().trim();
-            if (oldPass.isEmpty() || newPass.isEmpty() || confirmPass.isEmpty()) {
-                Toast.makeText(this, "Vui lòng nhập đầy đủ thông tin", Toast.LENGTH_SHORT).show();
+
+            if (!isForgotPassword && oldPass.isEmpty()) {
+                edtOldPassword.setError("Vui lòng nhập mật khẩu cũ");
                 return;
             }
+
+            if (newPass.isEmpty()) {
+                edtNewPassword.setError("Vui lòng nhập mật khẩu mới");
+                return;
+            }
+
             if (!newPass.equals(confirmPass)) {
-                Toast.makeText(this, "Mật khẩu mới không khớp", Toast.LENGTH_SHORT).show();
+                edtConfirmPassword.setError("Mật khẩu xác nhận không khớp");
                 return;
             }
-            SharedPreferences sharedPreferences = getSharedPreferences("LoginPrefs", MODE_PRIVATE);
-            String userId = sharedPreferences.getString("userId", "");
-            ApiService apiService = ApiClient.getApiService();
-            try {
-                JSONObject json = new JSONObject();
+
+            changePassword(oldPass, newPass);
+        });
+    }
+
+    private void changePassword(String oldPass, String newPass) {
+        ApiService apiService = ApiClient.getApiService();
+
+        try {
+            JSONObject json = new JSONObject();
+            Call<ResponseBody> call;
+
+            if (isForgotPassword) {
+                json.put("email", emailFromIntent);
+                json.put("newPassword", newPass);
+                RequestBody body = RequestBody.create(json.toString(), MediaType.parse("application/json"));
+                call = apiService.resetPasswordByEmail(body);
+            } else {
+                SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+                String userId = sharedPreferences.getString("userId", "");
                 json.put("oldPassword", oldPass);
                 json.put("newPassword", newPass);
                 RequestBody body = RequestBody.create(json.toString(), MediaType.parse("application/json"));
-                apiService.changePassword(userId, body).enqueue(new retrofit2.Callback<ResponseBody>() {
-                    @Override
-                    public void onResponse(retrofit2.Call<ResponseBody> call, retrofit2.Response<ResponseBody> response) {
-                        if (response.isSuccessful() && response.body() != null) {
-                            try {
-                                String resp = response.body().string();
-                                JSONObject obj = new JSONObject(resp);
-                                String msg = obj.optString("message", "Đổi mật khẩu thành công");
-                                Toast.makeText(DoiMatKhau.this, msg, Toast.LENGTH_SHORT).show();
-                                finish();
-                            } catch (Exception e) {
-                                Toast.makeText(DoiMatKhau.this, "Đổi mật khẩu thành công", Toast.LENGTH_SHORT).show();
-                                finish();
-                            }
-                        } else {
-                            String errorMsg = "Đổi mật khẩu thất bại";
-                            if (response.errorBody() != null) {
-                                try {
-                                    String errorBody = response.errorBody().string();
-                                    android.util.Log.e("DoiMatKhau", "API error body: " + errorBody);
-                                    // Thử parse JSON, nếu không phải thì log ra text
-                                    try {
-                                        JSONObject obj = new JSONObject(errorBody);
-                                        errorMsg = obj.optString("message", errorMsg);
-                                    } catch (Exception jsonEx) {
-                                        // Nếu không phải JSON, dùng luôn errorBody làm message
-                                        errorMsg = errorBody;
-                                    }
-                                } catch (Exception e) {
-                                    errorMsg += " (không đọc được lỗi chi tiết)";
-                                    android.util.Log.e("DoiMatKhau", "Không đọc được error body", e);
-                                }
-                            }
-                            Toast.makeText(DoiMatKhau.this, errorMsg, Toast.LENGTH_SHORT).show();
-                        }
-                    }
-                    @Override
-                    public void onFailure(retrofit2.Call<ResponseBody> call, Throwable t) {
-                        Toast.makeText(DoiMatKhau.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-                        android.util.Log.e("DoiMatKhau", "API changePassword onFailure", t);
-                    }
-                });
-            } catch (Exception e) {
-                Toast.makeText(DoiMatKhau.this, "Lỗi tạo dữ liệu đổi mật khẩu", Toast.LENGTH_SHORT).show();
-                android.util.Log.e("DoiMatKhau", "Lỗi tạo JSON body", e);
+                call = apiService.changePassword(userId, body);
             }
-        });
+
+            call.enqueue(new Callback<ResponseBody>() {
+                @Override
+                public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                    if (response.isSuccessful()) {
+                        showToast("Đổi mật khẩu thành công");
+                        if (isForgotPassword) {
+                            startActivity(new Intent(DoiMatKhau.this, LoginScreen.class));
+                            finish();
+                        } else {
+                            finish();
+                        }
+                    } else {
+                        showToast("Đổi mật khẩu thất bại");
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<ResponseBody> call, Throwable t) {
+                    showToast("Lỗi kết nối máy chủ");
+                }
+            });
+        } catch (Exception e) {
+            showToast("Lỗi xử lý dữ liệu");
+        }
+    }
+
+    private void showToast(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
 }

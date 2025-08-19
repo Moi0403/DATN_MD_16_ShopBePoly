@@ -78,7 +78,7 @@ public class DangGiaoFragment extends Fragment {
                 if (response.isSuccessful() && response.body() != null) {
                     list_order.clear();
                     for (Order order : response.body()) {
-                        if ("Đang giao".equalsIgnoreCase(order.getStatus())) {
+                        if ("Đang giao hàng".equalsIgnoreCase(order.getStatus())) {
                             list_order.add(order);
                         }
                     }

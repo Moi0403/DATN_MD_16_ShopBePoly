@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const orderSchema = new mongoose.Schema({
+    id_order: { type: String, required: true },
     id_user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'user',
@@ -28,8 +29,23 @@ const orderSchema = new mongoose.Schema({
     total: String,
     status: String,
     address: String,
-    pay: String
-});
+    pay: String,
+
+    // ✅ Thêm trường lý do hủy
+    cancelReason: {
+        type: String,
+        default: ""
+    },
+    checkedAt: {
+        type: Date, // Sử dụng Date để đồng bộ với timestamps
+        default: "" // Mặc định là null, chỉ cập nhật khi check
+    },
+    checkedBy: {
+        type: String,
+        default: ""
+    }
+    
+ }, { timestamps: true });
 
 const orderModel = mongoose.model('order', orderSchema);
 module.exports = orderModel;

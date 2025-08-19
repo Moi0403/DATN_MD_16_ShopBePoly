@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#F5F5F5">
+
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="@drawable/header_home"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="16dp">
+
+        <ImageView
+            android:id="@+id/btnBack"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_back"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:padding="4dp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Mã giảm giá"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="40dp" />
+    </LinearLayout>
+
+    <!-- Tab Layout -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:background="#FFFFFF"
+        android:orientation="horizontal"
+        android:elevation="2dp">
+
+        <TextView
+            android:id="@+id/tabAvailable"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:text="Có thể sử dụng"
+            android:textColor="#FF6B35"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:background="@drawable/tab_selected_bg"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/tabSaved"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:text="Đã lưu"
+            android:textColor="#666666"
+            android:gravity="center"
+            android:background="@drawable/tab_unselected_bg"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/tabUsed"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:text="Đã sử dụng"
+            android:textColor="#666666"
+            android:gravity="center"
+            android:background="@drawable/tab_unselected_bg"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+    <!-- Voucher List -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerViewVouchers"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="16dp"
+        android:clipToPadding="false" />
+
+    <!-- Empty State -->
+    <LinearLayout
+        android:id="@+id/layoutEmptyState"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone">
+
+        <ImageView
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:src="@drawable/ic_empty_voucher"
+            android:alpha="0.3"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Chưa có mã giảm giá"
+            android:textColor="#999999"
+            android:textSize="16sp"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Hãy quay lại sau để tìm những ưu đãi tuyệt vời!"
+            android:textColor="#CCCCCC"
+            android:textSize="14sp"
+            android:gravity="center" />
+    </LinearLayout>
+
+</LinearLayout>

@@ -1,8 +1,8 @@
 package com.example.shopbepoly.fragment;
 
+import android.app.Activity;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -10,12 +10,18 @@ import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.annotation.NonNull;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.fragment.app.Fragment;
@@ -27,148 +33,536 @@ import androidx.viewpager2.widget.ViewPager2;
 import com.example.shopbepoly.API.ApiClient;
 import com.example.shopbepoly.API.ApiService;
 import com.example.shopbepoly.Adapter.BannerAdapter;
-import com.example.shopbepoly.Adapter.CategoryAdapter;
 import com.example.shopbepoly.Adapter.ProductAdapter;
-import com.example.shopbepoly.DTO.Category;
+import com.example.shopbepoly.DTO.Banner;
 import com.example.shopbepoly.DTO.Notification;
 import com.example.shopbepoly.DTO.Product;
+import com.example.shopbepoly.DTO.Voucher;
 import com.example.shopbepoly.R;
 import com.example.shopbepoly.Screen.ThongBao;
 import com.example.shopbepoly.Screen.TimKiem;
-import com.google.android.material.tabs.TabLayout;
-import com.google.android.material.tabs.TabLayoutMediator;
+import com.example.shopbepoly.VoucherActivity;
 
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
 public class HomeFragment extends Fragment {
-    private RecyclerView recyclerViewProducts, recyclerViewCategories;
+    private RecyclerView recyclerViewProducts;
     private List<Product> productList = new ArrayList<>();
-    private List<Category> categoryList = new ArrayList<>();
     private ProductAdapter productAdapter;
-    private CategoryAdapter categoryAdapter;
     private ApiService apiService;
     private LinearLayout searchBox;
     private ViewPager2 viewPagerBanner;
-    private TabLayout tabLayoutBanner;
     private BannerAdapter bannerAdapter;
     private Handler handler;
     private Runnable runnable;
     private int currentPage = 0;
-    private static final long DELAY_MS = 3000; // Delay in milliseconds between slides
+    private static final long DELAY_MS = 3000;
     private ImageView img_notify;
     private static final String CHANNEL_ID = "shopbepoly_channel";
     private static final int NOTIFICATION_ID = 1;
+    private TextView tvNotificationCount;
+    private TextView tvViewAllVouchers;
+    private LinearLayout btnMoreVouchers;
+    private LinearLayout layoutVoucherCards;
+
+    private List<Banner> bannerList = new ArrayList<>();
+    private List<Voucher> voucherList = new ArrayList<>();
+
+    // Thống nhất với VoucherAdapter
+    private SharedPreferences voucherPrefs;
+    private static final String SAVED_VOUCHERS_KEY = "saved_vouchers";
+
+    private final ActivityResultLauncher<Intent> thongBaoLauncher =
+            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
+                    result -> {
+                        if (result.getResultCode() == Activity.RESULT_OK) {
+                            updateNotificationCount();
+                        }
+                    });
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_home, container, false);
         FavoriteFragment.loadFavoritesFromPrefs(requireContext());
+
+        // Initialize SharedPreferences - thống nhất với VoucherAdapter
+        voucherPrefs = requireContext().getSharedPreferences("VoucherPrefs", Context.MODE_PRIVATE);
+
+        // Initialize views
+        initializeViews(view);
+
+        // Setup listeners
+        setupListeners();
+
+        // Initialize banner and load data
+        setupBanner();
+        loadProduct();
+        loadVouchers();
+
+        createNotificationChannel();
+
+        return view;
+    }
+
+    private void initializeViews(View view) {
         img_notify = view.findViewById(R.id.imgNotification);
+        tvNotificationCount = view.findViewById(R.id.tvNotificationCount);
+        tvViewAllVouchers = view.findViewById(R.id.tvViewAllVouchers);
+        btnMoreVouchers = view.findViewById(R.id.btnMoreVouchers);
+        layoutVoucherCards = view.findViewById(R.id.layoutVoucherCards);
+        searchBox = view.findViewById(R.id.searchBox);
+        viewPagerBanner = view.findViewById(R.id.viewPagerBanner);
+
         recyclerViewProducts = view.findViewById(R.id.recyclerViewProducts);
         recyclerViewProducts.setLayoutManager(new GridLayoutManager(getContext(), 2));
-        productAdapter = new ProductAdapter(getContext(),productList);
+        productAdapter = new ProductAdapter(getContext(), productList);
         recyclerViewProducts.setAdapter(productAdapter);
         apiService = ApiClient.getApiService();
+    }
 
-        recyclerViewCategories = view.findViewById(R.id.recyclerViewCategories);
-        LinearLayoutManager layoutManagerCategory = new LinearLayoutManager(getContext(),
-                LinearLayoutManager.HORIZONTAL, false);
-        recyclerViewCategories.setLayoutManager(layoutManagerCategory);
-        categoryAdapter = new CategoryAdapter(getContext());
-        recyclerViewCategories.setAdapter(categoryAdapter);
-        categoryAdapter.setOnCategoryClickListener(category -> {
-            loadProductsByCategory(category.get_id());
-        });
-        createNotificationChannel();
+    private void setupListeners() {
+        // Setup notification click
         img_notify.setOnClickListener(v -> {
-            ApiService apiService = ApiClient.getApiService();
             SharedPreferences prefs = requireContext().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
             String userId = prefs.getString("userId", null);
 
-            apiService.getNotifications(userId).enqueue(new Callback<List<Notification>>() {
-                @Override
-                public void onResponse(Call<List<Notification>> call, Response<List<Notification>> response) {
-                    if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
-                        sendLocalNotification();
+            if (userId != null) {
+                apiService.getNotifications(userId).enqueue(new Callback<List<Notification>>() {
+                    @Override
+                    public void onResponse(Call<List<Notification>> call, Response<List<Notification>> response) {
+                        Intent intent = new Intent(getActivity(), ThongBao.class);
+                        thongBaoLauncher.launch(intent);
                     }
-                    startActivity(new Intent(getActivity(), ThongBao.class));
-                }
 
-                @Override
-                public void onFailure(Call<List<Notification>> call, Throwable t) {
-                    t.printStackTrace();
-
-                    startActivity(new Intent(getActivity(), ThongBao.class));
-                }
-            });
+                    @Override
+                    public void onFailure(Call<List<Notification>> call, Throwable t) {
+                        t.printStackTrace();
+                        startActivity(new Intent(getActivity(), ThongBao.class));
+                    }
+                });
+            } else {
+                startActivity(new Intent(getActivity(), ThongBao.class));
+            }
         });
 
-        searchBox = view.findViewById(R.id.searchBox);
+        // Setup search click
         searchBox.setOnClickListener(v -> {
             Intent intent = new Intent(getActivity(), TimKiem.class);
             startActivity(intent);
         });
 
-        // Initialize banner views
-        viewPagerBanner = view.findViewById(R.id.viewPagerBanner);
+        // Setup voucher section clicks
+        tvViewAllVouchers.setOnClickListener(v -> {
+            Intent intent = new Intent(getActivity(), VoucherActivity.class);
+            startActivity(intent);
+        });
 
-        // Setup banner
-        setupBanner();
-
-        loadProduct();
-        loadCategories();
-        return view;
+        btnMoreVouchers.setOnClickListener(v -> {
+            Intent intent = new Intent(getActivity(), VoucherActivity.class);
+            startActivity(intent);
+        });
     }
 
     private void setupBanner() {
-        // Add banner images to list
-        List<Integer> bannerList = new ArrayList<>();
-        bannerList.add(R.drawable.banner1);
-        bannerList.add(R.drawable.banner2);
-        bannerList.add(R.drawable.banner);
-
-        // Setup adapter
-        bannerAdapter = new BannerAdapter(bannerList);
+        bannerAdapter = new BannerAdapter(bannerList, ApiClient.BASE_URL);
         viewPagerBanner.setAdapter(bannerAdapter);
+        fetchBanners();
 
-        // Auto scroll banner
         handler = new Handler();
         runnable = new Runnable() {
             @Override
             public void run() {
-                if (currentPage == bannerList.size()) {
-                    currentPage = 0;
+                if (bannerList.isEmpty()) {
+                    return;
                 }
-                viewPagerBanner.setCurrentItem(currentPage++, true);
+                currentPage = (currentPage + 1) % bannerList.size();
+                viewPagerBanner.setCurrentItem(currentPage, true);
                 handler.postDelayed(this, DELAY_MS);
             }
         };
+
+        viewPagerBanner.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+            @Override
+            public void onPageSelected(int position) {
+                super.onPageSelected(position);
+                currentPage = position;
+            }
+        });
+    }
+
+    private void updateNotificationCount() {
+        SharedPreferences prefs = requireContext().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
+        String userId = prefs.getString("userId", null);
+
+        if (userId == null) return;
+
+        apiService.getNotifications(userId).enqueue(new Callback<List<Notification>>() {
+            @Override
+            public void onResponse(Call<List<Notification>> call, Response<List<Notification>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    int unreadCount = 0;
+                    for (Notification notification : response.body()) {
+                        if (!notification.isRead()) {
+                            unreadCount++;
+                        }
+                    }
+
+                    if (unreadCount > 0) {
+                        tvNotificationCount.setText(String.valueOf(unreadCount));
+                        tvNotificationCount.setVisibility(View.VISIBLE);
+                    } else {
+                        tvNotificationCount.setVisibility(View.GONE);
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<Notification>> call, Throwable t) {
+                t.printStackTrace();
+            }
+        });
+    }
+
+    // Method load vouchers từ API
+    private void loadVouchers() {
+        Log.d("HomeFragment", "Starting to load vouchers...");
+
+        apiService.getVouchers().enqueue(new Callback<List<Voucher>>() {
+            @Override
+            public void onResponse(Call<List<Voucher>> call, Response<List<Voucher>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    voucherList.clear();
+                    voucherList.addAll(response.body());
+                    Log.d("HomeFragment", "Loaded " + voucherList.size() + " vouchers from API");
+                    displayVouchers();
+                } else {
+                    Log.e("HomeFragment", "Error loading vouchers: " + response.code() + " - " + response.message());
+                    if (response.errorBody() != null) {
+                        try {
+                            Log.e("HomeFragment", "Error body: " + response.errorBody().string());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<Voucher>> call, Throwable t) {
+                Log.e("HomeFragment", "Network error loading vouchers", t);
+            }
+        });
+    }
+
+    // Method hiển thị vouchers
+    private void displayVouchers() {
+        Log.d("HomeFragment", "displayVouchers() called");
+
+        if (layoutVoucherCards == null) {
+            Log.w("HomeFragment", "layoutVoucherCards is null");
+            return;
+        }
+
+        if (voucherList == null || voucherList.isEmpty()) {
+            Log.w("HomeFragment", "Voucher list is null or empty");
+            return;
+        }
+
+        try {
+            // Lưu lại button "Xem thêm"
+            View moreButton = layoutVoucherCards.findViewById(R.id.btnMoreVouchers);
+            if (moreButton != null) {
+                layoutVoucherCards.removeView(moreButton);
+            }
+
+            // Xóa tất cả voucher cards cũ
+            layoutVoucherCards.removeAllViews();
+
+            // Hiển thị tối đa 2 voucher active đầu tiên
+            int displayCount = 0;
+            int maxDisplay = 2;
+
+            for (Voucher voucher : voucherList) {
+                if (displayCount >= maxDisplay) break;
+
+                // Kiểm tra voucher còn active và chưa hết hạn
+                if (isVoucherValid(voucher)) {
+                    try {
+                        View voucherCard = createVoucherCard(voucher);
+                        if (voucherCard != null) {
+                            layoutVoucherCards.addView(voucherCard);
+                            displayCount++;
+                            Log.d("HomeFragment", "Added voucher card: " + voucher.getCode());
+                        }
+                    } catch (Exception e) {
+                        Log.e("HomeFragment", "Error creating voucher card for: " + voucher.getCode(), e);
+                    }
+                }
+            }
+
+            // Thêm lại button "Xem thêm"
+            if (moreButton != null) {
+                layoutVoucherCards.addView(moreButton);
+            }
+
+            Log.d("HomeFragment", "Successfully displayed " + displayCount + " active vouchers");
+
+        } catch (Exception e) {
+            Log.e("HomeFragment", "Error in displayVouchers()", e);
+        }
+    }
+
+    // Helper method để kiểm tra voucher có hợp lệ không
+    private boolean isVoucherValid(Voucher voucher) {
+        if (voucher == null) return false;
+
+        // Kiểm tra active
+        if (!voucher.isActive()) return false;
+
+        // Kiểm tra hết hạn
+        Date currentDate = new Date();
+        if (voucher.getEndDate() != null && currentDate.after(voucher.getEndDate())) {
+            return false;
+        }
+
+        // Kiểm tra usage limit
+        if (voucher.getUsedCount() >= voucher.getUsageLimit()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    // Method tạo voucher card động
+    private View createVoucherCard(Voucher voucher) {
+        try {
+            if (getContext() == null || voucher == null) {
+                Log.w("HomeFragment", "Context or voucher is null");
+                return null;
+            }
+
+            // Tạo layout chính
+            LinearLayout voucherCard = new LinearLayout(getContext());
+            LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(
+                    (int) (280 * getResources().getDisplayMetrics().density),
+                    (int) (100 * getResources().getDisplayMetrics().density)
+            );
+            cardParams.setMarginEnd((int) (12 * getResources().getDisplayMetrics().density));
+            voucherCard.setLayoutParams(cardParams);
+            voucherCard.setOrientation(LinearLayout.HORIZONTAL);
+            voucherCard.setBackground(getResources().getDrawable(R.drawable.voucher_card_bg));
+
+            int padding = (int) (16 * getResources().getDisplayMetrics().density);
+            voucherCard.setPadding(padding, padding, padding, padding);
+            voucherCard.setGravity(16); // center_vertical
+
+            // Icon
+            ImageView icon = createVoucherIcon();
+
+            // Text container
+            LinearLayout textContainer = createTextContainer(voucher);
+
+            // Save button
+            TextView saveButton = createSaveButton(voucher);
+
+            // Add views to containers
+            voucherCard.addView(icon);
+            voucherCard.addView(textContainer);
+            voucherCard.addView(saveButton);
+
+            return voucherCard;
+
+        } catch (Exception e) {
+            Log.e("HomeFragment", "Error creating voucher card", e);
+            return null;
+        }
+    }
+
+    private ImageView createVoucherIcon() {
+        ImageView icon = new ImageView(getContext());
+        LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(
+                (int) (40 * getResources().getDisplayMetrics().density),
+                (int) (40 * getResources().getDisplayMetrics().density)
+        );
+        iconParams.setMarginEnd((int) (12 * getResources().getDisplayMetrics().density));
+        icon.setLayoutParams(iconParams);
+        icon.setImageResource(R.drawable.ic_voucher_ticket);
+        icon.setBackground(getResources().getDrawable(R.drawable.circle_orange_bg));
+        int iconPadding = (int) (8 * getResources().getDisplayMetrics().density);
+        icon.setPadding(iconPadding, iconPadding, iconPadding, iconPadding);
+        return icon;
+    }
+
+    private LinearLayout createTextContainer(Voucher voucher) {
+        LinearLayout textContainer = new LinearLayout(getContext());
+        LinearLayout.LayoutParams textParams = new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f
+        );
+        textContainer.setLayoutParams(textParams);
+        textContainer.setOrientation(LinearLayout.VERTICAL);
+
+        // Voucher title
+        TextView title = new TextView(getContext());
+        title.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        ));
+
+        // Format discount text
+        String discountText = formatDiscountText(voucher);
+        title.setText(discountText);
+        title.setTextColor(Color.parseColor("#FF6B35"));
+        title.setTypeface(null, android.graphics.Typeface.BOLD);
+        title.setTextSize(16);
+
+        // Voucher description
+        TextView description = new TextView(getContext());
+        LinearLayout.LayoutParams descParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        );
+        descParams.topMargin = (int) (4 * getResources().getDisplayMetrics().density);
+        description.setLayoutParams(descParams);
+
+        String descText = formatDescriptionText(voucher);
+        description.setText(descText);
+        description.setTextColor(Color.parseColor("#666666"));
+        description.setTextSize(12);
+
+        textContainer.addView(title);
+        textContainer.addView(description);
+
+        return textContainer;
+    }
+
+    private TextView createSaveButton(Voucher voucher) {
+        TextView saveButton = new TextView(getContext());
+        saveButton.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        ));
+
+        // Kiểm tra voucher đã được lưu chưa
+        boolean isSaved = isVoucherSaved(voucher.getId());
+
+        if (isSaved) {
+            saveButton.setText("Đã lưu");
+            saveButton.setTextColor(getResources().getColor(R.color.gray));
+            saveButton.setBackground(getResources().getDrawable(R.drawable.saved_button_bg));
+            saveButton.setEnabled(false);
+        } else {
+            saveButton.setText("Lưu");
+            saveButton.setTextColor(Color.WHITE);
+            saveButton.setBackground(getResources().getDrawable(R.drawable.save_voucher_bg));
+        }
+
+        saveButton.setTypeface(null, android.graphics.Typeface.BOLD);
+        int buttonPadding = (int) (8 * getResources().getDisplayMetrics().density);
+        saveButton.setPadding(buttonPadding, buttonPadding, buttonPadding, buttonPadding);
+        saveButton.setTextSize(12);
+
+        // Add click listener cho save button
+        saveButton.setOnClickListener(v -> {
+            if (!isSaved) {
+                saveVoucher(voucher);
+                saveButton.setText("Đã lưu");
+                saveButton.setTextColor(getResources().getColor(R.color.gray));
+                saveButton.setBackground(getResources().getDrawable(R.drawable.saved_button_bg));
+                saveButton.setEnabled(false);
+                Toast.makeText(getContext(), "Đã lưu mã giảm giá!", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        return saveButton;
+    }
+
+    private String formatDiscountText(Voucher voucher) {
+        if ("percent".equals(voucher.getDiscountType()) || "percent".equals(voucher.getDiscountType())) {
+            return "Giảm " + (int) voucher.getDiscountValue() + "%";
+        } else {
+            return "Giảm " + formatCurrency(voucher.getDiscountValue());
+        }
+    }
+
+    private String formatDescriptionText(Voucher voucher) {
+        if ("percent".equals(voucher.getDiscountType()) || "percent".equals(voucher.getDiscountType())) {
+            if (voucher.getMinOrderValue() > 0) {
+                return "Tối đa " + formatCurrency(voucher.getMinOrderValue());
+            } else {
+                return "Không giới hạn";
+            }
+        } else {
+            if (voucher.getMinOrderValue() > 0) {
+                return "Đơn tối thiểu " + formatCurrency(voucher.getMinOrderValue());
+            } else {
+                return "Không giới hạn";
+            }
+        }
+    }
+
+    // Method kiểm tra voucher đã được lưu chưa - THỐNG NHẤT với VoucherAdapter
+    private boolean isVoucherSaved(String voucherId) {
+        Set<String> savedVouchers = voucherPrefs.getStringSet(SAVED_VOUCHERS_KEY, new HashSet<>());
+        return savedVouchers.contains(voucherId);
+    }
+
+    // Method lưu voucher - THỐNG NHẤT với VoucherAdapter
+    private void saveVoucher(Voucher voucher) {
+        Set<String> savedVouchers = voucherPrefs.getStringSet(SAVED_VOUCHERS_KEY, new HashSet<>());
+        savedVouchers = new HashSet<>(savedVouchers); // Create new set to avoid modification issues
+        savedVouchers.add(voucher.getId());
+        voucherPrefs.edit().putStringSet(SAVED_VOUCHERS_KEY, savedVouchers).apply();
+
+        Log.d("HomeFragment", "Saved voucher: " + voucher.getCode() + " with ID: " + voucher.getId());
+    }
+
+    // Helper method format currency
+    private String formatCurrency(double amount) {
+        if (amount >= 1000000) {
+            return (int) (amount / 1000000) + "M";
+        } else if (amount >= 1000) {
+            return (int) (amount / 1000) + "K";
+        }
+        return String.valueOf((int) amount);
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        handler.postDelayed(runnable, DELAY_MS);
+        if (handler != null && runnable != null && !bannerList.isEmpty()) {
+            handler.postDelayed(runnable, DELAY_MS);
+        }
 
-        // Load lại danh sách yêu thích từ SharedPreferences
         FavoriteFragment.loadFavoritesFromPrefs(requireContext());
 
-        // Cập nhật lại adapter để icon yêu thích đổi màu
         if (productAdapter != null) {
             productAdapter.notifyDataSetChanged();
         }
-    }
+        updateNotificationCount();
 
+        // Reload vouchers để cập nhật trạng thái "đã lưu"
+        if (!voucherList.isEmpty()) {
+            displayVouchers();
+        } else {
+            loadVouchers();
+        }
+    }
 
     @Override
     public void onPause() {
         super.onPause();
-        handler.removeCallbacks(runnable);
+        if (handler != null && runnable != null) {
+            handler.removeCallbacks(runnable);
+        }
     }
 
     private void loadProduct() {
@@ -190,43 +584,6 @@ public class HomeFragment extends Fragment {
         });
     }
 
-    private void loadCategories() {
-        Call<List<Category>> call = apiService.getCategories();
-        call.enqueue(new Callback<List<Category>>() {
-            @Override
-            public void onResponse(Call<List<Category>> call, Response<List<Category>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    categoryList.clear();
-                    categoryList.addAll(response.body());
-                    categoryAdapter.setCategoryList(categoryList);
-                }
-            }
-
-            @Override
-            public void onFailure(Call<List<Category>> call, Throwable t) {
-                t.printStackTrace();
-            }
-        });
-    }
-
-    private void loadProductsByCategory(String categoryId) {
-        Call<List<Product>> call = apiService.getProductsByCategory(categoryId);
-        call.enqueue(new Callback<List<Product>>() {
-            @Override
-            public void onResponse(Call<List<Product>> call, Response<List<Product>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    productList.clear();
-                    productList.addAll(response.body());
-                    productAdapter.notifyDataSetChanged();
-                }
-            }
-
-            @Override
-            public void onFailure(Call<List<Product>> call, Throwable t) {
-                t.printStackTrace();
-            }
-        });
-    }
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             CharSequence name = "ShopBePoly Notification Channel";
@@ -245,21 +602,27 @@ public class HomeFragment extends Fragment {
         }
     }
 
-    private void sendLocalNotification() {
-        Intent intent = new Intent(getActivity(), ThongBao.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        PendingIntent pendingIntent = PendingIntent.getActivity(
-                getActivity(), 0, intent, PendingIntent.FLAG_IMMUTABLE);
+    private void fetchBanners() {
+        apiService.getBanners().enqueue(new Callback<List<Banner>>() {
+            @Override
+            public void onResponse(@NonNull Call<List<Banner>> call, @NonNull Response<List<Banner>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    bannerList.clear();
+                    bannerList.addAll(response.body());
+                    bannerAdapter.notifyDataSetChanged();
 
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(requireContext(), CHANNEL_ID)
-                .setSmallIcon(R.drawable.bell) // ảnh nhỏ (icon)
-                .setContentTitle("Bạn có thông báo mới")
-                .setContentText("Hãy kiểm tra thông báo của bạn ngay bây giờ.")
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                .setAutoCancel(true)
-                .setContentIntent(pendingIntent);
+                    if (!bannerList.isEmpty()) {
+                        handler.postDelayed(runnable, DELAY_MS);
+                    }
+                } else {
+                    Log.e("HomeFragment", "Error loading banners: " + response.code() + " " + response.message());
+                }
+            }
 
-        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(requireContext());
-        notificationManager.notify(NOTIFICATION_ID, builder.build());
+            @Override
+            public void onFailure(@NonNull Call<List<Banner>> call, @NonNull Throwable t) {
+                Log.e("HomeFragment", "Network error loading banners", t);
+            }
+        });
     }
 }

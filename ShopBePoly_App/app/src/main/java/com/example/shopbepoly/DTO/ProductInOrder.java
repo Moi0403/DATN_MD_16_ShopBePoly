@@ -7,6 +7,7 @@ import java.io.Serializable;
 public class ProductInOrder implements Serializable {
     @SerializedName("id_product")
     private Product id_product;
+    private String orderId;
     private int quantity;
     private String color;
     private String size;
@@ -25,6 +26,13 @@ public class ProductInOrder implements Serializable {
         this.id_product = id_product;
     }
 
+    public String getOrderId() {
+        return orderId;
+    }
+
+    public void setOrderId(String orderId) {
+        this.orderId = orderId;
+    }
 
     public int getQuantity() {
         return quantity;

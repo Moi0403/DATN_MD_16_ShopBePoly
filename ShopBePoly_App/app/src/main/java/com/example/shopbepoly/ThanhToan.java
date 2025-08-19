@@ -1,21 +1,27 @@
 package com.example.shopbepoly;
 
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.util.Log;
 import android.view.View;
 import android.widget.*;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.NotificationCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.example.shopbepoly.API.ApiClient;
 import com.example.shopbepoly.API.ApiService;
+import com.example.shopbepoly.API.CreateOrder;
 import com.example.shopbepoly.DTO.Address;
 import com.example.shopbepoly.DTO.Cart;
 import com.example.shopbepoly.DTO.Order;
@@ -24,18 +30,25 @@ import com.example.shopbepoly.DTO.ProductInOrder;
 import com.example.shopbepoly.DTO.User;
 import com.google.gson.Gson;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.PrimitiveIterator;
+import java.util.Random;
 
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import vn.zalopay.sdk.Environment;
+import vn.zalopay.sdk.ZaloPayError;
+import vn.zalopay.sdk.ZaloPaySDK;
+import vn.zalopay.sdk.listeners.PayOrderListener;
 
 public class ThanhToan extends AppCompatActivity {
 
@@ -45,16 +58,20 @@ public class ThanhToan extends AppCompatActivity {
     private User currentUser;
     private int quantity = 1;
     private int productPrice = 0;
-    private int shippingFee = 30000;
+    private int shippingFee = 20000; // Mặc định phí giao hàng tiêu chuẩn Hà Nội
     private String selectedSize = "", selectedColor = "", userId;
     private List<String> selectedCartIds = new ArrayList<>();
 
+    // ZaloPay
+    private String pendingOrderId;
+    private Order pendingOrder;
 
     private TextView txtProductName, txtProductColor, txtProductQuantity, txtProductSize, txtProductPrice,
             txtProductTotal, txtShippingFee, txtTotalPayment, txtCustomerName, txtCustomerAddress, txtCustomerPhone, txtShippingNote;
     private ImageView imgProduct, img_next_address;
-    private RadioGroup radioGroupShipping;
-    private RadioButton radioStandardShipping, radioFastShipping;
+    private RadioGroup radioGroupShipping, radioGroupPaymentMain;
+    private RadioButton radioStandardShipping, radioFastShipping, radioCOD, radioZaloPay, radioAppBank;
+    private LinearLayout layoutZaloPayInfo;
     private Button btnDatHang;
 
     private static final int REQ_ADDRESS = 3001;
@@ -69,7 +86,17 @@ public class ThanhToan extends AppCompatActivity {
 
         initViews();
         loadUserInfo();
+
+        StrictMode.ThreadPolicy policy = new
+                StrictMode.ThreadPolicy.Builder().permitAll().build();
+        StrictMode.setThreadPolicy(policy);
+
+        // ZaloPay SDK Init
+        ZaloPaySDK.init(2553, Environment.SANDBOX);
+
         radioStandardShipping.setChecked(true);
+
+        shippingFee = 20000;
 
         getDataFromIntent();
         selectedColor = getIntent().getStringExtra("color");
@@ -91,11 +118,17 @@ public class ThanhToan extends AppCompatActivity {
             String phone = txtCustomerPhone.getText().toString().trim();
             String address = txtCustomerAddress.getText().toString().trim();
 
-            int selectedPaymentId = ((RadioGroup) findViewById(R.id.radioGroupPaymentMain)).getCheckedRadioButtonId();
+            int selectedPaymentId = radioGroupPaymentMain.getCheckedRadioButtonId();
             int selectedBankId = ((RadioGroup) findViewById(R.id.radioGroupBank)).getCheckedRadioButtonId();
 
             if (name.isEmpty() || phone.isEmpty() || address.isEmpty()) {
                 Toast.makeText(this, "Vui lòng điền đầy đủ thông tin khách hàng", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // Kiểm tra địa chỉ có thuộc Hà Nội không
+            if (!isHanoiAddress(address)) {
+                Toast.makeText(this, "Hiện tại chỉ giao hàng trong nội thành Hà Nội", Toast.LENGTH_LONG).show();
                 return;
             }
 
@@ -109,9 +142,14 @@ public class ThanhToan extends AppCompatActivity {
                 return;
             }
 
-//            startActivity(new Intent(ThanhToan.this, Dathangthanhcong.class));
-//            finish();
-            createNewOrder(name, phone, address, selectedPaymentId, selectedBankId);
+            // Check if ZaloPay is selected
+            if (selectedPaymentId == R.id.radioZaloPay) {
+                // Process ZaloPay payment
+                processZaloPayPayment(name, phone, address, selectedPaymentId, selectedBankId);
+            } else {
+                // Process normal order
+                createNewOrder(name, phone, address, selectedPaymentId, selectedBankId);
+            }
         });
     }
 
@@ -133,6 +171,11 @@ public class ThanhToan extends AppCompatActivity {
         radioGroupShipping = findViewById(R.id.radioGroupShipping);
         radioStandardShipping = findViewById(R.id.radioStandardShipping);
         radioFastShipping = findViewById(R.id.radioFastShipping);
+        radioGroupPaymentMain = findViewById(R.id.radioGroupPaymentMain);
+        radioCOD = findViewById(R.id.radioCOD);
+        radioZaloPay = findViewById(R.id.radioZaloPay);
+        radioAppBank = findViewById(R.id.radioAppBank);
+        layoutZaloPayInfo = findViewById(R.id.layoutZaloPayInfo);
         btnDatHang = findViewById(R.id.btnDatHang);
     }
 
@@ -141,17 +184,213 @@ public class ThanhToan extends AppCompatActivity {
 
         radioGroupShipping.setOnCheckedChangeListener((group, checkedId) -> updateShippingFeeBasedOnAddress());
 
-        ((RadioGroup) findViewById(R.id.radioGroupPaymentMain)).setOnCheckedChangeListener((group, checkedId) -> {
+        radioGroupPaymentMain.setOnCheckedChangeListener((group, checkedId) -> {
             View layoutBankOptions = findViewById(R.id.layoutBankOptions);
+
+            // Hide all optional layouts first
+            layoutBankOptions.setVisibility(View.GONE);
+            layoutZaloPayInfo.setVisibility(View.GONE);
+            ((RadioGroup) findViewById(R.id.radioGroupBank)).clearCheck();
+
             if (checkedId == R.id.radioAppBank) {
                 layoutBankOptions.setVisibility(View.VISIBLE);
-            } else {
-                layoutBankOptions.setVisibility(View.GONE);
-                ((RadioGroup) findViewById(R.id.radioGroupBank)).clearCheck();
+            } else if (checkedId == R.id.radioZaloPay) {
+                layoutZaloPayInfo.setVisibility(View.VISIBLE);
             }
         });
 
         img_next_address.setOnClickListener(v -> startActivityForResult(new Intent(this, AddressListActivity.class), REQ_ADDRESS));
+    }
+
+    /**
+     * Process ZaloPay payment
+     */
+    private void processZaloPayPayment(String name, String phone, String address, int paymentId, int bankId) {
+        try {
+            // Create order first to get order ID
+            pendingOrder = createOrderObject(name, phone, address, paymentId, bankId);
+            pendingOrderId = pendingOrder.getIdOrder();
+
+            // Calculate total amount
+            int totalAmount = Integer.parseInt(pendingOrder.getTotal());
+
+            // Create ZaloPay order
+            createZaloPayOrder(totalAmount);
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error processing ZaloPay payment", e);
+            Toast.makeText(this, "Lỗi khởi tạo thanh toán ZaloPay: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * Create ZaloPay order and initiate payment
+     */
+    private void createZaloPayOrder(int amount) {
+        try {
+            CreateOrder orderApi = new CreateOrder();
+            JSONObject data = orderApi.createOrder(String.valueOf(amount));
+
+            if (data != null) {
+                String code = data.getString("return_code");
+
+                if (code.equals("1")) {
+                    // Success - get token to pay
+                    String token = data.getString("zp_trans_token");
+
+                    // Show progress
+                    btnDatHang.setEnabled(false);
+                    btnDatHang.setText("Đang xử lý ZaloPay...");
+
+                    // Call ZaloPay SDK to pay
+                    ZaloPaySDK.getInstance().payOrder(ThanhToan.this, token, "demozpdk://app", new PayOrderListener() {
+                        @Override
+                        public void onPaymentSucceeded(String s, String s1, String s2) {
+                            Log.d(TAG, "ZaloPay payment succeeded: " + s);
+
+                            runOnUiThread(() -> {
+                                // Update payment status
+                                if (pendingOrder != null) {
+                                    pendingOrder.setPay("ZaloPay - Đã thanh toán");
+                                    createOrderViaAPI(pendingOrder);
+                                }
+                            });
+                        }
+
+                        @Override
+                        public void onPaymentCanceled(String s, String s1) {
+                            Log.d(TAG, "ZaloPay payment cancelled: " + s);
+
+                            runOnUiThread(() -> {
+                                btnDatHang.setEnabled(true);
+                                btnDatHang.setText("Đặt hàng");
+                                Toast.makeText(ThanhToan.this, "Đã hủy thanh toán ZaloPay", Toast.LENGTH_SHORT).show();
+
+                                // Reset pending order
+                                pendingOrder = null;
+                                pendingOrderId = null;
+                            });
+                        }
+
+                        @Override
+                        public void onPaymentError(ZaloPayError zaloPayError, String s, String s1) {
+                            Log.e(TAG, "ZaloPay payment error: " + zaloPayError.toString() + " - " + s);
+
+                            runOnUiThread(() -> {
+                                btnDatHang.setEnabled(true);
+                                btnDatHang.setText("Đặt hàng");
+                                Toast.makeText(ThanhToan.this, "Lỗi thanh toán ZaloPay: " + zaloPayError.toString(), Toast.LENGTH_LONG).show();
+
+                                // Reset pending order
+                                pendingOrder = null;
+                                pendingOrderId = null;
+                            });
+                        }
+                    });
+
+                } else {
+                    // Error from ZaloPay API
+                    String message = data.has("return_message") ? data.getString("return_message") : "Lỗi không xác định";
+                    Toast.makeText(this, "Lỗi tạo đơn hàng ZaloPay: " + message, Toast.LENGTH_LONG).show();
+                    Log.e(TAG, "ZaloPay API Error: " + data.toString());
+                }
+            } else {
+                Toast.makeText(this, "Không thể kết nối đến ZaloPay", Toast.LENGTH_SHORT).show();
+            }
+
+        } catch (JSONException e) {
+            Log.e(TAG, "JSON parsing error", e);
+            Toast.makeText(this, "Lỗi xử lý dữ liệu ZaloPay", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Log.e(TAG, "ZaloPay order creation error", e);
+            Toast.makeText(this, "Lỗi tạo đơn hàng ZaloPay: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        ZaloPaySDK.getInstance().onResult(intent);
+    }
+
+    /**
+     * Create order object without calling API
+     */
+    private Order createOrderObject(String name, String phone, String address, int paymentId, int bankId) {
+        Order newOrder = new Order();
+
+        // Generate random order ID
+        String id_order = generateRandomOrderId();
+        newOrder.setIdOrder(id_order);
+
+        // Set user
+        User user = new User();
+        user.setId(userId);
+        newOrder.setId_user(user);
+
+        newOrder.setDate(getCurrentDate());
+        newOrder.setStatus("Đang xử lý");
+        newOrder.setAddress(address);
+        newOrder.setPay(getPaymentMethodText(paymentId, bankId));
+
+        String jsonCart = getIntent().getStringExtra("cart_list");
+        int totalAmount = 0;
+        List<ProductInOrder> productsInOrderList = new ArrayList<>();
+
+        if (jsonCart != null && !jsonCart.isEmpty()) {
+            List<Cart> cartList = new Gson().fromJson(jsonCart, new com.google.gson.reflect.TypeToken<List<Cart>>() {}.getType());
+
+            for (Cart cart : cartList) {
+                ProductInOrder productInOrder = new ProductInOrder();
+
+                Product productForOrder = new Product();
+                productForOrder.set_id(cart.getIdProduct().get_id());
+
+                productInOrder.setId_product(productForOrder);
+                productInOrder.setQuantity(cart.getQuantity());
+                productInOrder.setPrice(cart.getIdProduct().getPrice());
+                productInOrder.setColor(cart.getColor());
+                productInOrder.setSize(cart.getSize()+"");
+                productInOrder.setImg(cart.getIdProduct().getAvt_imgproduct());
+
+                totalAmount += cart.getIdProduct().getPrice() * cart.getQuantity();
+                productsInOrderList.add(productInOrder);
+                selectedCartIds.add(cart.get_id());
+            }
+        } else if (selectedProduct != null) {
+            ProductInOrder productInOrder = new ProductInOrder();
+
+            Product productForOrder = new Product();
+            productForOrder.set_id(selectedProduct.get_id());
+
+            productInOrder.setId_product(productForOrder);
+            productInOrder.setQuantity(quantity);
+            productInOrder.setPrice(selectedProduct.getPrice());
+            productInOrder.setColor(selectedColor);
+            productInOrder.setSize(selectedSize);
+            productInOrder.setImg(selectedProduct.getAvt_imgproduct());
+
+            totalAmount += selectedProduct.getPrice() * quantity;
+            productsInOrderList.add(productInOrder);
+        }
+
+        totalAmount += shippingFee;
+        newOrder.setTotal(String.valueOf(totalAmount));
+        newOrder.setProducts(productsInOrderList);
+
+        // Calculate total quantity
+        int totalQuantity = 0;
+        for (ProductInOrder pio : productsInOrderList) {
+            totalQuantity += pio.getQuantity();
+        }
+        newOrder.setQuantity_order(totalQuantity);
+
+        return newOrder;
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
     }
 
     private void getDataFromIntent() {
@@ -187,7 +426,6 @@ public class ThanhToan extends AppCompatActivity {
     }
 
     private void displayUserInfo() {
-        // Ưu tiên lấy địa chỉ mặc định nếu có
         SharedPreferences prefs = getSharedPreferences("AddressPrefs", MODE_PRIVATE);
         String json = prefs.getString("default_address_" + userId, "");
         if (!json.isEmpty()) {
@@ -197,13 +435,15 @@ public class ThanhToan extends AppCompatActivity {
                     txtCustomerName.setText(address.getName());
                     txtCustomerPhone.setText(address.getPhone());
                     txtCustomerAddress.setText(address.getAddress());
+                    // Kiểm tra địa chỉ sau khi load
+                    updateShippingFeeBasedOnAddress();
                     return;
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
-        // Nếu không có địa chỉ mặc định, thử lấy địa chỉ đầu tiên trong danh sách địa chỉ (nếu có)
+
         String allAddressesJson = prefs.getString("address_list_" + userId, "[]");
         List<Address> addressList = new Gson().fromJson(allAddressesJson, new com.google.gson.reflect.TypeToken<List<Address>>() {}.getType());
         if (addressList != null && !addressList.isEmpty()) {
@@ -211,9 +451,11 @@ public class ThanhToan extends AppCompatActivity {
             txtCustomerName.setText(firstAddress.getName());
             txtCustomerPhone.setText(firstAddress.getPhone());
             txtCustomerAddress.setText(firstAddress.getAddress());
+            // Kiểm tra địa chỉ sau khi load
+            updateShippingFeeBasedOnAddress();
             return;
         }
-        // Nếu không có địa chỉ nào, để trống toàn bộ các trường
+
         txtCustomerName.setText("");
         txtCustomerPhone.setText("");
         txtCustomerAddress.setText("");
@@ -270,41 +512,153 @@ public class ThanhToan extends AppCompatActivity {
         txtShippingFee.setText(formatPrice(shippingFee));
         txtTotalPayment.setText(formatPrice(totalProductPrice + shippingFee));
     }
+    private boolean isHanoiInnerCity(String address) {
+        if (address == null || address.isEmpty()) {
+            return false;
+        }
 
+        address = address.toLowerCase().trim();
+
+        // Các quận nội thành Hà Nội
+        String[] innerDistricts = {
+                "ba đình", "hoàn kiếm", "hai bà trưng", "đống đa",
+                "tây hồ", "cầu giấy", "thanh xuân", "hoàng mai",
+                "long biên", "bắc từ liêm", "nam từ liêm", "hà đông"
+        };
+
+        for (String district : innerDistricts) {
+            if (address.contains(district)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+    // Phương thức kiểm tra địa chỉ có thuộc Hà Nội không
+    private boolean isHanoiAddress(String address) {
+        if (address == null || address.isEmpty()) {
+            return false;
+        }
+
+        address = address.toLowerCase().trim();
+
+        // Kiểm tra từ khóa Hà Nội
+        boolean hasHanoiKeyword = address.contains("hà nội") ||
+                address.contains("ha noi") ||
+                address.contains("hanoi") ||
+                address.contains("hn");
+
+        // Kiểm tra có thuộc nội thành hoặc ngoại thành không
+        boolean isInnerOrOuter = isHanoiInnerCity(address) || isHanoiOuterCity(address);
+
+        return hasHanoiKeyword || isInnerOrOuter;
+    }
+
+    // Cập nhật phương thức tính phí vận chuyển theo khu vực Hà Nội
+    private int calculateShippingFeeByAddress(String address, boolean isFastShipping) {
+        if (address == null || address.isEmpty()) {
+            // Mặc định là phí giao hàng nội thành
+            return isFastShipping ? 30000 : 20000;
+        }
+
+        // Kiểm tra nội thành Hà Nội
+        if (isHanoiInnerCity(address)) {
+            // Phí giao hàng nội thành Hà Nội
+            return isFastShipping ? 30000 : 20000; // Giao nhanh: 30k, Tiêu chuẩn: 20k
+        }
+        // Kiểm tra ngoại thành Hà Nội
+        else if (isHanoiOuterCity(address)) {
+            // Phí giao hàng ngoại thành Hà Nội (cao hơn nội thành)
+            return isFastShipping ? 50000 : 35000; // Giao nhanh: 50k, Tiêu chuẩn: 35k
+        }
+        // Kiểm tra có từ khóa Hà Nội nhưng không xác định được quận/huyện
+        else if (address.toLowerCase().contains("hà nội") ||
+                address.toLowerCase().contains("ha noi") ||
+                address.toLowerCase().contains("hanoi")) {
+            // Áp dụng phí nội thành làm mặc định
+            return isFastShipping ? 30000 : 20000;
+        }
+        // Không thuộc Hà Nội
+        else {
+            return 0; // Không giao hàng
+        }
+    }
+    private boolean isHanoiOuterCity(String address) {
+        if (address == null || address.isEmpty()) {
+            return false;
+        }
+
+        address = address.toLowerCase().trim();
+
+        // Các huyện ngoại thành Hà Nội
+        String[] outerDistricts = {
+                "sóc sơn", "đông anh", "gia lâm", "mê linh",
+                "thanh trì", "thường tín", "hoài đức", "đan phượng",
+                "mỹ đức", "ứng hòa", "thạch thất", "quốc oai",
+                "chương mỹ", "thanh oai", "phú xuyên", "ba vì"
+        };
+
+        for (String district : outerDistricts) {
+            if (address.contains(district)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+    // Cập nhật phương thức tính phí vận chuyển theo khu vực Hà Nội
     private void updateShippingFeeBasedOnAddress() {
         String address = txtCustomerAddress.getText().toString();
         boolean isFast = radioFastShipping.isChecked();
+
+        // Kiểm tra xem địa chỉ có thuộc Hà Nội không
+        if (!isHanoiAddress(address)) {
+            // Hiển thị thông báo không giao hàng
+            if (txtShippingNote != null) {
+                txtShippingNote.setText("⚠️ Hiện tại chỉ giao hàng trong địa bàn Hà Nội");
+                txtShippingNote.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
+            }
+
+            // Vô hiệu hóa nút đặt hàng
+            btnDatHang.setEnabled(false);
+            btnDatHang.setText("Không giao hàng đến khu vực này");
+
+            // Set phí vận chuyển = 0
+            shippingFee = 0;
+            txtShippingFee.setText("0₫");
+
+            // Tính lại tổng tiền
+            updateTotalPriceDisplay();
+
+            return;
+        }
+
+        // Nếu là địa chỉ Hà Nội hợp lệ
         shippingFee = calculateShippingFeeByAddress(address, isFast);
 
+        // Kích hoạt lại nút đặt hàng
+        btnDatHang.setEnabled(true);
+        btnDatHang.setText("Đặt hàng");
+
+        // Hiển thị thông báo phí giao hàng dựa trên khu vực
         if (txtShippingNote != null) {
-            txtShippingNote.setText(
-                    address.toLowerCase().contains("hà nội") || address.toLowerCase().contains("hcm")
-                            ? "Áp dụng phí nội thành"
-                            : "Áp dụng phí ngoại thành");
+            String noteText = "";
+            int noteColor = android.R.color.holo_green_dark;
+
+            if (isHanoiInnerCity(address)) {
+                noteText = "✓ Giao hàng nội thành Hà Nội";
+            } else if (isHanoiOuterCity(address)) {
+                noteText = "✓ Giao hàng ngoại thành Hà Nội";
+                noteColor = android.R.color.holo_orange_dark; // Màu cam cho ngoại thành
+            } else {
+                noteText = "✓ Giao hàng trong địa bàn Hà Nội";
+            }
+
+            txtShippingNote.setText(noteText);
+            txtShippingNote.setTextColor(getResources().getColor(noteColor));
         }
 
         updateTotalPriceDisplay();
-    }
-
-    private int calculateShippingFeeByAddress(String address, boolean isFastShipping) {
-        if (address == null || address.isEmpty()) {
-            return isFastShipping ? 50000 : 30000;
-        }
-
-        address = address.toLowerCase();
-
-        boolean isNear = address.contains("hà nội") || address.contains("ha noi") || address.contains("tp.hcm")
-                || address.contains("hồ chí minh") || address.contains("ho chi minh") || address.contains("tphcm")
-                || address.contains("thành phố hồ chí minh") || address.contains("hải phòng")
-                || address.contains("đà nẵng") || address.contains("bình dương") || address.contains("đồng nai");
-
-        boolean isFar = address.contains("sơn la") || address.contains("điện biên") || address.contains("cao bằng")
-                || address.contains("hà giang") || address.contains("lào cai") || address.contains("kon tum")
-                || address.contains("gia lai") || address.contains("phú yên");
-
-        if (isNear) return isFastShipping ? 40000 : 20000;
-        else if (isFar) return isFastShipping ? 60000 : 40000;
-        else return isFastShipping ? 50000 : 30000;
     }
 
     @Override
@@ -312,7 +666,6 @@ public class ThanhToan extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REQ_ADDRESS && resultCode == RESULT_OK) {
             if (data != null && data.hasExtra("address_result")) {
-                // Lấy địa chỉ vừa chọn và hiển thị lên giao diện
                 String addressJson = data.getStringExtra("address_result");
                 if (addressJson != null && !addressJson.isEmpty()) {
                     Address address = new Gson().fromJson(addressJson, Address.class);
@@ -323,7 +676,6 @@ public class ThanhToan extends AppCompatActivity {
                     return;
                 }
             }
-            // Nếu không có address_result thì fallback về mặc định
             displayUserInfo();
             updateShippingFeeBasedOnAddress();
         }
@@ -341,100 +693,36 @@ public class ThanhToan extends AppCompatActivity {
 
     private void createNewOrder(String name, String phone, String address, int paymentId, int bankId) {
         try {
-            Order newOrder = new Order();
-
-            // Ensure id_user is set as a User object with only the ID,
-            // so UserTypeAdapter can handle it when serializing.
-            User user = new User();
-            user.setId(userId); // Assuming 'userId' is available in ThanhToan activity
-            newOrder.setId_user(user);
-
-            newOrder.setDate(getCurrentDate());
-            newOrder.setStatus("Đang xử lý");
-            newOrder.setAddress(address);
-            newOrder.setPay(getPaymentMethodText(paymentId, bankId));
-
-            String jsonCart = getIntent().getStringExtra("cart_list");
-            int totalAmount = 0;
-            // ✅ Direct list of ProductInOrder
-            List<ProductInOrder> productsInOrderList = new ArrayList<>();
-
-            if (jsonCart != null && !jsonCart.isEmpty()) {
-                // Use the Gson instance that knows how to parse Cart objects (if Cart contains complex types)
-                // or a simple new Gson() if Cart is straightforward.
-                List<Cart> cartList = new Gson().fromJson(jsonCart, new com.google.gson.reflect.TypeToken<List<Cart>>() {}.getType());
-
-                for (Cart cart : cartList) {
-                    ProductInOrder productInOrder = new ProductInOrder();
-
-                    // ✅ Create a Product object and set its ID.
-                    // The ProductIdTypeAdapter's 'write' method will then take this Product object
-                    // and serialize only its ID as a String for the API request.
-                    Product productForOrder = new Product();
-                    productForOrder.set_id(cart.getIdProduct().get_id()); // Use getId() from your Product DTO
-
-                    productInOrder.setId_product(productForOrder); // Set the Product object
-
-                    productInOrder.setQuantity(cart.getQuantity());
-                    productInOrder.setPrice(cart.getIdProduct().getPrice());
-                    productInOrder.setColor(cart.getColor());
-                    productInOrder.setSize(cart.getSize()+"");
-                    productInOrder.setImg(cart.getIdProduct().getAvt_imgproduct()); // Use getAvtImgproduct()
-
-                    totalAmount += cart.getIdProduct().getPrice() * cart.getQuantity();
-                    productsInOrderList.add(productInOrder);
-                    selectedCartIds.add(cart.get_id());
-                }
-            } else if (selectedProduct != null) {
-                ProductInOrder productInOrder = new ProductInOrder();
-
-                // ✅ Create a Product object and set its ID for selectedProduct case
-                Product productForOrder = new Product();
-                productForOrder.set_id(selectedProduct.get_id()); // Use getId() from your Product DTO
-
-                productInOrder.setId_product(productForOrder); // Set the Product object
-
-                productInOrder.setQuantity(quantity);
-                productInOrder.setPrice(selectedProduct.getPrice());
-                productInOrder.setColor(selectedColor);
-                productInOrder.setSize(selectedSize);
-                productInOrder.setImg(selectedProduct.getAvt_imgproduct()); // Use getAvtImgproduct()
-
-                totalAmount += selectedProduct.getPrice() * quantity;
-                productsInOrderList.add(productInOrder);
-            }
-
-            totalAmount += shippingFee;
-            newOrder.setTotal(String.valueOf(totalAmount));
-            newOrder.setProducts(productsInOrderList); // ✅ Set the list of ProductInOrder objects
-
-            // Calculate and set quantity_order
-            int totalQuantity = 0;
-            for (ProductInOrder pio : productsInOrderList) {
-                totalQuantity += pio.getQuantity();
-            }
-            newOrder.setQuantity_order(totalQuantity);
-
-            createOrderViaAPI(newOrder); // Call your API method
-
+            Order newOrder = createOrderObject(name, phone, address, paymentId, bankId);
+            createOrderViaAPI(newOrder);
         } catch (Exception e) {
             Log.e(TAG, "Error creating order", e);
             Toast.makeText(this, "Lỗi tạo đơn hàng: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 
-
-
-
     private String getCurrentDate() {
-        // ISO 8601: yyyy-MM-dd'T'HH:mm:ss'Z' (hoặc không cần 'Z')
         return new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).format(new java.util.Date());
     }
 
+    private String generateRandomOrderId() {
+        String datePart = new java.text.SimpleDateFormat("yyMMdd", Locale.getDefault()).format(new java.util.Date());
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        StringBuilder randomPart = new StringBuilder();
+        Random random = new Random();
+
+        for (int i = 0; i < 4; i++) {
+            randomPart.append(chars.charAt(random.nextInt(chars.length())));
+        }
+
+        return "" + datePart + randomPart.toString();
+    }
 
     private String getPaymentMethodText(int paymentId, int bankId){
         try {
-            if (paymentId == R.id.radioAppBank){
+            if (paymentId == R.id.radioZaloPay) {
+                return "ZaloPay - Ví điện tử";
+            } else if (paymentId == R.id.radioAppBank){
                 RadioButton selectedBank = findViewById(bankId);
                 return "Chuyển khoản - " + (selectedBank != null ? selectedBank.getText().toString() : "Ngân Hàng");
             } else {
@@ -448,25 +736,22 @@ public class ThanhToan extends AppCompatActivity {
     }
 
     private void createOrderViaAPI(Order order){
-        //Hiển thị loading
         btnDatHang.setEnabled(false);
         btnDatHang.setText("Đang xử lý ...");
 
         ApiService apiService = ApiClient.getApiService();
-
         Call<Order> call = apiService.createOrder(order);
 
         call.enqueue(new Callback<Order>() {
             @Override
             public void onResponse(Call<Order> call, Response<Order> response) {
-                //reset button
                 btnDatHang.setEnabled(true);
                 btnDatHang.setText("Đặt hàng");
 
                 if (response.isSuccessful() && response.body() != null){
                     Toast.makeText(ThanhToan.this, "Đặt hàng thành công", Toast.LENGTH_SHORT).show();
+                    sendLocalNotification();
 
-                    //xóa cart nếu đặt hàng từ cart
                     String jsonCart = getIntent().getStringExtra("cart_list");
                     if (!selectedCartIds.isEmpty()) {
                         clearSelectedCartAfterOrder(selectedCartIds);
@@ -478,7 +763,6 @@ public class ThanhToan extends AppCompatActivity {
                     setResult(RESULT_OK, resultIntent);
                     finish();
                 } else {
-                    //nếu Api fail, lưu vào local
                     Log.e(TAG, "API create order failed: " + response.code());
                     saveOrderToLocal(order);
                 }
@@ -486,16 +770,38 @@ public class ThanhToan extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<Order> call, Throwable t) {
-                //reset button
                 btnDatHang.setEnabled(true);
                 btnDatHang.setText("Đặt hàng");
 
                 Log.e(TAG, "API create order failed", t);
-                //lưu vào local khi API fail
                 saveOrderToLocal(order);
             }
         });
+    }
 
+    private void sendLocalNotification() {
+        String channelId = "order_channel_id";
+        String channelName = "Đơn hàng";
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    channelId, channelName, NotificationManager.IMPORTANCE_HIGH
+            );
+            channel.enableLights(true);
+            channel.enableVibration(true);
+            channel.setDescription("Thông báo đơn hàng mới");
+            notificationManager.createNotificationChannel(channel);
+        }
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, channelId)
+                .setSmallIcon(R.drawable.ic_bell)
+                .setContentTitle("Đặt hàng thành công")
+                .setContentText("Cảm ơn bạn đã đặt hàng tại ShopBePoly!")
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true);
+
+        notificationManager.notify((int) System.currentTimeMillis(), builder.build());
     }
 
     private void saveOrderToLocal(Order order){
@@ -503,11 +809,9 @@ public class ThanhToan extends AppCompatActivity {
             SharedPreferences prefs = getSharedPreferences("OrderPrefs", MODE_PRIVATE);
             SharedPreferences.Editor editor = prefs.edit();
 
-            //tạo ID cho order
-            String orderId = "ORD" + System.currentTimeMillis();
-            order.set_id(orderId);
+            String id_order = generateRandomOrderId();
+            order.setIdOrder(id_order);
 
-            //láy danh sách order hiện có
             String existingOrders = prefs.getString("orders_list", "[]");
             List<Order> orderList = new Gson().fromJson(existingOrders, new com.google.gson.reflect.TypeToken<List<Order>>() {}.getType());
 
@@ -515,17 +819,14 @@ public class ThanhToan extends AppCompatActivity {
                 orderList = new ArrayList<>();
             }
 
-            //thêm order mới vào đầu danh sách
             orderList.add(0, order);
 
-            //lưu lại
             String updatedOrders = new Gson().toJson(orderList);
             editor.putString("orders_list", updatedOrders);
             editor.apply();
 
             Toast.makeText(this, "Đặt hàng thành công", Toast.LENGTH_SHORT).show();
 
-            //xóa cart nếu đặt hàng từ cart
             String jsonCart = getIntent().getStringExtra("cart_list");
             if (!selectedCartIds.isEmpty()) {
                 clearSelectedCartAfterOrder(selectedCartIds);
@@ -535,9 +836,6 @@ public class ThanhToan extends AppCompatActivity {
             resultIntent.putExtra("delete_selected", true);
             setResult(RESULT_OK, resultIntent);
             finish();
-
-
-
 
         } catch (Exception e) {
             Log.e(TAG, "Error saving order locally", e);
@@ -568,5 +866,4 @@ public class ThanhToan extends AppCompatActivity {
             Log.e(TAG, "Error clearing selected cart items", e);
         }
     }
-
 }

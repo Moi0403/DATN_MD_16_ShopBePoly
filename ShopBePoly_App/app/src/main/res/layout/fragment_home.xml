@@ -113,23 +113,74 @@
                 android:clipToOutline="true"
                 android:background="@drawable/banner_rounded" />
 
-            <!-- Thể loại -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Thương hiệu"
-                android:textStyle="bold"
-                android:textSize="16sp"
-                android:layout_marginBottom="12dp"/>
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/recyclerViewCategories"
+            <!-- Voucher Section -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:overScrollMode="never"
-                android:scrollbars="horizontal"
-                android:orientation="horizontal" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="16dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Mã giảm giá"
+                    android:textStyle="bold"
+                    android:textSize="16sp"/>
+
+                <TextView
+                    android:id="@+id/tvViewAllVouchers"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Xem tất cả >"
+                    android:textColor="#FF6B35"
+                    android:textSize="14sp"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:padding="8dp"/>
+            </LinearLayout>
+
+            <!-- Voucher Cards -->
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none"
+                android:layout_marginBottom="16dp">
+
+                <LinearLayout
+                    android:id="@+id/layoutVoucherCards"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <!-- Voucher cards sẽ được thêm động từ code -->
+
+                    <!-- More Vouchers Button -->
+                    <LinearLayout
+                        android:id="@+id/btnMoreVouchers"
+                        android:layout_width="120dp"
+                        android:layout_height="100dp"
+                        android:background="@drawable/more_vouchers_bg"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:layout_marginEnd="12dp">
+
+                        <ImageView
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:src="@drawable/ic_empty_voucher"
+                            android:layout_marginBottom="8dp"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Xem thêm"
+                            android:textColor="#FF6B35"
+                            android:textStyle="bold"
+                            android:textSize="12sp"/>
+                    </LinearLayout>
+                </LinearLayout>
+            </HorizontalScrollView>
 
             <!-- Sản phẩm nổi bật -->
             <TextView
@@ -147,6 +198,7 @@
                 android:nestedScrollingEnabled="false"
                 android:overScrollMode="never"
                 tools:listitem="@layout/item_product" />
+
             <FrameLayout
                 android:id="@+id/fragment_container"
                 android:layout_width="match_parent"

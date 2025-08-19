@@ -49,6 +49,9 @@ dependencies {
     // Picasso
     implementation 'com.squareup.picasso:picasso:2.71828'
     implementation libs.activity
+    implementation fileTree(dir: 'C:\\Users\\Dungg\\Desktop\\Zalopay', include: ['*.aar', '*.jar'], exclude: [])
+    implementation fileTree(dir: 'C:\\Users\\DELL\\OneDrive\\Desktop\\Zalopay', include: ['*.aar', '*.jar'], exclude: [])
+    implementation fileTree(dir: 'C:\\Users\\abc\\Desktop\\Zalopay', include: ['*.aar', '*.jar'], exclude: [])
 
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
@@ -71,5 +74,14 @@ dependencies {
     implementation 'androidx.viewpager2:viewpager2:1.0.0'
     implementation 'com.google.android.material:material:1.11.0'
     implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
+
+    implementation 'it.xabaras.android:recyclerview-swipedecorator:1.4'
+
+    implementation 'org.java-websocket:Java-WebSocket:1.5.3'
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+    implementation "androidx.lifecycle:lifecycle-process:2.7.0"
+
+    //pay
+    implementation("commons-codec:commons-codec:1.14")
 
 }

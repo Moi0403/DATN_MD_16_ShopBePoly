@@ -1,20 +1,6 @@
 // Đảm bảo config được định nghĩa (giả sử đã có trong window.config)
 const { host, port } = window.config || { host: 'localhost', port: 3000 };
 
-// Load Sidebar
-fetch('../Style_Sidebar/Sidebar.html')
-  .then(res => res.text())
-  .then(data => {
-    document.getElementById('sidebar-container').innerHTML = data;
-    const dangxuat = document.getElementById('dangxuat');
-    if (dangxuat) {
-      dangxuat.addEventListener('click', () => {
-        if (confirm('Bạn có chắc chắn muốn đăng xuất không?')) {
-          window.location.href = '../Web_TrangChu/TrangChu.html';
-        }
-      });
-    }
-  });
 
 window.addEventListener('DOMContentLoaded', async () => {
   const cate_selet = document.getElementById('category_pro');
@@ -44,20 +30,24 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 function convertToColorCode(color) {
   const colorMap = {
-    'đen': 'black',
-    'trắng': 'white',
-    'đỏ': 'red',
-    'xanh': 'blue',
-    'vàng': 'yellow',
-    default: '#ccc'
+    'đen': '#000000',
+    'trắng': '#FFFFFF',
+    'đỏ': '#FF0000',
+    'xanh': '#0000FF',
+    'vàng': '#FFFF00',
+    'hồng': '#FFC0CB',
+    'tím': '#800080',
+    'nâu': '#8B4513',
+    'cam': '#FFA500'
   };
-  return colorMap[color.toLowerCase()] || colorMap.default;
+
+  return colorMap[color.toLowerCase()] || '#CCCCCC'; // fallback nếu không khớp
 }
 
 function updateColorSpinner() {
   const colorSpinner = document.getElementById('colorSpinner');
   const existingColors = [...document.querySelectorAll('.var-color-name')].map(el => el.value.toLowerCase());
-  const allColors = ['Đen', 'Trắng', 'Đỏ', 'Xanh', 'Vàng', 'Hồng'];
+  const allColors = ['Đen', 'Trắng', 'Đỏ', 'Xanh', 'Vàng', 'Hồng', 'Tím', 'Nâu', 'Cam'];
 
   // Lấy các màu chưa tồn tại
   const availableColors = allColors.filter(color => !existingColors.includes(color.toLowerCase()));
@@ -165,6 +155,21 @@ function attachSizeEvents(colorBlock) {
 
   // Cập nhật tất cả select ban đầu
   updateAllSizeOptions(variationWrapper);
+
+
+  // Gắn lại sự kiện xóa size cho các hàng có sẵn (được render từ server khi sửa)
+const existingSizeButtons = variationWrapper.querySelectorAll('.btn-remove-size');
+existingSizeButtons.forEach(btn => {
+  btn.removeEventListener('click', () => {}); // Xóa sự kiện cũ nếu có
+  btn.addEventListener('click', () => {
+    const row = btn.closest('.variation-row');
+    if (row) {
+      row.remove();
+      updateAllSizeOptions(variationWrapper);
+    }
+  });
+});
+
 }
 
 // Hàm cập nhật option của một select
@@ -176,7 +181,7 @@ function updateSizeOptions(sizeRow, wrapper, initialSize = null) {
   sizeRow.innerHTML = `
     <select class="form-select var-size" required>
       <option value="">-- Chọn size --</option>
-      ${[37, 38, 39, 40, 41]
+      ${[36, 37, 38, 39, 40, 41, 42, 43, 44, 45]
         .filter(size => !currentSizes.includes(size) || (initialSize && size === initialSize))
         .map(size => `<option value="${size}" ${initialSize === size ? 'selected' : ''}>${size}</option>`).join('')}
     </select>
@@ -190,7 +195,6 @@ function updateSizeOptions(sizeRow, wrapper, initialSize = null) {
   select.addEventListener('change', () => updateAllSizeOptions(wrapper));
 }
 
-// Hàm cập nhật tất cả select trong cùng wrapper
 function updateAllSizeOptions(wrapper) {
   const rows = wrapper.querySelectorAll('.variation-row');
   rows.forEach(row => {
@@ -203,7 +207,7 @@ function updateAllSizeOptions(wrapper) {
     const selectedValue = select.value;
     select.innerHTML = `
       <option value="">-- Chọn size --</option>
-      ${[37, 38, 39, 40, 41]
+      ${[36, 37, 38, 39, 40, 41, 42, 43, 44, 45]
         .filter(size => !currentSizes.includes(size))
         .map(size => `<option value="${size}" ${size === Number(selectedValue) ? 'selected' : ''}>${size}</option>`).join('')}
     `;
@@ -237,9 +241,9 @@ const ThemPro = () => {
       console.log(`Color: ${colorName}, FileInput:`, fileInput, 'Files:', files);
 
       if (files && files.length > 0) {
-        Array.from(files).forEach(file => {
+        Array.from(files).forEach((file, fileIndex) => {
           if (file) {
-            formData.append(`variationImages-${colorIndex}`, file);
+            formData.append(`variationImages-${colorIndex}-${fileIndex}`, file);
             listImg.push(file.name);
           }
         });
@@ -247,6 +251,7 @@ const ThemPro = () => {
         alert(`Vui lòng chọn ảnh cho màu ${colorName}!`);
         throw new Error(`No image selected for color ${colorName}`);
       }
+
 
       const rows = block.querySelectorAll('.variation-row');
       rows.forEach(row => {
@@ -430,7 +435,7 @@ const hienThiPro = async () => {
                       data-color="${v.color?.name}"
                       data-size="${v.size}"
                       title="Chỉnh sửa tồn kho">
-                <i class="bi bi-pencil-square me-1" style="font-size: 0.8rem;"></i>Sửa
+                Sửa
               </button>
             </div>
           `).join('') + '<hr>';
@@ -447,7 +452,7 @@ const hienThiPro = async () => {
       [tdSize, tdColor, tdStock, tdSold].forEach(td => td.style.textAlign = 'center');
 
       const tdDis = document.createElement('td');
-      tdDis.textContent = item.discount;
+      tdDis.textContent = item.sale +"%";
       tdDis.style.textAlign = 'center';
 
       const tdPriceE = document.createElement('td');
@@ -457,6 +462,10 @@ const hienThiPro = async () => {
       const tdPrice = document.createElement('td');
       tdPrice.textContent = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.price);
       tdPrice.style.textAlign = 'center';
+
+      const tdPriceSale = document.createElement('td');
+      tdPriceSale.textContent = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.price_sale);
+      tdPriceSale.style.textAlign = 'center';
 
       const tdXL = document.createElement('td');
       tdXL.style.textAlign = 'center';
@@ -486,235 +495,294 @@ const hienThiPro = async () => {
       btnSua.classList.add('btn', 'btn-outline-primary');
       btnSua.style.marginTop = '10px';
       btnSua.addEventListener('click', () => {
-        editingProductId = item._id;
-        window.currentEditingVariations = item.variations || [];
-        document.getElementById("ThemPro").style.display = "none";
+          editingProductId = item._id;
+          window.currentEditingVariations = item.variations || [];
+          document.getElementById("ThemPro").style.display = "none";
 
-        document.getElementById('name_pro').value = item.nameproduct || '';
-        document.getElementById('price_enter').value = item.price_enter || '';
-        document.getElementById('price_pro').value = item.price || '';
-        document.getElementById('category_pro').value = item.id_category?._id || '';
-        document.getElementById('mota_pro').value = item.description || '';
+          // Điền thông tin sản phẩm vào form
+          document.getElementById('name_pro').value = item.nameproduct || '';
+          document.getElementById('price_enter').value = item.price_enter || '';
+          document.getElementById('price_pro').value = item.price || '';
+          document.getElementById('category_pro').value = item.id_category?._id || '';
+          document.getElementById('mota_pro').value = item.description || '';
 
-        const avtPreview = document.getElementById('preview-image');
-        if (item.avt_imgproduct) {
-          avtPreview.src = `http://${host}:${port}/uploads/${item.avt_imgproduct}`;
-          avtPreview.style.display = 'block';
-        } else {
-          avtPreview.style.display = 'none';
-        }
+          const avtPreview = document.getElementById('preview-image');
+          if (item.avt_imgproduct) {
+            avtPreview.src = `http://${host}:${port}/uploads/${item.avt_imgproduct}`;
+            avtPreview.style.display = 'block';
+          } else {
+            avtPreview.style.display = 'none';
+          }
 
-        const colorBlockContainer = document.getElementById('color-block-container');
-        colorBlockContainer.innerHTML = '';
+          const colorBlockContainer = document.getElementById('color-block-container');
+          colorBlockContainer.innerHTML = '';
 
-        const grouped = {};
-        item.variations?.forEach(variation => {
-          const colorName = variation.color?.name || '';
-          if (!grouped[colorName]) grouped[colorName] = [];
-          grouped[colorName].push(variation);
-        }) || {};
+          // Nhóm biến thể theo màu
+          const grouped = {};
+          item.variations?.forEach(variation => {
+            const colorName = variation.color?.name || '';
+            if (!grouped[colorName]) grouped[colorName] = [];
+            grouped[colorName].push(variation);
+          }) || {};
 
-        Object.entries(grouped).forEach(([colorName, variations], colorIndex) => {
-          const colorCode = convertToColorCode(colorName);
-          const colorBlock = document.createElement('div');
-          colorBlock.classList.add('color-block', 'border', 'p-3', 'mb-3');
-          colorBlockContainer.appendChild(document.createElement('hr'));
-          colorBlockContainer.appendChild(colorBlock);
+          // Tạo color blocks
+          Object.entries(grouped).forEach(([colorName, variations], colorIndex) => {
+            const colorCode = variations[0].color?.code || convertToColorCode(colorName);
+            const colorBlock = document.createElement('div');
+            colorBlock.classList.add('color-block', 'border', 'p-3', 'mb-3');
+            colorBlockContainer.appendChild(document.createElement('hr'));
+            colorBlockContainer.appendChild(colorBlock);
 
-          let listImg = [];
-          variations.forEach(v => {
-            if (Array.isArray(v.list_imgproduct)) {
-              v.list_imgproduct.forEach(img => {
-                if (img && !listImg.includes(img)) listImg.push(img);
-              });
-            }
-          });
-          colorBlock.innerHTML = `
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <h5>${colorName}</h5>
-              <button type="button" class="btn btn-danger btn-remove-color">X</button>
-            </div>
-            <input type="hidden" class="var-color-name" value="${colorName}">
-            <input type="hidden" class="var-color-code" value="${colorCode}">
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <label class="form-label">Chọn ảnh cho màu này:</label>
-                <input type="file" class="form-control var-image" accept="image/*" multiple>
-              </div>
-              <div class="col-md-6">
-                <img class="color-preview" src="${listImg.length > 0 ? `http://${host}:${port}/uploads/${listImg[0]}` : ''}" alt="Preview Image" style="max-width: 150px; max-height: 150px; margin-top: 10px; ${listImg.length > 0 ? 'display:block;' : 'display:none;'}">
-              </div>
-            </div>
-            <div class="variation-wrapper"></div>
-            <button type="button" class="btn btn-primary btn-add-size mt-2">Thêm size</button>
-          `;
-
-          const varImageInput = colorBlock.querySelector('.var-image');
-          const colorPreview = colorBlock.querySelector('.color-preview');
-          varImageInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-              const reader = new FileReader();
-              reader.onload = (event) => {
-                colorPreview.src = event.target.result;
-                colorPreview.style.display = 'block';
-              };
-              reader.onerror = () => {
-                colorPreview.style.display = 'none';
-                alert('Lỗi khi đọc file ảnh cho màu!');
-              };
-              reader.readAsDataURL(file);
-            } else {
-              colorPreview.style.display = 'none';
-              colorPreview.src = '';
-            }
-          });
-
-          const variationWrapper = colorBlock.querySelector('.variation-wrapper');
-          variations.forEach(variation => {
-            const sizeRow = document.createElement('div');
-            sizeRow.classList.add('variation-row', 'd-flex', 'gap-2', 'mb-2');
-            updateSizeOptions(sizeRow, variationWrapper, variation.size);
-            variationWrapper.appendChild(sizeRow);
-            const stockInput = sizeRow.querySelector('.var-stock');
-            stockInput.value = variation.stock || '';
-          });
-
-          attachSizeEvents(colorBlock);
-        });
-
-        // Cập nhật spinner sau khi tạo các color-block trong chế độ sửa
-        updateColorSpinner();
-
-        let btnLuu = document.getElementById('btnLuuSua');
-        if (!btnLuu) {
-          btnLuu = document.createElement('button');
-          btnLuu.id = 'btnLuuSua';
-          btnLuu.textContent = 'Lưu';
-          btnLuu.className = 'btn btn-success mt-3';
-          document.getElementById('themPro').appendChild(btnLuu);
-          btnLuu.addEventListener('click', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(document.getElementById('themPro'));
-
-            const colorBlocks = document.querySelectorAll('.color-block');
-            const variations = [];
-
-            if (colorBlocks.length === 0) {
-              alert('Vui lòng thêm ít nhất một màu!');
-              return;
-            }
-
-            let hasError = false;
-            colorBlocks.forEach((block, colorIndex) => {
-              const colorName = block.querySelector('.var-color-name').value;
-              const colorCode = block.querySelector('.var-color-code').value;
-              const fileInput = block.querySelector('.var-image');
-              const files = fileInput?.files || null;
-              const colorPreview = block.querySelector('.color-preview');
-              let listImg = [];
-
-              console.log(`Processing color: ${colorName}, files:`, files);
-
-              if (files && files.length > 0) {
-                Array.from(files).forEach(file => {
-                  if (file) {
-                    formData.append(`variationImages-${colorIndex}`, file);
-                    listImg.push(file.name);
-                  }
+            let listImg = [];
+            variations.forEach(v => {
+              if (Array.isArray(v.list_imgproduct)) {
+                v.list_imgproduct.forEach(img => {
+                  if (img && !listImg.includes(img)) listImg.push(img);
                 });
-              } else {
-                const oldVariation = (window.currentEditingVariations || []).find(v => v.color?.name === colorName);
-                if (oldVariation && oldVariation.list_imgproduct?.length > 0) {
-                  listImg = oldVariation.list_imgproduct;
-                  formData.append(`variationImages-${colorIndex}_old`, oldVariation.list_imgproduct[0]);
-                } else if (!window.currentEditingVariations.some(v => v.color?.name === colorName)) {
-                  alert(`Bạn phải chọn ảnh cho màu mới: ${colorName}`);
-                  hasError = true;
-                  return;
-                }
               }
-
-              const rows = block.querySelectorAll('.variation-row');
-              if (rows.length === 0) {
-                alert(`Vui lòng thêm ít nhất một size cho màu ${colorName}!`);
-                hasError = true;
-                return;
-              }
-
-              rows.forEach(row => {
-                const size = row.querySelector('.var-size').value;
-                const stock = row.querySelector('.var-stock').value;
-                if (!size || !stock || stock.trim() === '') {
-                  alert(`Vui lòng điền đầy đủ size và tồn kho cho màu ${colorName}!`);
-                  hasError = true;
-                  return;
-                }
-                variations.push({
-                  size: Number(size),
-                  stock: Number(stock),
-                  color: { name: colorName, code: colorCode },
-                  list_imgproduct: listImg
-                });
-              });
             });
 
-            if (hasError || variations.length === 0) {
-              return;
-            }
+            colorBlock.innerHTML = `
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5>${colorName}</h5>
+                <button type="button" class="btn btn-danger btn-remove-color">X</button>
+              </div>
+              <input type="hidden" class="var-color-name" value="${colorName}">
+              <input type="hidden" class="var-color-code" value="${colorCode}">
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <label class="form-label">Chọn ảnh cho màu này:</label>
+                  <input type="file" class="form-control var-image" accept="image/*" multiple>
+                </div>
+                <div class="col-md-6">
+                  <img class="color-preview"
+                  src="${listImg[0] ? `http://${host}:${port}/uploads/${listImg[0]}` : ''}"
+                  data-images='${JSON.stringify(listImg)}'
+                  alt="Preview Image"
+                  style="max-width: 150px; max-height: 150px; margin-top: 10px; ${listImg[0] ? 'display:block;' : 'display:none;'}">
 
-            formData.append("variations", JSON.stringify(variations));
-            const avtInput = document.getElementById('avt_imgpro');
-            if (avtInput && avtInput.files.length > 0) {
-              formData.append('avt_imgproduct', avtInput.files[0]);
-            }
+                  </div>
+              </div>
+              <div class="variation-wrapper"></div>
+              <button type="button" class="btn btn-primary btn-add-size mt-2">Thêm size</button>
+            `;
 
-            try {
-              const response = await fetch(`http://${host}:${port}/api/update_product/${editingProductId}`, {
-                method: 'PUT',
-                body: formData
-              });
-              if (!response.ok) {
-                const result = await response.json();
-                alert('Lỗi cập nhật: ' + (result.message || ''));
+            const varImageInput = colorBlock.querySelector('.var-image');
+            const colorPreview = colorBlock.querySelector('.color-preview');
+            varImageInput.addEventListener('change', function(e) {
+              const file = e.target.files[0];
+              if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                  colorPreview.src = event.target.result;
+                  colorPreview.style.display = 'block';
+                };
+                reader.onerror = () => {
+                  colorPreview.style.display = 'none';
+                  alert('Lỗi khi đọc file ảnh cho màu!');
+                };
+                reader.readAsDataURL(file);
+              } else {
+                colorPreview.style.display = 'none';
+                colorPreview.src = '';
+              }
+            });
+
+            const variationWrapper = colorBlock.querySelector('.variation-wrapper');
+            variations.forEach(variation => {
+              const sizeRow = document.createElement('div');
+              sizeRow.classList.add('variation-row', 'd-flex', 'gap-2', 'mb-2');
+              updateSizeOptions(sizeRow, variationWrapper, variation.size);
+              variationWrapper.appendChild(sizeRow);
+              const stockInput = sizeRow.querySelector('.var-stock');
+              stockInput.value = variation.stock || '';
+              // Lưu _id của biến thể vào data attribute
+              sizeRow.dataset.variationId = variation._id || '';
+            });
+
+            attachSizeEvents(colorBlock);
+          });
+
+          updateColorSpinner();
+
+          let btnLuu = document.getElementById('btnLuuSua');
+          if (!btnLuu) {
+            btnLuu = document.createElement('button');
+            btnLuu.id = 'btnLuuSua';
+            btnLuu.textContent = 'Lưu';
+            btnLuu.className = 'btn btn-success mt-3';
+            document.getElementById('themPro').appendChild(btnLuu);
+            btnLuu.addEventListener('click', async (e) => {
+              e.preventDefault();
+              const formData = new FormData(document.getElementById('themPro'));
+
+              const colorBlocks = document.querySelectorAll('.color-block');
+              const variations = [];
+              let hasError = false;
+
+              if (colorBlocks.length === 0) {
+                alert('Vui lòng thêm ít nhất một màu!');
                 return;
               }
-              alert('Cập nhật thành công');
-              hienThiPro();
-              btnLuu.remove();
-              document.getElementById("ThemPro").style.display = "block";
-              document.getElementById('themPro').reset();
-              document.getElementById('preview-image').style.display = 'none';
-              document.getElementById('preview-image').src = '';
-              document.getElementById('color-block-container').innerHTML = '';
-            } catch (err) {
-              alert('Lỗi khi cập nhật sản phẩm');
-            }
+
+              colorBlocks.forEach((block, colorIndex) => {
+                const colorName = block.querySelector('.var-color-name').value?.trim();
+                const colorCode = block.querySelector('.var-color-code').value?.trim();
+                const fileInput = block.querySelector('.var-image');
+                const files = fileInput?.files || [];
+                let listImg = [];
+
+                if (!colorName || !colorCode) {
+                  alert(`Vui lòng điền tên màu và mã màu cho biến thể ${colorIndex + 1}!`);
+                  hasError = true;
+                  return;
+                }
+
+                if (files.length > 0) {
+                  Array.from(files).forEach((file, fileIndex) => {
+                    if (file) {
+                      formData.append(`variationImages-${colorIndex}-${fileIndex}`, file);
+                      listImg.push(file.name);
+                    }
+                  });
+                } else {
+                  const oldVariation = window.currentEditingVariations.find(v => v.color?.name === colorName);
+                  if (oldVariation && oldVariation.list_imgproduct?.length > 0) {
+                    listImg = oldVariation.list_imgproduct;
+                  } else if (!window.currentEditingVariations.some(v => v.color?.name === colorName)) {
+                    alert(`Vui lòng chọn ít nhất một ảnh cho màu mới: ${colorName}`);
+                    hasError = true;
+                    return;
+                  }
+                }
+
+                const rows = block.querySelectorAll('.variation-row');
+                if (rows.length === 0) {
+                  alert(`Vui lòng thêm ít nhất một size cho màu ${colorName}!`);
+                  hasError = true;
+                  return;
+                }
+
+                rows.forEach(row => {
+                  const size = row.querySelector('.var-size').value?.trim();
+                  const stock = row.querySelector('.var-stock').value?.trim();
+                  const variationId = row.dataset.variationId || '';
+
+                  if (!size || !stock || isNaN(stock)) {
+                    alert(`Vui lòng điền đầy đủ và hợp lệ size và tồn kho cho màu ${colorName}!`);
+                    hasError = true;
+                    return;
+                  }
+
+                  variations.push({
+                    _id: variationId,
+                    size: Number(size),
+                    stock: Number(stock),
+                    sold: window.currentEditingVariations.find(v => v._id === variationId)?.sold || 0,
+                    color: { name: colorName, code: colorCode },
+                    list_imgproduct: listImg
+                  });
+                });
+              });
+
+              if (hasError || variations.length === 0) {
+                return;
+              }
+
+              formData.append('variations', JSON.stringify(variations));
+              const avtInput = document.getElementById('avt_imgpro');
+              if (avtInput?.files?.length > 0) {
+                formData.append('avt_imgpro', avtInput.files[0]);
+              }
+
+              // Debug: Log formData
+              console.log('FormData entries:');
+              for (let [key, value] of formData.entries()) {
+                console.log(`${key}:`, value instanceof File ? value.name : value);
+              }
+
+              try {
+                const response = await fetch(`http://${host}:${port}/api/update_product/${editingProductId}`, {
+                  method: 'PUT',
+                  body: formData
+                });
+
+                if (!response.ok) {
+                  const result = await response.json();
+                  throw new Error(result.error || `HTTP error! Status: ${response.status}`);
+                }
+
+                alert('Cập nhật sản phẩm thành công');
+                hienThiPro();
+                btnLuu.remove();
+                document.getElementById('btnHuy')?.remove();
+                document.getElementById('ThemPro').style.display = 'block';
+                document.getElementById('themPro').reset();
+                document.getElementById('preview-image').style.display = 'none';
+                document.getElementById('preview-image').src = '';
+                document.getElementById('color-block-container').innerHTML = '';
+              } catch (err) {
+                console.error('Lỗi khi cập nhật sản phẩm:', err);
+                alert('Lỗi khi cập nhật sản phẩm: ' + err.message);
+              }
+            });
+          }
+
+          let btnHuy = document.createElement('button');
+          btnHuy.id = 'btnHuy';
+          btnHuy.textContent = 'Hủy';
+          btnHuy.className = 'btn btn-danger mt-3';
+          btnHuy.style.marginLeft = '10px';
+          document.getElementById('themPro').appendChild(btnHuy);
+          btnHuy.addEventListener('click', () => {
+            document.getElementById('ThemPro').style.display = 'block';
+            document.getElementById('themPro').reset();
+            document.getElementById('preview-image').style.display = 'none';
+            document.getElementById('preview-image').src = '';
+            document.getElementById('color-block-container').innerHTML = '';
+            if (btnLuu.parentNode) btnLuu.parentNode.removeChild(btnLuu);
+            if (btnHuy.parentNode) btnHuy.parentNode.removeChild(btnHuy);
+            location.reload();
           });
-        }
-        let btnHuy = document.createElement('button');
-        btnHuy.id = 'btnHuy';
-        btnHuy.textContent = 'Hủy';
-        btnHuy.className = 'btn btn-danger mt-3';
-        btnHuy.style.marginLeft = '10px';
-        document.getElementById('themPro').appendChild(btnHuy);
-        btnHuy.addEventListener('click', () => {
-          document.getElementById("ThemPro").style.display = "block";
-          document.getElementById('themPro').reset();
-          document.getElementById('preview-image').style.display = 'none';
-          document.getElementById('preview-image').src = '';
-          document.getElementById('color-block-container').innerHTML = '';
-          if (btnLuu.parentNode) btnLuu.parentNode.removeChild(btnLuu);
-          if (btnHuy.parentNode) btnHuy.parentNode.removeChild(btnHuy);
-          hienThiPro();
+
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         });
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      });
 
       const btnGG = document.createElement('button');
       btnGG.textContent = 'Giảm giá';
       btnGG.classList.add('btn', 'btn-outline-warning');
       btnGG.style.marginTop = '10px';
+      btnGG.addEventListener('click', async () => {
+        editingProductId = item._id;
+        const sale = prompt('Nhập tỷ lệ giảm giá (0-100%):');
+
+        if (sale === null) return; // bấm Cancel
+        const discountNum = Number(sale);
+
+        if (isNaN(discountNum) || discountNum < 0 || discountNum > 100) {
+            alert('Vui lòng nhập số hợp lệ từ 0 đến 100');
+            return;
+        }
+
+        try {
+            const res = await fetch(`http://${host}:${port}/api/products/${editingProductId}/sale`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sale: discountNum })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                alert('Cập nhật giảm giá thành công');
+                location.reload();
+            } else {
+                alert('Lỗi: ' + data.message);
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Không thể kết nối tới server');
+        }
+      });
 
       btnGroup.appendChild(btnDel);
       btnGroup.appendChild(btnSua);
@@ -732,6 +800,7 @@ const hienThiPro = async () => {
       tr.appendChild(tdDis);
       tr.appendChild(tdPriceE);
       tr.appendChild(tdPrice);
+      tr.appendChild(tdPriceSale);
       tr.appendChild(tdXL);
       tbody.appendChild(tr);
 

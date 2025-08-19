@@ -31,6 +31,11 @@ public class AddressAdapter extends RecyclerView.Adapter<AddressAdapter.AddressV
         this.listener = listener;
     }
 
+    public void updateAddressList(List<Address> newAddressList) {
+        this.addressList = newAddressList;
+        notifyDataSetChanged();
+    }
+
     @NonNull
     @Override
     public AddressViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {

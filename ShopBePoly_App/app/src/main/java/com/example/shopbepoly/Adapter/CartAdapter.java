@@ -63,15 +63,36 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
     public void onBindViewHolder(@NonNull CartViewHolder holder, @SuppressLint("RecyclerView") int position) {
         Cart cart = list_cart.get(position);
         Product product = cart.getIdProduct();
-        Log.d("CartAdapter", "Binding position: " + position);
+        Log.d("CartAdapter", "=== DEBUG BIND VIEW HOLDER ===");
+        Log.d("CartAdapter", "Position: " + position);
+        Log.d("CartAdapter", "Product Name: " + (product != null ? product.getNameproduct() : "NULL"));
+        Log.d("CartAdapter", "cart.getImg_cart(): " + cart.getImg_cart());
+        Log.d("CartAdapter", "Is img_cart null/empty: " + (cart.getImg_cart() == null || cart.getImg_cart().isEmpty()));
+        Log.d("CartAdapter", "================================");
         if (cart != null && cart.getIdProduct() != null) {
-            Log.d("CartAdapter", "Product Name: " + product.getNameproduct() + ", Image: " + product.getAvt_imgproduct());
-//            Glide.with(context)
-//                    .load(cart.getImg_cart())
-//                    .placeholder(R.drawable.ic_launcher_background)
-//                    .error(R.drawable.ic_launcher_foreground)
-//                    .into(holder.imvAVT);
-            Glide.with(context).load(cart.getImg_cart()).into(holder.imvAVT);
+            String imageUrl = cart.getImg_cart();
+            if (imageUrl != null && !imageUrl.trim().isEmpty()) {
+                Log.d("CartAdapter", "Loading image: " + imageUrl);
+                Glide.with(context)
+                        .load(imageUrl)
+                        .placeholder(R.drawable.ic_launcher_background)
+                        .error(R.drawable.ic_launcher_foreground)
+                        .into(holder.imvAVT);
+            } else {
+                Log.w("CartAdapter", "Image URL is null/empty, using fallback");
+                // Fallback sang ảnh chính nếu img_cart rỗng
+                String fallbackImg = product.getAvt_imgproduct();
+                if (fallbackImg != null && !fallbackImg.trim().isEmpty()) {
+                    Glide.with(context)
+                            .load(fallbackImg)
+                            .placeholder(R.drawable.ic_launcher_background)
+                            .error(R.drawable.ic_launcher_foreground)
+                            .into(holder.imvAVT);
+                } else {
+                    // Set placeholder nếu không có ảnh nào
+                    holder.imvAVT.setImageResource(R.drawable.ic_launcher_background);
+                }
+            }
             holder.tvName.setText(product.getNameproduct() != null ? product.getNameproduct() : "N/A");
             holder.tvPrice.setText(String.format("Giá: " + "%,d đ", cart.getTotal()));
             holder.tvMau.setText("Màu: "+cart.getColor());
@@ -308,7 +329,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
                 total += item.getTotal();
             }
         }
-        frag_total.tvTotal.setText(String.format("Giá: " + "%,d đ",total));
+        frag_total.tvTotal.setText(String.format("Thành tiền: " + "%,d đ",total));
     }
     public void selectAll(boolean isChecked) {
         for (Cart cart : list_cart) {
