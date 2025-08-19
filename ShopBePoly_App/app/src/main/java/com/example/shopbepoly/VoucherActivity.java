@@ -1,11 +1,13 @@
 package com.example.shopbepoly;
 
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -41,10 +43,9 @@ public class VoucherActivity extends AppCompatActivity implements VoucherAdapter
     private VoucherAdapter voucherAdapter;
     private ApiService apiService;
     private SharedPreferences sharedPreferences;
+    private String currentUserId;
 
     private int currentTab = 0; // 0: Available, 1: Saved, 2: Used
-    private static final String SAVED_VOUCHERS_KEY = "saved_vouchers";
-    private static final String USED_VOUCHERS_KEY = "used_vouchers";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,6 +59,21 @@ public class VoucherActivity extends AppCompatActivity implements VoucherAdapter
 
         apiService = ApiClient.getApiService();
         sharedPreferences = getSharedPreferences("VoucherPrefs", MODE_PRIVATE);
+
+        // Lấy user ID từ session
+        SharedPreferences userPrefs = getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
+        this.currentUserId = userPrefs.getString("userId", "");
+
+        // Kiểm tra nếu chưa đăng nhập
+        if (currentUserId.isEmpty()) {
+            Toast.makeText(this, "Vui lòng đăng nhập để sử dụng tính năng này", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+
+        // Kiểm tra xem có selectedTab từ intent không
+        int selectedTab = getIntent().getIntExtra("selectedTab", 0);
+        currentTab = selectedTab;
 
         loadVouchers();
     }
@@ -137,7 +153,7 @@ public class VoucherActivity extends AppCompatActivity implements VoucherAdapter
                     allVouchers.addAll(response.body());
 
                     filterAvailableVouchers();
-                    showVouchers(availableVouchers);
+                    switchTab(currentTab);
                 }
             }
 
@@ -145,6 +161,7 @@ public class VoucherActivity extends AppCompatActivity implements VoucherAdapter
             public void onFailure(Call<List<Voucher>> call, Throwable t) {
                 t.printStackTrace();
                 showEmptyState();
+                Toast.makeText(VoucherActivity.this, "Không thể tải danh sách voucher", Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -165,7 +182,15 @@ public class VoucherActivity extends AppCompatActivity implements VoucherAdapter
 
     private void loadSavedVouchers() {
         savedVouchers.clear();
-        Set<String> savedVoucherIds = sharedPreferences.getStringSet(SAVED_VOUCHERS_KEY, new HashSet<>());
+
+        if (currentUserId.isEmpty()) {
+            showVouchers(savedVouchers);
+            return;
+        }
+
+        // Key với user ID
+        String key = "saved_vouchers_" + currentUserId;
+        Set<String> savedVoucherIds = sharedPreferences.getStringSet(key, new HashSet<>());
 
         for (Voucher voucher : allVouchers) {
             if (savedVoucherIds.contains(voucher.getId())) {
@@ -178,7 +203,15 @@ public class VoucherActivity extends AppCompatActivity implements VoucherAdapter
 
     private void loadUsedVouchers() {
         usedVouchers.clear();
-        Set<String> usedVoucherIds = sharedPreferences.getStringSet(USED_VOUCHERS_KEY, new HashSet<>());
+
+        if (currentUserId.isEmpty()) {
+            showVouchers(usedVouchers);
+            return;
+        }
+
+        // Key với user ID
+        String key = "used_vouchers_" + currentUserId;
+        Set<String> usedVoucherIds = sharedPreferences.getStringSet(key, new HashSet<>());
 
         for (Voucher voucher : allVouchers) {
             if (usedVoucherIds.contains(voucher.getId())) {
@@ -212,12 +245,24 @@ public class VoucherActivity extends AppCompatActivity implements VoucherAdapter
 
     @Override
     public void onVoucherClick(Voucher voucher) {
-        // Handle voucher item click - show voucher details or copy code
-        // You can implement a dialog or new activity here
+        Toast.makeText(this, "Mã: " + voucher.getCode() + " đã được sao chép", Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public void onSaveVoucherClick(Voucher voucher) {
-        // This is handled in the adapter
+        // Refresh current tab to update voucher counts
+        if (currentTab == 0) {
+            filterAvailableVouchers();
+            showVouchers(availableVouchers);
+        } else if (currentTab == 1) {
+            loadSavedVouchers();
+        }
     }
+
+    @Override
+    public void onVoucherUsageLimitReached(Voucher voucher) {
+        Toast.makeText(this, "Voucher " + voucher.getCode() + " đã hết lượt sử dụng", Toast.LENGTH_LONG).show();
+        loadVouchers();
+    }
+
 }

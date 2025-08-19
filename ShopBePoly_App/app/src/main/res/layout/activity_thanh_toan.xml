@@ -162,7 +162,7 @@
                 android:textStyle="bold"
                 android:textSize="16sp"
                 android:textColor="#222"
-                android:layout_marginTop="20dp"
+                android:layout_marginTop="10dp"
                 android:layout_marginStart="4dp"/>
 
             <androidx.cardview.widget.CardView
@@ -216,6 +216,162 @@
                         android:text="Số điện thoại"
                         android:textColor="#888"
                         android:textSize="14sp"/>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Phần Mã giảm giá -->
+            <TextView
+                android:id="@+id/txtVoucherLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Mã giảm giá"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:textColor="#222"
+                android:layout_marginTop="10dp"
+                android:layout_marginStart="4dp"/>
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="#FFF"
+                app:cardUseCompatPadding="true">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <!-- Input mã voucher -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <EditText
+                            android:id="@+id/etVoucherCode"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_weight="1"
+                            android:hint="Nhập mã giảm giá"
+                            android:background="@drawable/edittext_border"
+                            android:padding="12dp"
+                            android:textSize="14sp"
+                            android:inputType="textCapCharacters"
+                            android:maxLines="1"
+                            android:imeOptions="actionDone" />
+
+                        <Button
+                            android:id="@+id/btnApplyVoucher"
+                            android:layout_width="wrap_content"
+                            android:layout_height="48dp"
+                            android:text="Áp dụng"
+                            android:textColor="#FFF"
+                            android:backgroundTint="#FF6B35"
+                            android:textStyle="bold"
+                            android:textSize="12sp"
+                            android:layout_marginStart="8dp"
+                            android:paddingStart="16dp"
+                            android:paddingEnd="16dp" />
+                    </LinearLayout>
+
+                    <!-- Nút chọn từ danh sách voucher -->
+                    <LinearLayout
+                        android:id="@+id/layoutSelectVoucher"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginTop="12dp"
+                        android:background="?attr/selectableItemBackground"
+                        android:padding="8dp"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_voucher_ticket"
+                            app:tint="#FF6B35"/>
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Chọn mã giảm giá có sẵn"
+                            android:textColor="#FF6B35"
+                            android:textSize="14sp"
+                            android:layout_marginStart="8dp" />
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@drawable/baseline_navigate_next_24"
+                            app:tint="#FF6B35" />
+                    </LinearLayout>
+
+                    <!-- Thông tin voucher đã áp dụng -->
+                    <LinearLayout
+                        android:id="@+id/layoutAppliedVoucher"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginTop="12dp"
+                        android:background="@drawable/applied_voucher_bg"
+                        android:padding="12dp"
+                        android:visibility="gone">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+
+                            <ImageView
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:src="@drawable/ic_voucher_check"
+                                app:tint="#4CAF50" />
+
+                            <TextView
+                                android:id="@+id/txtAppliedVoucherTitle"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Giảm 50.000đ"
+                                android:textColor="#4CAF50"
+                                android:textStyle="bold"
+                                android:textSize="14sp"
+                                android:layout_marginStart="8dp" />
+
+                            <TextView
+                                android:id="@+id/btnRemoveVoucher"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Bỏ chọn"
+                                android:textColor="#FF5722"
+                                android:textSize="12sp"
+                                android:background="?attr/selectableItemBackground"
+                                android:padding="4dp"
+                                android:clickable="true"
+                                android:focusable="true" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/txtAppliedVoucherDesc"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Mã: SAVE50K - Giảm 50.000đ cho đơn hàng từ 200.000đ"
+                            android:textColor="#666"
+                            android:textSize="12sp"
+                            android:layout_marginTop="4dp"
+                            android:layout_marginStart="28dp" />
+                    </LinearLayout>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
@@ -442,6 +598,30 @@
                     android:layout_height="wrap_content"
                     android:text="0 VND"
                     android:textColor="#000"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <!-- Dòng giảm giá voucher -->
+            <LinearLayout
+                android:id="@+id/layoutVoucherDiscount"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="end"
+                android:visibility="gone">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Giảm giá voucher"
+                    android:textColor="#4CAF50"
+                    android:textSize="14sp" />
+                <TextView
+                    android:id="@+id/txtVoucherDiscount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="-50,000 VND"
+                    android:textColor="#4CAF50"
                     android:textSize="14sp" />
             </LinearLayout>
 
