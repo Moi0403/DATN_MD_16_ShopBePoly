@@ -135,7 +135,14 @@ async function confirmOrder(orderId) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        status: "Đang giao hàng"
+        status: "Đang giao hàng",
+        confirmedBy: (() => {
+          try {
+            const user = JSON.parse(localStorage.getItem('userData') || '{}');
+            return user.name || user.username || '';
+          } catch (_) { return ''; }
+        })(),
+        confirmedAt: new Date().toISOString()
       })
     });
 

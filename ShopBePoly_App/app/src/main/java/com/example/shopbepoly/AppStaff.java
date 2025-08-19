@@ -93,6 +93,9 @@ public class AppStaff extends AppCompatActivity {
                         Log.d("AppStaff", "Notified adapter of data change, current list size: " + deliveringOrders.size());
                         showEmptyState(deliveringOrders.isEmpty());
 
+                        // Cập nhật header với số lượng đơn hàng
+                        updateHeaderWithOrderCount(deliveringOrders.size());
+
                         // Only show Toast for initial load, not for refresh operations
                         if (!swipeRefreshLayout.isRefreshing()) {
                             if (deliveringOrders.isEmpty()) {
@@ -105,12 +108,14 @@ public class AppStaff extends AppCompatActivity {
                         Log.e("STAFF_DEBUG", "API trả về success = false: " + deliveringResponse.getError());
                         Toast.makeText(AppStaff.this, "Lỗi: " + deliveringResponse.getError(), Toast.LENGTH_SHORT).show();
                         showEmptyState(true);
+                        updateHeaderWithOrderCount(0);
                     }
                 } else {
                     Log.e("STAFF_DEBUG", "Response không thành công: " + response.code());
                     Log.e("STAFF_DEBUG", "Error body: " + response.errorBody());
                     Toast.makeText(AppStaff.this, "Lỗi khi tải đơn hàng: " + response.code(), Toast.LENGTH_SHORT).show();
                     showEmptyState(true);
+                    updateHeaderWithOrderCount(0);
                 }
 
                 // Dừng animation refresh
@@ -122,7 +127,7 @@ public class AppStaff extends AppCompatActivity {
                 Log.e("STAFF_DEBUG", "Network error: " + t.getMessage());
                 Toast.makeText(AppStaff.this, "Lỗi mạng: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                 showEmptyState(true);
-
+                updateHeaderWithOrderCount(0);
                 // Dừng animation refresh
                 swipeRefreshLayout.setRefreshing(false);
             }
@@ -145,5 +150,32 @@ public class AppStaff extends AppCompatActivity {
         Log.d("AppStaff", "onOrderCancelled callback triggered, refreshing order list...");
         loadDeliveringOrders();
         // Removed Toast to prevent callstack issues - the loadDeliveringOrders will show appropriate messages
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Refresh danh sách khi quay lại màn hình
+        loadDeliveringOrders();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        // Cập nhật header khi bắt đầu
+        if (deliveringOrders != null) {
+            updateHeaderWithOrderCount(deliveringOrders.size());
+        }
+    }
+
+    private void updateHeaderWithOrderCount(int count) {
+        TextView headerTitle = findViewById(R.id.tvHeaderTitle);
+        if (headerTitle != null) {
+            if (count > 0) {
+                headerTitle.setText("Quản lý đơn hàng (" + count + " đơn đang giao)");
+            } else {
+                headerTitle.setText("Quản lý đơn hàng");
+            }
+        }
     }
 }

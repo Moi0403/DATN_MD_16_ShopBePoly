@@ -23,6 +23,7 @@ import com.example.shopbepoly.Screen.DanhGia;
 import com.google.gson.Gson;
 
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
@@ -104,18 +105,28 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
         holder.tvmaDH.setText("Mã đơn hàng: " + orderCode);
 
         String totalStr = order.getTotal();
-        int totalValue = 0;
+        int amountToDisplay = 0;
         try {
-            if (totalStr != null && !totalStr.isEmpty()) {
-                totalValue = Integer.parseInt(totalStr);
+            if (isStaff && isZaloPayPaid(order.getPay())) {
+                amountToDisplay = 0;
+            } else if (totalStr != null && !totalStr.isEmpty()) {
+                amountToDisplay = Integer.parseInt(totalStr);
             }
         } catch (NumberFormatException e) {
             Log.e(TAG, "Error parsing total: " + totalStr, e);
         }
-        holder.tvthanhTien.setText(String.format("Giá: %,d đ", totalValue));
+        holder.tvthanhTien.setText(String.format("Giá: %,d đ", amountToDisplay));
         holder.tvSoLuongSP.setText("Tổng số lượng sản phẩm: " + order.getQuantity_order());
         holder.tvngayMua.setText("Ngày: " + formatDate(order.getDate()));
         holder.tvTT.setText("Trạng thái: " + order.getStatus());
+
+        // Hiển thị thông tin khách hàng nếu là staff
+        if (isStaff) {
+            holder.layoutCustomerInfo.setVisibility(View.VISIBLE);
+            displayCustomerInfo(holder, order);
+        } else {
+            holder.layoutCustomerInfo.setVisibility(View.GONE);
+        }
 
         // Hiển thị lý do hủy nếu đơn hàng bị hủy
         if ("Đã hủy".equalsIgnoreCase(order.getStatus())) {
@@ -132,11 +143,76 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
         updateButtonVisibility(holder, order);
     }
 
+    private void displayCustomerInfo(OrderViewHolder holder, Order order) {
+        try {
+            // Hiển thị tên khách hàng
+            if (order.getId_user() != null && order.getId_user().getName() != null && !order.getId_user().getName().isEmpty()) {
+                holder.tvCustomerName.setText("Tên KH: " + order.getId_user().getName());
+                holder.tvCustomerName.setVisibility(View.VISIBLE);
+            } else {
+                holder.tvCustomerName.setVisibility(View.GONE);
+            }
+
+            // Hiển thị số điện thoại và xử lý sao chép
+            if (order.getId_user() != null && order.getId_user().getPhone_number() != null && !order.getId_user().getPhone_number().isEmpty()) {
+                String phoneNumber = order.getId_user().getPhone_number();
+                holder.tvCustomerPhone.setText("SĐT: " + phoneNumber);
+                holder.tvCustomerPhone.setVisibility(View.VISIBLE);
+                holder.btnCopyPhone.setVisibility(View.VISIBLE);
+
+                // Xử lý sự kiện sao chép số điện thoại
+                holder.btnCopyPhone.setOnClickListener(v -> copyToClipboard(phoneNumber, "Số điện thoại"));
+            } else {
+                holder.tvCustomerPhone.setVisibility(View.GONE);
+                holder.btnCopyPhone.setVisibility(View.GONE);
+            }
+
+            // Hiển thị địa chỉ và xử lý sao chép
+            if (order.getAddress() != null && !order.getAddress().isEmpty()) {
+                String address = order.getAddress();
+                holder.tvCustomerAddress.setText("Địa chỉ: " + address);
+                holder.tvCustomerAddress.setVisibility(View.VISIBLE);
+                holder.btnCopyAddress.setVisibility(View.VISIBLE);
+
+                // Xử lý sự kiện sao chép địa chỉ
+                holder.btnCopyAddress.setOnClickListener(v -> copyToClipboard(address, "Địa chỉ"));
+            } else {
+                holder.tvCustomerAddress.setVisibility(View.GONE);
+                holder.btnCopyAddress.setVisibility(View.GONE);
+            }
+
+            // Ẩn layout nếu không có thông tin nào
+            if (holder.tvCustomerName.getVisibility() == View.GONE &&
+                    holder.tvCustomerPhone.getVisibility() == View.GONE &&
+                    holder.tvCustomerAddress.getVisibility() == View.GONE) {
+                holder.layoutCustomerInfo.setVisibility(View.GONE);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error displaying customer info", e);
+            holder.layoutCustomerInfo.setVisibility(View.GONE);
+        }
+    }
+
+    private void copyToClipboard(String text, String label) {
+        try {
+            android.content.ClipboardManager clipboard = (android.content.ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+            android.content.ClipData clip = android.content.ClipData.newPlainText(label, text);
+            clipboard.setPrimaryClip(clip);
+
+            Toast.makeText(context, "Đã sao chép " + label + " vào clipboard", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Log.e(TAG, "Error copying to clipboard", e);
+            Toast.makeText(context, "Không thể sao chép " + label, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+
     private void setupClickListeners(OrderViewHolder holder, Order order, int position) {
         // Nút Chi tiết
         holder.btnChiTiet.setOnClickListener(v -> {
             Intent intent = new Intent(context, Chitietdonhang.class);
             intent.putExtra("order", order);
+            intent.putExtra("isStaff", isStaff);
             context.startActivity(intent);
         });
 
@@ -571,6 +647,9 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
     public static class OrderViewHolder extends RecyclerView.ViewHolder {
         TextView tvmaDH, tvthanhTien, tvngayMua, tvTT, tvLydo, tvSoLuongSP;
         Button btnHuy, btnChiTiet, btnNhan, btnMuaLai;
+        View layoutCustomerInfo;
+        TextView tvCustomerName, tvCustomerPhone, tvCustomerAddress;
+        ImageView btnCopyPhone, btnCopyAddress;
 
         public OrderViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -584,6 +663,18 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
             btnChiTiet = itemView.findViewById(R.id.btnChitiet);
             btnNhan = itemView.findViewById(R.id.btnNhan);
             btnMuaLai = itemView.findViewById(R.id.btnMuaLai);
+            layoutCustomerInfo = itemView.findViewById(R.id.layoutCustomerInfo);
+            tvCustomerName = itemView.findViewById(R.id.tvCustomerName);
+            tvCustomerPhone = itemView.findViewById(R.id.tvCustomerPhone);
+            tvCustomerAddress = itemView.findViewById(R.id.tvCustomerAddress);
+            btnCopyPhone = itemView.findViewById(R.id.btnCopyPhone);
+            btnCopyAddress = itemView.findViewById(R.id.btnCopyAddress);
         }
+    }
+
+    private boolean isZaloPayPaid(String payInfo) {
+        if (payInfo == null) return false;
+        String normalized = payInfo.trim().toLowerCase(Locale.getDefault());
+        return normalized.contains("zalopay") && (normalized.contains("đã thanh toán") || normalized.contains("da thanh toan") || normalized.contains("paid"));
     }
 }
