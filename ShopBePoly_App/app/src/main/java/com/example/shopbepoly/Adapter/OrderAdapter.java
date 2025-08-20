@@ -32,6 +32,10 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.work.Data;
+import androidx.work.ExistingWorkPolicy;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -40,6 +44,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.TimeUnit;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -241,19 +246,23 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
         switch (status) {
             case "đang xử lý":
                 holder.btnHuy.setVisibility(View.VISIBLE);
+                holder.btnNhan.setEnabled(true);
                 break;
             case "đang giao hàng":
                 holder.btnNhan.setVisibility(View.VISIBLE);
                 // Thay đổi text dựa trên context (staff hoặc user)
                 if (isStaff) {
                     holder.btnNhan.setText("Xác nhận đơn");
+                    holder.btnNhan.setEnabled(true);
                 } else {
                     holder.btnNhan.setText("Đã nhận hàng");
+                    holder.btnNhan.setEnabled(true);
                 }
                 break;
             case "đã hủy":
             case "đã giao hàng":
                 holder.btnMuaLai.setVisibility(View.VISIBLE);
+                holder.btnNhan.setEnabled(true);
                 break;
         }
     }
@@ -289,20 +298,37 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
 
     private void showReceiveDialog(Order order) {
         if (isStaff) {
-            // Dialog cho staff - xác nhận giao hàng
+            // Dialog cho staff - xác nhận chuyển sang trạng thái đang giao hàng
             AlertDialog.Builder builder = new AlertDialog.Builder(context);
             builder.setIcon(R.drawable.thongbao);
-            builder.setTitle("Xác nhận giao hàng");
-            builder.setMessage("Bạn có chắc chắn đã giao hàng thành công cho đơn hàng này?");
+            builder.setTitle("Xác nhận đơn đang giao");
+            builder.setMessage("Xác nhận đã bàn giao cho đơn vị vận chuyển? Đơn sẽ ở trạng thái 'Đang giao hàng' cho đến khi KH xác nhận.");
             builder.setPositiveButton("Xác nhận", (dialog, which) -> {
                 Order order1 = new Order();
                 order1.set_id(order.get_id());
-                order1.setStatus("Đã giao hàng");
-                Log.d("OrderAdapter", "Staff confirming delivery for order " + order.get_id() + " with status: " + order1.getStatus());
+                order1.setStatus("Đang giao hàng");
+                Log.d("OrderAdapter", "Staff confirming delivering for order " + order.get_id() + " with status: " + order1.getStatus());
                 updateOrder(order1);
-                
-                Toast.makeText(context, "Đã xác nhận giao hàng và thông báo tới khách hàng", Toast.LENGTH_SHORT).show();
-                
+
+                // Schedule auto-complete to Delivered after 5 minutes if user doesn't confirm
+                try {
+                    Data inputData = new Data.Builder()
+                            .putString("orderId", order.get_id())
+                            .build();
+                    OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(com.example.shopbepoly.workers.AutoCompleteDeliveryWorker.class)
+                            .setInitialDelay(20, TimeUnit.DAYS)
+                            .setInputData(inputData)
+                            .addTag("auto-complete-delivery-" + order.get_id())
+                            .build();
+                    String uniqueName = "auto-complete-delivery-" + order.get_id();
+                    WorkManager.getInstance(context.getApplicationContext())
+                            .enqueueUniqueWork(uniqueName, ExistingWorkPolicy.REPLACE, request);
+                } catch (Exception e) {
+                    Log.e(TAG, "Failed to schedule auto-complete worker", e);
+                }
+
+                Toast.makeText(context, "Đã xác nhận đang giao. Khách hàng sẽ xác nhận khi nhận hàng", Toast.LENGTH_SHORT).show();
+
                 // Don't call onOrderCancelled here - updateOrder will handle it after server response
             });
             builder.setNegativeButton("Hủy", null);
@@ -584,13 +610,11 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
                 Log.d("OrderAdapter", "Update order response: " + response.code() + " - " + response.message());
                 if (response.isSuccessful()) {
                     Toast.makeText(context, "Cập nhật thành công", Toast.LENGTH_SHORT).show();
-                    
-                    // Nếu là staff và đang cập nhật trạng thái thành "Đã giao hàng", 
-                    // cần refresh danh sách từ server vì đơn hàng sẽ không còn ở trạng thái "đang giao"
+
+                    // Nếu là staff, sau khi xác nhận cần refresh danh sách để đồng bộ trạng thái
                     Log.d("OrderAdapter", "Checking if staff delivery confirmation: isStaff=" + isStaff + ", status='" + order.getStatus() + "'");
-                    if (isStaff && "Đã giao hàng".equals(order.getStatus())) {
-                        Log.d("OrderAdapter", "Staff confirmed delivery, refreshing order list...");
-                        Log.d("OrderAdapter", "Order status: '" + order.getStatus() + "'");
+                    if (isStaff) {
+                        Log.d("OrderAdapter", "Staff action completed, refreshing order list...");
                         // Thêm delay nhỏ để đảm bảo server đã xử lý xong
                         new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
                             if (onOrderCancelled != null) {
