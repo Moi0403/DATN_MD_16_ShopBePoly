@@ -3261,6 +3261,281 @@ router.get('/user_vouchers/:userId', async (req, res) => {
     }
 });
 
+router.get('/voucher/code/:code', async (req, res) => {
+    try {
+        const voucherCode = req.params.code.toUpperCase();
+        
+        const voucher = await voucherModel.findOne({ 
+            code: voucherCode,
+            isActive: true
+        });
+        
+        if (!voucher) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "Mã voucher không tồn tại hoặc đã bị vô hiệu hóa" 
+            });
+        }
+        
+        // Check if voucher is expired
+        const now = new Date();
+        if (now < voucher.startDate) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Mã voucher chưa có hiệu lực" 
+            });
+        }
+        
+        if (now > voucher.endDate) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Mã voucher đã hết hạn" 
+            });
+        }
+        
+        // Check usage limit
+        if (voucher.usedCount >= voucher.usageLimit) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Mã voucher đã hết lượt sử dụng" 
+            });
+        }
+        
+        res.status(200).json({
+            success: true,
+            voucher: voucher
+        });
+        
+    } catch (error) {
+        console.error("Lỗi khi tìm voucher theo mã:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Lỗi server", 
+            error 
+        });
+    }
+});
+
+// Validate and calculate discount for voucher
+router.post('/voucher/validate', async (req, res) => {
+    try {
+        const { voucherCode, orderTotal, userId } = req.body;
+        
+        if (!voucherCode || orderTotal === undefined) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Thiếu thông tin voucher hoặc tổng đơn hàng" 
+            });
+        }
+
+        const voucher = await voucherModel.findOne({ 
+            code: voucherCode.toUpperCase(),
+            isActive: true
+        });
+
+        if (!voucher) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "Mã voucher không tồn tại hoặc đã bị vô hiệu hóa" 
+            });
+        }
+
+        // Validate voucher conditions
+        const now = new Date();
+        
+        if (now < voucher.startDate) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Mã voucher chưa có hiệu lực" 
+            });
+        }
+        
+        if (now > voucher.endDate) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Mã voucher đã hết hạn" 
+            });
+        }
+
+        if (voucher.usedCount >= voucher.usageLimit) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Mã voucher đã hết lượt sử dụng" 
+            });
+        }
+
+        // Check minimum order value
+        if (orderTotal < voucher.minOrderValue) {
+            return res.status(400).json({ 
+                success: false, 
+                message: `Đơn hàng tối thiểu ${voucher.minOrderValue.toLocaleString('vi-VN')}₫ để sử dụng mã này` 
+            });
+        }
+
+        // Calculate discount
+        let discountAmount = 0;
+        if (voucher.discountType === 'percent' || voucher.discountType === 'percentage') {
+            discountAmount = orderTotal * (voucher.discountValue / 100);
+            // Apply maximum discount if specified
+            if (voucher.maxDiscountAmount && discountAmount > voucher.maxDiscountAmount) {
+                discountAmount = voucher.maxDiscountAmount;
+            }
+        } else {
+            discountAmount = voucher.discountValue;
+        }
+
+        // Ensure discount doesn't exceed order total
+        if (discountAmount > orderTotal) {
+            discountAmount = orderTotal;
+        }
+
+        const finalTotal = Math.max(0, orderTotal - discountAmount);
+
+        res.status(200).json({
+            success: true,
+            message: "Mã voucher hợp lệ",
+            voucher: voucher,
+            discountAmount: discountAmount,
+            finalTotal: finalTotal,
+            savings: discountAmount
+        });
+
+    } catch (error) {
+        console.error("Lỗi khi validate voucher:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Lỗi server", 
+            error 
+        });
+    }
+});
+
+// Mark voucher as used (when order is completed)
+router.post('/voucher/use', async (req, res) => {
+    try {
+        const { voucherId, orderId, userId } = req.body;
+        
+        if (!voucherId) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Thiếu thông tin voucher" 
+            });
+        }
+
+        const voucher = await voucherModel.findById(voucherId);
+        if (!voucher) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "Voucher không tồn tại" 
+            });
+        }
+
+        // Check if voucher can still be used
+        if (voucher.usedCount >= voucher.usageLimit) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Voucher đã hết lượt sử dụng" 
+            });
+        }
+
+        // Increment used count
+        const updatedVoucher = await voucherModel.findByIdAndUpdate(
+            voucherId,
+            { 
+                $inc: { usedCount: 1 }, 
+                updatedAt: new Date() 
+            },
+            { new: true }
+        );
+
+        // Optional: Create voucher usage history
+        // const voucherUsage = new VoucherUsageModel({
+        //     voucherId: voucherId,
+        //     userId: userId,
+        //     orderId: orderId,
+        //     usedAt: new Date()
+        // });
+        // await voucherUsage.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Voucher đã được sử dụng",
+            voucher: updatedVoucher
+        });
+
+    } catch (error) {
+        console.error("Lỗi khi sử dụng voucher:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Lỗi server", 
+            error 
+        });
+    }
+});
+
+// Get available vouchers for user (considering saved vouchers)
+router.get('/vouchers/available/:userId', async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        const { orderTotal } = req.query;
+        
+        // Get all active, non-expired vouchers
+        const vouchers = await voucherModel.find({ 
+            isActive: true,
+            startDate: { $lte: new Date() },
+            endDate: { $gte: new Date() },
+            $expr: { $lt: ['$usedCount', '$usageLimit'] }
+        }).sort({ createdAt: -1 });
+        
+        // Filter vouchers based on order total if provided
+        let availableVouchers = vouchers;
+        if (orderTotal) {
+            availableVouchers = vouchers.filter(voucher => 
+                parseFloat(orderTotal) >= voucher.minOrderValue
+            );
+        }
+        
+        // Add calculated discount for each voucher
+        const vouchersWithDiscount = availableVouchers.map(voucher => {
+            let discountAmount = 0;
+            if (orderTotal) {
+                if (voucher.discountType === 'percent' || voucher.discountType === 'percentage') {
+                    discountAmount = parseFloat(orderTotal) * (voucher.discountValue / 100);
+                    if (voucher.maxDiscountAmount && discountAmount > voucher.maxDiscountAmount) {
+                        discountAmount = voucher.maxDiscountAmount;
+                    }
+                } else {
+                    discountAmount = voucher.discountValue;
+                }
+                
+                if (discountAmount > parseFloat(orderTotal)) {
+                    discountAmount = parseFloat(orderTotal);
+                }
+            }
+            
+            return {
+                ...voucher.toObject(),
+                calculatedDiscount: discountAmount,
+                canUse: orderTotal ? parseFloat(orderTotal) >= voucher.minOrderValue : true
+            };
+        });
+        
+        res.status(200).json({
+            success: true,
+            vouchers: vouchersWithDiscount,
+            total: vouchersWithDiscount.length
+        });
+        
+    } catch (error) {
+        console.error("Lỗi khi lấy voucher khả dụng:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Lỗi server", 
+            error 
+        });
+    }
+});
+
 
 // check ten user đơn hàng
 router.get('/user/:id/statistics', async (req, res) => {

@@ -295,9 +295,9 @@
 
                         <ImageView
                             android:layout_width="24dp"
-                            android:layout_height="24dp"
+                            android:layout_height="28dp"
                             android:src="@drawable/ic_voucher_ticket"
-                            app:tint="#FF6B35"/>
+                            app:tint="#FF6B35" />
 
                         <TextView
                             android:layout_width="0dp"
@@ -537,7 +537,7 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- Bottom bar: Tổng tiền + Nút đặt hàng -->
+    <!-- Bottom bar: Tổng tiền + Nút đặt hàng (CẬP NHẬT) -->
     <LinearLayout
         android:id="@+id/bottomBar"
         android:layout_width="match_parent"
@@ -553,53 +553,77 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:elevation="8dp">
 
+        <!-- Thông báo tiết kiệm (nếu có voucher) -->
+        <TextView
+            android:id="@+id/txtSavingsInfo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🎉 Bạn tiết kiệm được 50.000đ!"
+            android:textColor="#FF9800"
+            android:textStyle="bold"
+            android:textSize="14sp"
+            android:gravity="center"
+            android:layout_marginBottom="8dp"
+            android:visibility="gone" />
+
         <LinearLayout
             android:id="@+id/layoutTotal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
+            <!-- Tổng tiền hàng -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:gravity="end">
+                android:gravity="center_vertical"
+                android:layout_marginBottom="4dp">
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Tổng tiền hàng"
-                    android:textColor="#888"
+                    android:textColor="#666"
                     android:textSize="14sp" />
                 <TextView
                     android:id="@+id/txtProductTotal"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="0 VND"
-                    android:textColor="#000"
+                    android:text="0₫"
+                    android:textColor="#333"
                     android:textSize="14sp" />
             </LinearLayout>
 
+            <!-- Phí vận chuyển -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:gravity="end">
+                android:gravity="center_vertical"
+                android:layout_marginBottom="4dp">
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Phí vận chuyển"
-                    android:textColor="#888"
+                    android:textColor="#666"
                     android:textSize="14sp" />
                 <TextView
                     android:id="@+id/txtShippingFee"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="0 VND"
-                    android:textColor="#000"
+                    android:text="0₫"
+                    android:textColor="#333"
                     android:textSize="14sp" />
             </LinearLayout>
+
+            <!-- Tạm tính (trước khi giảm giá) -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#E0E0E0"
+                android:layout_marginVertical="8dp" />
 
             <!-- Dòng giảm giá voucher -->
             <LinearLayout
@@ -607,45 +631,63 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:gravity="end"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="4dp"
                 android:visibility="gone">
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_voucher_ticket"
+                    app:tint="#4CAF50"
+                    android:layout_marginEnd="8dp" />
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Giảm giá voucher"
                     android:textColor="#4CAF50"
-                    android:textSize="14sp" />
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
                 <TextView
                     android:id="@+id/txtVoucherDiscount"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="-50,000 VND"
+                    android:text="-50.000₫"
                     android:textColor="#4CAF50"
-                    android:textSize="14sp" />
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
             </LinearLayout>
 
+            <!-- Đường phân cách cho tổng cuối -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="2dp"
+                android:background="#FF6B35"
+                android:layout_marginVertical="8dp" />
+
+            <!-- Tổng thanh toán -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:gravity="end">
+                android:gravity="center_vertical"
+                android:layout_marginBottom="4dp">
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Tổng thanh toán"
-                    android:textColor="#000"
+                    android:textColor="#222"
                     android:textStyle="bold"
-                    android:textSize="15sp" />
+                    android:textSize="16sp" />
                 <TextView
                     android:id="@+id/txtTotalPayment"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="0 VND"
-                    android:textColor="#FF0000"
+                    android:text="0₫"
+                    android:textColor="#FF3D00"
                     android:textStyle="bold"
-                    android:textSize="15sp" />
+                    android:textSize="18sp" />
             </LinearLayout>
         </LinearLayout>
 

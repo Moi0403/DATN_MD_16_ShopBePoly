@@ -8,6 +8,7 @@ import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.StrictMode;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.*;
@@ -28,6 +29,7 @@ import com.example.shopbepoly.DTO.Order;
 import com.example.shopbepoly.DTO.Product;
 import com.example.shopbepoly.DTO.ProductInOrder;
 import com.example.shopbepoly.DTO.User;
+import com.example.shopbepoly.DTO.Voucher;
 import com.google.gson.Gson;
 
 import org.json.JSONException;
@@ -36,10 +38,12 @@ import org.json.JSONObject;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 import okhttp3.ResponseBody;
 import retrofit2.Call;
@@ -53,6 +57,7 @@ import vn.zalopay.sdk.listeners.PayOrderListener;
 public class ThanhToan extends AppCompatActivity {
 
     private static final String TAG = "ThanhToan";
+    private static final int REQ_VOUCHER_SELECTION = 3002;
 
     private Product selectedProduct;
     private User currentUser;
@@ -62,17 +67,24 @@ public class ThanhToan extends AppCompatActivity {
     private String selectedSize = "", selectedColor = "", userId;
     private List<String> selectedCartIds = new ArrayList<>();
 
+    // Voucher variables
+    private Voucher appliedVoucher;
+    private double voucherDiscount = 0;
+
     // ZaloPay
     private String pendingOrderId;
     private Order pendingOrder;
 
     private TextView txtProductName, txtProductColor, txtProductQuantity, txtProductSize, txtProductPrice,
-            txtProductTotal, txtShippingFee, txtTotalPayment, txtCustomerName, txtCustomerAddress, txtCustomerPhone, txtShippingNote;
+            txtProductTotal, txtShippingFee, txtTotalPayment, txtCustomerName, txtCustomerAddress,
+            txtCustomerPhone, txtShippingNote, txtVoucherDiscount, txtAppliedVoucherTitle,
+            txtAppliedVoucherDesc, btnRemoveVoucher;
     private ImageView imgProduct, img_next_address;
     private RadioGroup radioGroupShipping, radioGroupPaymentMain;
     private RadioButton radioStandardShipping, radioFastShipping, radioCOD, radioZaloPay, radioAppBank;
-    private LinearLayout layoutZaloPayInfo;
-    private Button btnDatHang;
+    private LinearLayout layoutZaloPayInfo, layoutSelectVoucher, layoutAppliedVoucher, layoutVoucherDiscount;
+    private EditText etVoucherCode;
+    private Button btnDatHang, btnApplyVoucher;
 
     private static final int REQ_ADDRESS = 3001;
 
@@ -95,7 +107,6 @@ public class ThanhToan extends AppCompatActivity {
         ZaloPaySDK.init(2553, Environment.SANDBOX);
 
         radioStandardShipping.setChecked(true);
-
         shippingFee = 20000;
 
         getDataFromIntent();
@@ -168,6 +179,18 @@ public class ThanhToan extends AppCompatActivity {
         txtCustomerAddress = findViewById(R.id.txtCustomerAddress);
         txtCustomerPhone = findViewById(R.id.txtCustomerPhone);
         img_next_address = findViewById(R.id.img_next_Adress);
+
+        // Voucher views
+        etVoucherCode = findViewById(R.id.etVoucherCode);
+        btnApplyVoucher = findViewById(R.id.btnApplyVoucher);
+        layoutSelectVoucher = findViewById(R.id.layoutSelectVoucher);
+        layoutAppliedVoucher = findViewById(R.id.layoutAppliedVoucher);
+        layoutVoucherDiscount = findViewById(R.id.layoutVoucherDiscount);
+        txtAppliedVoucherTitle = findViewById(R.id.txtAppliedVoucherTitle);
+        txtAppliedVoucherDesc = findViewById(R.id.txtAppliedVoucherDesc);
+        btnRemoveVoucher = findViewById(R.id.btnRemoveVoucher);
+        txtVoucherDiscount = findViewById(R.id.txtVoucherDiscount);
+
         radioGroupShipping = findViewById(R.id.radioGroupShipping);
         radioStandardShipping = findViewById(R.id.radioStandardShipping);
         radioFastShipping = findViewById(R.id.radioFastShipping);
@@ -200,6 +223,187 @@ public class ThanhToan extends AppCompatActivity {
         });
 
         img_next_address.setOnClickListener(v -> startActivityForResult(new Intent(this, AddressListActivity.class), REQ_ADDRESS));
+
+        // Voucher listeners
+        btnApplyVoucher.setOnClickListener(v -> applyVoucherByCode());
+
+        layoutSelectVoucher.setOnClickListener(v -> {
+            Intent intent = new Intent(this, VoucherSelection.class);
+            intent.putExtra("order_total", getCurrentOrderTotal());
+            startActivityForResult(intent, REQ_VOUCHER_SELECTION);
+        });
+
+        btnRemoveVoucher.setOnClickListener(v -> removeAppliedVoucher());
+    }
+
+    private void applyVoucherByCode() {
+        String voucherCode = etVoucherCode.getText().toString().trim().toUpperCase();
+
+        if (TextUtils.isEmpty(voucherCode)) {
+            Toast.makeText(this, "Vui lòng nhập mã voucher", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        btnApplyVoucher.setEnabled(false);
+        btnApplyVoucher.setText("Đang kiểm tra...");
+
+        ApiService apiService = ApiClient.getApiService();
+        apiService.getVoucherByCode(voucherCode).enqueue(new Callback<ApiService.VoucherResponse>() {
+            @Override
+            public void onResponse(Call<ApiService.VoucherResponse> call, Response<ApiService.VoucherResponse> response) {
+                btnApplyVoucher.setEnabled(true);
+                btnApplyVoucher.setText("Áp dụng");
+
+                if (response.isSuccessful() && response.body() != null) {
+                    ApiService.VoucherResponse voucherResponse = response.body();
+
+                    if (voucherResponse.isSuccess() && voucherResponse.getVoucher() != null) {
+                        Voucher voucher = voucherResponse.getVoucher();
+                        validateAndApplyVoucher(voucher);
+                    } else if (voucherResponse.isSuccess() && voucherResponse.getData() != null) {
+                        // Trường hợp API trả về data thay vì voucher
+                        Voucher voucher = voucherResponse.getData();
+                        validateAndApplyVoucher(voucher);
+                    } else {
+                        String errorMessage = voucherResponse.getMessage() != null
+                                ? voucherResponse.getMessage()
+                                : "Mã voucher không hợp lệ";
+                        Toast.makeText(ThanhToan.this, errorMessage, Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Toast.makeText(ThanhToan.this, "Mã voucher không hợp lệ", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiService.VoucherResponse> call, Throwable t) {
+                btnApplyVoucher.setEnabled(true);
+                btnApplyVoucher.setText("Áp dụng");
+                Toast.makeText(ThanhToan.this, "Lỗi kết nối, vui lòng thử lại", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void validateAndApplyVoucher(Voucher voucher) {
+        double currentOrderTotal = getCurrentOrderTotal();
+
+        // Kiểm tra voucher có hợp lệ không
+        if (!voucher.isActive()) {
+            Toast.makeText(this, "Mã voucher đã bị vô hiệu hóa", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        if (voucher.isExpired()) {
+            Toast.makeText(this, "Mã voucher đã hết hạn", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        if (voucher.getUsedCount() >= voucher.getUsageLimit()) {
+            Toast.makeText(this, "Mã voucher đã hết lượt sử dụng", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        // Kiểm tra điều kiện đơn hàng tối thiểu
+        if (currentOrderTotal < voucher.getMinOrderValue()) {
+            String message = String.format("Đơn hàng tối thiểu %s để sử dụng voucher này",
+                    formatPrice((int)voucher.getMinOrderValue()));
+            Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        // Áp dụng voucher
+        applyVoucher(voucher);
+    }
+
+    private void applyVoucher(Voucher voucher) {
+        appliedVoucher = voucher;
+        double currentOrderTotal = getCurrentOrderTotal();
+
+        // Tính toán giảm giá
+        if ("percent".equals(voucher.getDiscountType()) || "percentage".equals(voucher.getDiscountType())) {
+            voucherDiscount = currentOrderTotal * (voucher.getDiscountValue() / 100);
+        } else {
+            voucherDiscount = voucher.getDiscountValue();
+        }
+
+        // Đảm bảo giảm giá không vượt quá tổng đơn hàng
+        if (voucherDiscount > currentOrderTotal) {
+            voucherDiscount = currentOrderTotal;
+        }
+
+        // Cập nhật UI
+        updateVoucherUI();
+        updateTotalPriceDisplay();
+
+        // Clear input
+        etVoucherCode.setText("");
+
+        Toast.makeText(this, "Áp dụng voucher thành công!", Toast.LENGTH_SHORT).show();
+    }
+
+    private void removeAppliedVoucher() {
+        appliedVoucher = null;
+        voucherDiscount = 0;
+        updateVoucherUI();
+        updateTotalPriceDisplay();
+        Toast.makeText(this, "Đã bỏ chọn voucher", Toast.LENGTH_SHORT).show();
+    }
+
+    private void updateVoucherUI() {
+        if (appliedVoucher != null) {
+            // Hiển thị voucher đã áp dụng
+            layoutAppliedVoucher.setVisibility(View.VISIBLE);
+            layoutVoucherDiscount.setVisibility(View.VISIBLE);
+
+            // Set title - rõ ràng hơn về mức giảm giá
+            String discountText;
+            if ("percent".equals(appliedVoucher.getDiscountType()) || "percentage".equals(appliedVoucher.getDiscountType())) {
+                discountText = String.format("Voucher giảm %d%%", (int)appliedVoucher.getDiscountValue());
+            } else {
+                discountText = String.format("Voucher giảm %s", formatPrice((int)appliedVoucher.getDiscountValue()));
+            }
+            txtAppliedVoucherTitle.setText(discountText);
+
+            // Set description với thông tin chi tiết
+            String description = String.format("Mã: %s", appliedVoucher.getCode());
+            if (appliedVoucher.getMinOrderValue() > 0) {
+                description += String.format(" • Cho đơn từ %s", formatPrice((int)appliedVoucher.getMinOrderValue()));
+            }
+            txtAppliedVoucherDesc.setText(description);
+
+            // Set discount amount - số tiền thực tế được giảm
+            txtVoucherDiscount.setText("-" + formatPrice((int)voucherDiscount));
+            txtVoucherDiscount.setTextColor(getResources().getColor(R.color.primary_red)); // Màu đỏ cho số âm
+
+        } else {
+            // Ẩn voucher đã áp dụng
+            layoutAppliedVoucher.setVisibility(View.GONE);
+            layoutVoucherDiscount.setVisibility(View.GONE);
+        }
+    }
+
+    private double getCurrentOrderTotal() {
+        String jsonCart = getIntent().getStringExtra("cart_list");
+        double totalProductPrice = 0;
+
+        if (jsonCart != null && !jsonCart.isEmpty()) {
+            List<Cart> cartList = new Gson().fromJson(jsonCart, new com.google.gson.reflect.TypeToken<List<Cart>>() {}.getType());
+            for (Cart cart : cartList) {
+                int finalPrice = cart.getFinalPrice() > 0
+                        ? cart.getFinalPrice()
+                        : (cart.getIdProduct().getPrice_sale() > 0
+                        ? cart.getIdProduct().getPrice_sale()
+                        : cart.getIdProduct().getPrice());
+                totalProductPrice += finalPrice * cart.getQuantity();
+            }
+        } else if (selectedProduct != null) {
+            int finalPrice = selectedProduct.getPrice_sale() > 0
+                    ? selectedProduct.getPrice_sale()
+                    : selectedProduct.getPrice();
+            totalProductPrice = finalPrice * quantity;
+        }
+
+        return totalProductPrice;
     }
 
     /**
@@ -396,7 +600,15 @@ public class ThanhToan extends AppCompatActivity {
             productsInOrderList.add(pio);
         }
 
+        // Apply voucher discount
         totalAmount += shippingFee;
+        totalAmount = (int)(totalAmount - voucherDiscount);
+
+        // Make sure total is not negative
+        if (totalAmount < 0) {
+            totalAmount = 0;
+        }
+
         newOrder.setTotal(String.valueOf(totalAmount));
         newOrder.setProducts(productsInOrderList);
 
@@ -525,19 +737,57 @@ public class ThanhToan extends AppCompatActivity {
         String jsonCart = getIntent().getStringExtra("cart_list");
         int totalProductPrice = 0;
 
+        // Tính tổng tiền sản phẩm
         if (jsonCart != null && !jsonCart.isEmpty()) {
             List<Cart> cartList = new Gson().fromJson(jsonCart, new com.google.gson.reflect.TypeToken<List<Cart>>() {}.getType());
             for (Cart cart : cartList) {
-                totalProductPrice += cart.getIdProduct().getPrice() * cart.getQuantity();
+                int finalPrice = cart.getFinalPrice() > 0
+                        ? cart.getFinalPrice()
+                        : (cart.getIdProduct().getPrice_sale() > 0
+                        ? cart.getIdProduct().getPrice_sale()
+                        : cart.getIdProduct().getPrice());
+                totalProductPrice += finalPrice * cart.getQuantity();
             }
         } else if (selectedProduct != null) {
             totalProductPrice = productPrice * quantity;
         }
 
+        // Hiển thị tổng tiền sản phẩm
         txtProductTotal.setText(formatPrice(totalProductPrice));
+
+        // Hiển thị phí vận chuyển
         txtShippingFee.setText(formatPrice(shippingFee));
-        txtTotalPayment.setText(formatPrice(totalProductPrice + shippingFee));
+
+        // Tính tổng tiền cuối cùng với voucher
+        int subtotal = totalProductPrice + shippingFee; // Tổng phụ (chưa trừ voucher)
+        int finalTotal = (int)(subtotal - voucherDiscount); // Tổng cuối cùng (đã trừ voucher)
+
+        // Đảm bảo tổng không âm
+        if (finalTotal < 0) {
+            finalTotal = 0;
+        }
+
+        // Hiển thị tổng thanh toán với định dạng rõ ràng
+        txtTotalPayment.setText(formatPrice(finalTotal));
+
+        // Nếu có voucher, có thể hiển thị thêm thông tin tiết kiệm
+        if (appliedVoucher != null && voucherDiscount > 0) {
+            // Tìm TextView để hiển thị thông tin tiết kiệm (nếu có trong layout)
+            TextView txtSavingsInfo = findViewById(R.id.txtSavingsInfo);
+            if (txtSavingsInfo != null) {
+                String savingsText = String.format("🎉 Bạn tiết kiệm được %s!", formatPrice((int)voucherDiscount));
+                txtSavingsInfo.setText(savingsText);
+                txtSavingsInfo.setVisibility(View.VISIBLE);
+                txtSavingsInfo.setTextColor(getResources().getColor(R.color.star_gold));
+            }
+        } else {
+            TextView txtSavingsInfo = findViewById(R.id.txtSavingsInfo);
+            if (txtSavingsInfo != null) {
+                txtSavingsInfo.setVisibility(View.GONE);
+            }
+        }
     }
+
     private boolean isHanoiInnerCity(String address) {
         if (address == null || address.isEmpty()) {
             return false;
@@ -560,6 +810,7 @@ public class ThanhToan extends AppCompatActivity {
 
         return false;
     }
+
     // Phương thức kiểm tra địa chỉ có thuộc Hà Nội không
     private boolean isHanoiAddress(String address) {
         if (address == null || address.isEmpty()) {
@@ -609,6 +860,7 @@ public class ThanhToan extends AppCompatActivity {
             return 0; // Không giao hàng
         }
     }
+
     private boolean isHanoiOuterCity(String address) {
         if (address == null || address.isEmpty()) {
             return false;
@@ -632,6 +884,7 @@ public class ThanhToan extends AppCompatActivity {
 
         return false;
     }
+
     // Cập nhật phương thức tính phí vận chuyển theo khu vực Hà Nội
     private void updateShippingFeeBasedOnAddress() {
         String address = txtCustomerAddress.getText().toString();
@@ -690,6 +943,7 @@ public class ThanhToan extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+
         if (requestCode == REQ_ADDRESS && resultCode == RESULT_OK) {
             if (data != null && data.hasExtra("address_result")) {
                 String addressJson = data.getStringExtra("address_result");
@@ -705,16 +959,41 @@ public class ThanhToan extends AppCompatActivity {
             displayUserInfo();
             updateShippingFeeBasedOnAddress();
         }
+
+        // Handle voucher selection result
+        if (requestCode == REQ_VOUCHER_SELECTION && resultCode == RESULT_OK) {
+            if (data != null && data.hasExtra("selected_voucher")) {
+                try {
+                    String voucherJson = data.getStringExtra("selected_voucher");
+                    Voucher selectedVoucher = new Gson().fromJson(voucherJson, Voucher.class);
+                    applyVoucher(selectedVoucher);
+                } catch (Exception e) {
+                    Log.e(TAG, "Error parsing selected voucher", e);
+                    Toast.makeText(this, "Lỗi áp dụng voucher", Toast.LENGTH_SHORT).show();
+                }
+            }
+        }
     }
 
     private void calculateTotalFromCart(List<Cart> cartList) {
         int totalProductPrice = 0;
         for (Cart cart : cartList) {
-            totalProductPrice += cart.getIdProduct().getPrice() * cart.getQuantity();
+            int finalPrice = cart.getFinalPrice() > 0
+                    ? cart.getFinalPrice()
+                    : (cart.getIdProduct().getPrice_sale() > 0
+                    ? cart.getIdProduct().getPrice_sale()
+                    : cart.getIdProduct().getPrice());
+            totalProductPrice += finalPrice * cart.getQuantity();
         }
         txtProductTotal.setText(formatPrice(totalProductPrice));
         txtShippingFee.setText(formatPrice(shippingFee));
-        txtTotalPayment.setText(formatPrice(totalProductPrice + shippingFee));
+
+        // Calculate final total with voucher discount
+        int finalTotal = (int)(totalProductPrice + shippingFee - voucherDiscount);
+        if (finalTotal < 0) {
+            finalTotal = 0;
+        }
+        txtTotalPayment.setText(formatPrice(finalTotal));
     }
 
     private void createNewOrder(String name, String phone, String address, int paymentId, int bankId) {
@@ -778,6 +1057,11 @@ public class ThanhToan extends AppCompatActivity {
                     Toast.makeText(ThanhToan.this, "Đặt hàng thành công", Toast.LENGTH_SHORT).show();
                     sendLocalNotification();
 
+                    // Mark voucher as used if applied
+                    if (appliedVoucher != null) {
+                        markVoucherAsUsed();
+                    }
+
                     String jsonCart = getIntent().getStringExtra("cart_list");
                     if (!selectedCartIds.isEmpty()) {
                         clearSelectedCartAfterOrder(selectedCartIds);
@@ -803,6 +1087,32 @@ public class ThanhToan extends AppCompatActivity {
                 saveOrderToLocal(order);
             }
         });
+    }
+
+    private void markVoucherAsUsed() {
+        if (appliedVoucher == null || userId.isEmpty()) {
+            return;
+        }
+
+        SharedPreferences voucherPrefs = getSharedPreferences("VoucherPrefs", MODE_PRIVATE);
+
+        // Remove from saved vouchers
+        String savedKey = "saved_vouchers_" + userId;
+        Set<String> savedVouchers = voucherPrefs.getStringSet(savedKey, new HashSet<>());
+        savedVouchers = new HashSet<>(savedVouchers);
+        savedVouchers.remove(appliedVoucher.getId());
+
+        // Add to used vouchers
+        String usedKey = "used_vouchers_" + userId;
+        Set<String> usedVouchers = voucherPrefs.getStringSet(usedKey, new HashSet<>());
+        usedVouchers = new HashSet<>(usedVouchers);
+        usedVouchers.add(appliedVoucher.getId());
+
+        // Save changes
+        SharedPreferences.Editor editor = voucherPrefs.edit();
+        editor.putStringSet(savedKey, savedVouchers);
+        editor.putStringSet(usedKey, usedVouchers);
+        editor.apply();
     }
 
     private void sendLocalNotification() {
@@ -852,6 +1162,11 @@ public class ThanhToan extends AppCompatActivity {
             editor.apply();
 
             Toast.makeText(this, "Đặt hàng thành công", Toast.LENGTH_SHORT).show();
+
+            // Mark voucher as used if applied
+            if (appliedVoucher != null) {
+                markVoucherAsUsed();
+            }
 
             String jsonCart = getIntent().getStringExtra("cart_list");
             if (!selectedCartIds.isEmpty()) {

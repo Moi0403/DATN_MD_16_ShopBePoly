@@ -188,54 +188,223 @@ public interface ApiService {
     @GET("vouchers")
     Call<List<Voucher>> getVouchers();
 
+    @GET("voucher/{id}")
+    Call<Voucher> getVoucherById(@Path("id") String voucherId);
+
+    @GET("vouchers/code/{code}")
+    Call<VoucherResponse> getVoucherByCode(@Path("code") String code);
+
     @POST("add_voucher")
-    Call<Voucher> addVoucher(@Body Voucher voucher);
+    Call<VoucherResponse> addVoucher(@Body Voucher voucher);
 
     @DELETE("del_voucher/{id}")
-    Call<List<Voucher>> deleteVoucher(@Path("id") String voucherId);
+    Call<VoucherDeleteResponse> deleteVoucher(@Path("id") String voucherId);
 
-//    @PUT("update_voucher_status/{id}")
-//    Call<Voucher> updateVoucherStatus(@Path("id") String voucherId, @Body VoucherStatusUpdate status);
-//
-//    @PUT("update_usage_limit/{id}")
-//    Call<Voucher> updateUsageLimit(@Path("id") String voucherId, @Body UsageLimitUpdate usageLimit);
-@POST("apply_voucher")
-Call<VoucherUsageResponse> applyVoucher(@Body Map<String, Object> body);
+    @PUT("update_voucher_status/{id}")
+    Call<VoucherResponse> updateVoucherStatus(
+            @Path("id") String voucherId,
+            @Body Map<String, Boolean> status
+    );
 
-    // Lấy voucher theo user
-    @GET("user_vouchers/{userId}")
-    Call<List<Voucher>> getUserVouchers(@Path("userId") String userId);
+    @PUT("update_usage_limit/{id}")
+    Call<VoucherResponse> updateUsageLimit(
+            @Path("id") String voucherId,
+            @Body Map<String, Integer> usageLimit
+    );
+
+    @GET("get-voucher/{voucherId}")
+    Call<VoucherResponse> getVoucher(@Path("voucherId") String voucherId);
+
+    @PUT("extend-voucher")
+    Call<VoucherResponse> extendVoucher(@Body ExtendVoucherRequest request);
+
+    @POST("apply_voucher")
+    Call<VoucherApplicationResponse> applyVoucher(@Body VoucherApplicationRequest request);
 
     @POST("use_voucher/{id}")
     Call<VoucherUsageResponse> useVoucher(@Path("id") String voucherId);
+
+    @GET("user_vouchers/{userId}")
+    Call<List<Voucher>> getUserVouchers(@Path("userId") String userId);
+
+    @POST("voucher/validate")
+    Call<VoucherValidationResponse> validateVoucher(@Body VoucherValidationRequest request);
+
+    @POST("voucher/use")
+    Call<VoucherUsageResponse> markVoucherAsUsed(@Body VoucherUsageRequest request);
+
+    @GET("vouchers/available/{userId}")
+    Call<AvailableVouchersResponse> getAvailableVouchers(
+            @Path("userId") String userId,
+            @Query("orderTotal") Double orderTotal
+    );
+
+    // Response Classes
+    class VoucherResponse {
+        private boolean success;
+        private String message;
+        private Voucher voucher;
+        private Voucher data; // Cho endpoint get-voucher
+
+        // Getters and setters
+        public boolean isSuccess() { return success; }
+        public void setSuccess(boolean success) { this.success = success; }
+        public String getMessage() { return message; }
+        public void setMessage(String message) { this.message = message; }
+        public Voucher getVoucher() { return voucher; }
+        public void setVoucher(Voucher voucher) { this.voucher = voucher; }
+        public Voucher getData() { return data; }
+        public void setData(Voucher data) { this.data = data; }
+    }
+
+    class VoucherDeleteResponse {
+        private String message;
+        private List<Voucher> vouchers;
+
+        public String getMessage() { return message; }
+        public void setMessage(String message) { this.message = message; }
+        public List<Voucher> getVouchers() { return vouchers; }
+        public void setVouchers(List<Voucher> vouchers) { this.vouchers = vouchers; }
+    }
+
+    class ExtendVoucherRequest {
+        private String voucherId;
+        private String startDate;
+        private String endDate;
+
+        public ExtendVoucherRequest(String voucherId, String startDate, String endDate) {
+            this.voucherId = voucherId;
+            this.startDate = startDate;
+            this.endDate = endDate;
+        }
+
+        // Getters and setters
+        public String getVoucherId() { return voucherId; }
+        public void setVoucherId(String voucherId) { this.voucherId = voucherId; }
+        public String getStartDate() { return startDate; }
+        public void setStartDate(String startDate) { this.startDate = startDate; }
+        public String getEndDate() { return endDate; }
+        public void setEndDate(String endDate) { this.endDate = endDate; }
+    }
+
+    class VoucherApplicationRequest {
+        private String voucherCode;
+        private Double orderTotal;
+        private String userId;
+
+        public VoucherApplicationRequest(String voucherCode, Double orderTotal, String userId) {
+            this.voucherCode = voucherCode;
+            this.orderTotal = orderTotal;
+            this.userId = userId;
+        }
+
+        // Getters and setters
+        public String getVoucherCode() { return voucherCode; }
+        public void setVoucherCode(String voucherCode) { this.voucherCode = voucherCode; }
+        public Double getOrderTotal() { return orderTotal; }
+        public void setOrderTotal(Double orderTotal) { this.orderTotal = orderTotal; }
+        public String getUserId() { return userId; }
+        public void setUserId(String userId) { this.userId = userId; }
+    }
+
+    class VoucherApplicationResponse {
+        private boolean success;
+        private String message;
+        private Voucher voucher;
+        private Double discountAmount;
+        private Double finalTotal;
+        private Double savings;
+
+        // Getters and setters
+        public boolean isSuccess() { return success; }
+        public void setSuccess(boolean success) { this.success = success; }
+        public String getMessage() { return message; }
+        public void setMessage(String message) { this.message = message; }
+        public Voucher getVoucher() { return voucher; }
+        public void setVoucher(Voucher voucher) { this.voucher = voucher; }
+        public Double getDiscountAmount() { return discountAmount; }
+        public void setDiscountAmount(Double discountAmount) { this.discountAmount = discountAmount; }
+        public Double getFinalTotal() { return finalTotal; }
+        public void setFinalTotal(Double finalTotal) { this.finalTotal = finalTotal; }
+        public Double getSavings() { return savings; }
+        public void setSavings(Double savings) { this.savings = savings; }
+    }
+
+    class VoucherValidationRequest {
+        private String voucherCode;
+        private Double orderTotal;
+        private String userId;
+
+        // Constructor and getters/setters
+        public VoucherValidationRequest(String voucherCode, Double orderTotal, String userId) {
+            this.voucherCode = voucherCode;
+            this.orderTotal = orderTotal;
+            this.userId = userId;
+        }
+
+        public String getVoucherCode() { return voucherCode; }
+        public void setVoucherCode(String voucherCode) { this.voucherCode = voucherCode; }
+        public Double getOrderTotal() { return orderTotal; }
+        public void setOrderTotal(Double orderTotal) { this.orderTotal = orderTotal; }
+        public String getUserId() { return userId; }
+        public void setUserId(String userId) { this.userId = userId; }
+    }
+
+    class VoucherValidationResponse {
+        private boolean success;
+        private String message;
+        private Voucher voucher;
+        private Double discountAmount;
+        private Double finalTotal;
+        private Double savings;
+
+        // Getters and setters tương tự VoucherApplicationResponse
+    }
+
+    class VoucherUsageRequest {
+        private String voucherId;
+        private String orderId;
+        private String userId;
+
+        public VoucherUsageRequest(String voucherId, String orderId, String userId) {
+            this.voucherId = voucherId;
+            this.orderId = orderId;
+            this.userId = userId;
+        }
+
+        // Getters and setters
+        public String getVoucherId() { return voucherId; }
+        public void setVoucherId(String voucherId) { this.voucherId = voucherId; }
+        public String getOrderId() { return orderId; }
+        public void setOrderId(String orderId) { this.orderId = orderId; }
+        public String getUserId() { return userId; }
+        public void setUserId(String userId) { this.userId = userId; }
+    }
+
     class VoucherUsageResponse {
         private boolean success;
         private String message;
         private Voucher voucher;
 
-        public boolean isSuccess() {
-            return success;
-        }
+        public boolean isSuccess() { return success; }
+        public void setSuccess(boolean success) { this.success = success; }
+        public String getMessage() { return message; }
+        public void setMessage(String message) { this.message = message; }
+        public Voucher getVoucher() { return voucher; }
+        public void setVoucher(Voucher voucher) { this.voucher = voucher; }
+    }
 
-        public void setSuccess(boolean success) {
-            this.success = success;
-        }
+    class AvailableVouchersResponse {
+        private boolean success;
+        private List<Voucher> vouchers;
+        private int total;
 
-        public String getMessage() {
-            return message;
-        }
-
-        public void setMessage(String message) {
-            this.message = message;
-        }
-
-        public Voucher getVoucher() {
-            return voucher;
-        }
-
-        public void setVoucher(Voucher voucher) {
-            this.voucher = voucher;
-        }
+        public boolean isSuccess() { return success; }
+        public void setSuccess(boolean success) { this.success = success; }
+        public List<Voucher> getVouchers() { return vouchers; }
+        public void setVouchers(List<Voucher> vouchers) { this.vouchers = vouchers; }
+        public int getTotal() { return total; }
+        public void setTotal(int total) { this.total = total; }
     }
 
 }
