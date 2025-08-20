@@ -1,9 +1,11 @@
 package com.example.shopbepoly;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -33,6 +35,7 @@ public class AppStaff extends AppCompatActivity {
     private OrderAdapter orderAdapter;
     private List<Order> deliveringOrders = new ArrayList<>();
     private ApiService apiService;
+    private ImageView imgStaffProfile;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,7 +52,17 @@ public class AppStaff extends AppCompatActivity {
         recyclerOrders = findViewById(R.id.recyclerOrders);
         tvEmpty = findViewById(R.id.tvEmpty);
         swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
+        imgStaffProfile = findViewById(R.id.imgStaffProfile);
         apiService = ApiClient.getApiService();
+
+        if (imgStaffProfile != null) {
+            imgStaffProfile.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    startActivity(new Intent(AppStaff.this, StaffProfileActivity.class));
+                }
+            });
+        }
     }
 
     private void setupRecyclerView() {
