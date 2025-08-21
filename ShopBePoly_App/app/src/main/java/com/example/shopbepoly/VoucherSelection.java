@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -34,6 +35,8 @@ import retrofit2.Response;
 
 public class VoucherSelection extends AppCompatActivity implements VoucherSelectionAdapter.OnVoucherSelectionListener {
 
+    private static final String TAG = "VoucherSelection";
+
     private RecyclerView recyclerViewVouchers;
     private LinearLayout layoutEmptyState;
     private ImageView btnBack;
@@ -54,6 +57,18 @@ public class VoucherSelection extends AppCompatActivity implements VoucherSelect
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_voucher_selection);
 
+        // Lấy tổng đơn hàng từ intent TRƯỚC TIÊN
+        orderTotal = getIntent().getDoubleExtra("order_total", 0);
+        Log.d(TAG, "Order total received: " + orderTotal);
+
+        // Kiểm tra nếu orderTotal = 0 thì có thể có vấn đề
+        if (orderTotal <= 0) {
+            Log.w(TAG, "Warning: Order total is 0 or negative");
+            Toast.makeText(this, "Lỗi: Không có thông tin tổng đơn hàng", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+
         initViews();
         setupClickListeners();
 
@@ -64,9 +79,6 @@ public class VoucherSelection extends AppCompatActivity implements VoucherSelect
         SharedPreferences userPrefs = getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
         currentUserId = userPrefs.getString("userId", "");
 
-        // Lấy tổng đơn hàng từ intent
-        orderTotal = getIntent().getDoubleExtra("order_total", 0);
-
         if (currentUserId.isEmpty()) {
             Toast.makeText(this, "Vui lòng đăng nhập để sử dụng tính năng này", Toast.LENGTH_SHORT).show();
             finish();
@@ -76,6 +88,7 @@ public class VoucherSelection extends AppCompatActivity implements VoucherSelect
         // Hiển thị thông tin đơn hàng
         updateOrderInfo();
 
+        // Load vouchers
         loadApplicableVouchers();
     }
 
@@ -85,10 +98,15 @@ public class VoucherSelection extends AppCompatActivity implements VoucherSelect
         btnBack = findViewById(R.id.btnBack);
         tvOrderInfo = findViewById(R.id.tvOrderInfo);
 
+        // Setup RecyclerView
         recyclerViewVouchers.setLayoutManager(new LinearLayoutManager(this));
+
+        // Khởi tạo adapter với orderTotal đã có
         voucherAdapter = new VoucherSelectionAdapter(this, applicableVouchers, orderTotal);
         voucherAdapter.setOnVoucherSelectionListener(this);
         recyclerViewVouchers.setAdapter(voucherAdapter);
+
+        Log.d(TAG, "Views initialized with orderTotal: " + orderTotal);
     }
 
     private void setupClickListeners() {
@@ -99,23 +117,31 @@ public class VoucherSelection extends AppCompatActivity implements VoucherSelect
         NumberFormat formatter = NumberFormat.getNumberInstance(Locale.US);
         String formattedAmount = formatter.format(orderTotal) + "₫";
         tvOrderInfo.setText("Tổng tiền đơn hàng: " + formattedAmount);
+        Log.d(TAG, "Order info updated: " + formattedAmount);
     }
 
     private void loadApplicableVouchers() {
+        Log.d(TAG, "Loading vouchers...");
+
         apiService.getVouchers().enqueue(new Callback<List<Voucher>>() {
             @Override
             public void onResponse(Call<List<Voucher>> call, Response<List<Voucher>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     allVouchers.clear();
                     allVouchers.addAll(response.body());
+                    Log.d(TAG, "Loaded " + allVouchers.size() + " vouchers from API");
 
                     filterApplicableVouchers();
+                } else {
+                    Log.e(TAG, "Failed to load vouchers: " + response.code());
+                    showEmptyState();
+                    Toast.makeText(VoucherSelection.this, "Không thể tải danh sách voucher", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(Call<List<Voucher>> call, Throwable t) {
-                t.printStackTrace();
+                Log.e(TAG, "API call failed", t);
                 showEmptyState();
                 Toast.makeText(VoucherSelection.this, "Không thể tải danh sách voucher", Toast.LENGTH_SHORT).show();
             }
@@ -133,6 +159,9 @@ public class VoucherSelection extends AppCompatActivity implements VoucherSelect
         List<Voucher> eligibleVouchers = new ArrayList<>();
         List<Voucher> ineligibleVouchers = new ArrayList<>();
 
+        Log.d(TAG, "Filtering vouchers for user: " + currentUserId + ", orderTotal: " + orderTotal);
+        Log.d(TAG, "Saved voucher IDs: " + savedVoucherIds.size());
+
         for (Voucher voucher : allVouchers) {
             // Kiểm tra voucher đã được lưu
             if (savedVoucherIds.contains(voucher.getId())) {
@@ -142,13 +171,24 @@ public class VoucherSelection extends AppCompatActivity implements VoucherSelect
                         voucher.getEndDate().after(currentDate) &&
                         voucher.getUsedCount() < voucher.getUsageLimit()) {
 
+                    Log.d(TAG, "Processing voucher: " + voucher.getCode() +
+                            " - MinOrder: " + voucher.getMinOrderValue() +
+                            " - OrderTotal: " + orderTotal);
+
                     // Phân loại theo điều kiện đơn hàng
                     if (orderTotal >= voucher.getMinOrderValue()) {
                         eligibleVouchers.add(voucher);
+                        Log.d(TAG, "Voucher " + voucher.getCode() + " is eligible");
                     } else {
                         ineligibleVouchers.add(voucher);
+                        Log.d(TAG, "Voucher " + voucher.getCode() + " is not eligible (need more: " +
+                                (voucher.getMinOrderValue() - orderTotal) + ")");
                     }
+                } else {
+                    Log.d(TAG, "Voucher " + voucher.getCode() + " is expired or used up");
                 }
+            } else {
+                Log.d(TAG, "Voucher " + voucher.getCode() + " is not saved by user");
             }
         }
 
@@ -156,26 +196,35 @@ public class VoucherSelection extends AppCompatActivity implements VoucherSelect
         applicableVouchers.addAll(eligibleVouchers);
         applicableVouchers.addAll(ineligibleVouchers);
 
+        Log.d(TAG, "Final applicable vouchers: " + applicableVouchers.size() +
+                " (Eligible: " + eligibleVouchers.size() + ", Ineligible: " + ineligibleVouchers.size() + ")");
+
         if (applicableVouchers.isEmpty()) {
             showEmptyState();
         } else {
             hideEmptyState();
+            // Cập nhật adapter với danh sách mới và đảm bảo orderTotal đúng
             voucherAdapter.updateData(applicableVouchers);
+            voucherAdapter.updateOrderTotal(orderTotal);
         }
     }
 
     private void showEmptyState() {
         recyclerViewVouchers.setVisibility(View.GONE);
         layoutEmptyState.setVisibility(View.VISIBLE);
+        Log.d(TAG, "Showing empty state");
     }
 
     private void hideEmptyState() {
         recyclerViewVouchers.setVisibility(View.VISIBLE);
         layoutEmptyState.setVisibility(View.GONE);
+        Log.d(TAG, "Hiding empty state");
     }
 
     @Override
     public void onVoucherSelected(Voucher voucher) {
+        Log.d(TAG, "Voucher selected: " + voucher.getCode() + " for order total: " + orderTotal);
+
         // Kiểm tra điều kiện một lần nữa
         if (orderTotal >= voucher.getMinOrderValue()) {
             Intent resultIntent = new Intent();
@@ -188,25 +237,45 @@ public class VoucherSelection extends AppCompatActivity implements VoucherSelect
                     formatCurrency(discount));
             Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
 
+            Log.d(TAG, "Voucher selected successfully. Discount: " + discount);
             finish();
         } else {
             double needed = voucher.getMinOrderValue() - orderTotal;
             String message = String.format("Cần mua thêm %s để đạt đơn tối thiểu %s",
                     formatCurrency(needed), formatCurrency(voucher.getMinOrderValue()));
             Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+            Log.w(TAG, "Voucher not applicable. Need more: " + needed);
         }
     }
 
     private double calculateDiscount(Voucher voucher, double orderTotal) {
+        double discount = 0;
+
         if ("percent".equals(voucher.getDiscountType()) || "percentage".equals(voucher.getDiscountType())) {
-            return orderTotal * (voucher.getDiscountValue() / 100);
+            discount = orderTotal * (voucher.getDiscountValue() / 100.0);
         } else {
-            return voucher.getDiscountValue();
+            discount = voucher.getDiscountValue();
         }
+
+        // Đảm bảo discount không vượt quá tổng đơn hàng
+        discount = Math.min(discount, orderTotal);
+
+        Log.d(TAG, "Calculated discount: " + discount + " for voucher: " + voucher.getCode());
+        return discount;
     }
 
     private String formatCurrency(double amount) {
-        NumberFormat formatter = NumberFormat.getNumberInstance(Locale.US);
-        return formatter.format(amount) + "₫";
+        try {
+            NumberFormat formatter = NumberFormat.getNumberInstance(Locale.US);
+            return formatter.format(amount) + "₫";
+        } catch (Exception e) {
+            return String.valueOf((long)amount) + "₫";
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.d(TAG, "Activity destroyed");
     }
 }

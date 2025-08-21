@@ -83,8 +83,7 @@ public class ThanhToan extends AppCompatActivity {
     private RadioGroup radioGroupShipping, radioGroupPaymentMain;
     private RadioButton radioStandardShipping, radioFastShipping, radioCOD, radioZaloPay, radioAppBank;
     private LinearLayout layoutZaloPayInfo, layoutSelectVoucher, layoutAppliedVoucher, layoutVoucherDiscount;
-    private EditText etVoucherCode;
-    private Button btnDatHang, btnApplyVoucher;
+    private Button btnDatHang;
 
     private static final int REQ_ADDRESS = 3001;
 
@@ -181,8 +180,7 @@ public class ThanhToan extends AppCompatActivity {
         img_next_address = findViewById(R.id.img_next_Adress);
 
         // Voucher views
-        etVoucherCode = findViewById(R.id.etVoucherCode);
-        btnApplyVoucher = findViewById(R.id.btnApplyVoucher);
+
         layoutSelectVoucher = findViewById(R.id.layoutSelectVoucher);
         layoutAppliedVoucher = findViewById(R.id.layoutAppliedVoucher);
         layoutVoucherDiscount = findViewById(R.id.layoutVoucherDiscount);
@@ -225,64 +223,86 @@ public class ThanhToan extends AppCompatActivity {
         img_next_address.setOnClickListener(v -> startActivityForResult(new Intent(this, AddressListActivity.class), REQ_ADDRESS));
 
         // Voucher listeners
-        btnApplyVoucher.setOnClickListener(v -> applyVoucherByCode());
+//        btnApplyVoucher.setOnClickListener(v -> applyVoucherByCode());
 
         layoutSelectVoucher.setOnClickListener(v -> {
+            Log.d(TAG, "=== VOUCHER SELECTION CLICKED ===");
+
+            // Debug current state
+            String jsonCart = getIntent().getStringExtra("cart_list");
+            Log.d(TAG, "Has cart data: " + (jsonCart != null && !jsonCart.isEmpty()));
+            Log.d(TAG, "Has selected product: " + (selectedProduct != null));
+
+            double currentOrderTotal = getCurrentOrderTotal();
+            Log.d(TAG, "Calculated order total: " + currentOrderTotal);
+
+            if (currentOrderTotal <= 0) {
+                Log.e(TAG, "Order total is 0! Cannot proceed with voucher selection");
+                Toast.makeText(this, "Không thể tính tổng đơn hàng. Vui lòng thử lại.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // Debug shipping and other fees
+            Log.d(TAG, "Shipping fee: " + shippingFee);
+            Log.d(TAG, "Current voucher discount: " + voucherDiscount);
+
             Intent intent = new Intent(this, VoucherSelection.class);
-            intent.putExtra("order_total", getCurrentOrderTotal());
+            intent.putExtra("order_total", currentOrderTotal);
+
+            Log.d(TAG, "Starting VoucherSelection with order_total: " + currentOrderTotal);
             startActivityForResult(intent, REQ_VOUCHER_SELECTION);
         });
 
         btnRemoveVoucher.setOnClickListener(v -> removeAppliedVoucher());
     }
 
-    private void applyVoucherByCode() {
-        String voucherCode = etVoucherCode.getText().toString().trim().toUpperCase();
-
-        if (TextUtils.isEmpty(voucherCode)) {
-            Toast.makeText(this, "Vui lòng nhập mã voucher", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        btnApplyVoucher.setEnabled(false);
-        btnApplyVoucher.setText("Đang kiểm tra...");
-
-        ApiService apiService = ApiClient.getApiService();
-        apiService.getVoucherByCode(voucherCode).enqueue(new Callback<ApiService.VoucherResponse>() {
-            @Override
-            public void onResponse(Call<ApiService.VoucherResponse> call, Response<ApiService.VoucherResponse> response) {
-                btnApplyVoucher.setEnabled(true);
-                btnApplyVoucher.setText("Áp dụng");
-
-                if (response.isSuccessful() && response.body() != null) {
-                    ApiService.VoucherResponse voucherResponse = response.body();
-
-                    if (voucherResponse.isSuccess() && voucherResponse.getVoucher() != null) {
-                        Voucher voucher = voucherResponse.getVoucher();
-                        validateAndApplyVoucher(voucher);
-                    } else if (voucherResponse.isSuccess() && voucherResponse.getData() != null) {
-                        // Trường hợp API trả về data thay vì voucher
-                        Voucher voucher = voucherResponse.getData();
-                        validateAndApplyVoucher(voucher);
-                    } else {
-                        String errorMessage = voucherResponse.getMessage() != null
-                                ? voucherResponse.getMessage()
-                                : "Mã voucher không hợp lệ";
-                        Toast.makeText(ThanhToan.this, errorMessage, Toast.LENGTH_SHORT).show();
-                    }
-                } else {
-                    Toast.makeText(ThanhToan.this, "Mã voucher không hợp lệ", Toast.LENGTH_SHORT).show();
-                }
-            }
-
-            @Override
-            public void onFailure(Call<ApiService.VoucherResponse> call, Throwable t) {
-                btnApplyVoucher.setEnabled(true);
-                btnApplyVoucher.setText("Áp dụng");
-                Toast.makeText(ThanhToan.this, "Lỗi kết nối, vui lòng thử lại", Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
+//    private void applyVoucherByCode() {
+//        String voucherCode = etVoucherCode.getText().toString().trim().toUpperCase();
+//
+//        if (TextUtils.isEmpty(voucherCode)) {
+//            Toast.makeText(this, "Vui lòng nhập mã voucher", Toast.LENGTH_SHORT).show();
+//            return;
+//        }
+//
+//        btnApplyVoucher.setEnabled(false);
+//        btnApplyVoucher.setText("Đang kiểm tra...");
+//
+//        ApiService apiService = ApiClient.getApiService();
+//        apiService.getVoucherByCode(voucherCode).enqueue(new Callback<ApiService.VoucherResponse>() {
+//            @Override
+//            public void onResponse(Call<ApiService.VoucherResponse> call, Response<ApiService.VoucherResponse> response) {
+//                btnApplyVoucher.setEnabled(true);
+//                btnApplyVoucher.setText("Áp dụng");
+//
+//                if (response.isSuccessful() && response.body() != null) {
+//                    ApiService.VoucherResponse voucherResponse = response.body();
+//
+//                    if (voucherResponse.isSuccess() && voucherResponse.getVoucher() != null) {
+//                        Voucher voucher = voucherResponse.getVoucher();
+//                        validateAndApplyVoucher(voucher);
+//                    } else if (voucherResponse.isSuccess() && voucherResponse.getData() != null) {
+//                        // Trường hợp API trả về data thay vì voucher
+//                        Voucher voucher = voucherResponse.getData();
+//                        validateAndApplyVoucher(voucher);
+//                    } else {
+//                        String errorMessage = voucherResponse.getMessage() != null
+//                                ? voucherResponse.getMessage()
+//                                : "Mã voucher không hợp lệ";
+//                        Toast.makeText(ThanhToan.this, errorMessage, Toast.LENGTH_SHORT).show();
+//                    }
+//                } else {
+//                    Toast.makeText(ThanhToan.this, "Mã voucher không hợp lệ", Toast.LENGTH_SHORT).show();
+//                }
+//            }
+//
+//            @Override
+//            public void onFailure(Call<ApiService.VoucherResponse> call, Throwable t) {
+//                btnApplyVoucher.setEnabled(true);
+//                btnApplyVoucher.setText("Áp dụng");
+//                Toast.makeText(ThanhToan.this, "Lỗi kết nối, vui lòng thử lại", Toast.LENGTH_SHORT).show();
+//            }
+//        });
+//    }
 
     private void validateAndApplyVoucher(Voucher voucher) {
         double currentOrderTotal = getCurrentOrderTotal();
@@ -336,7 +356,7 @@ public class ThanhToan extends AppCompatActivity {
         updateTotalPriceDisplay();
 
         // Clear input
-        etVoucherCode.setText("");
+//        etVoucherCode.setText("");
 
         Toast.makeText(this, "Áp dụng voucher thành công!", Toast.LENGTH_SHORT).show();
     }

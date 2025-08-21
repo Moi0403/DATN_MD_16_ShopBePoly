@@ -1,6 +1,7 @@
 package com.example.shopbepoly.Adapter;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -22,6 +23,7 @@ import java.util.Locale;
 
 public class VoucherSelectionAdapter extends RecyclerView.Adapter<VoucherSelectionAdapter.VoucherViewHolder> {
 
+    private static final String TAG = "VoucherAdapter";
     private Context context;
     private List<Voucher> voucherList;
     private double orderTotal;
@@ -35,6 +37,7 @@ public class VoucherSelectionAdapter extends RecyclerView.Adapter<VoucherSelecti
         this.context = context;
         this.voucherList = voucherList;
         this.orderTotal = orderTotal;
+        Log.d(TAG, "Adapter created with orderTotal: " + orderTotal);
     }
 
     public void setOnVoucherSelectionListener(OnVoucherSelectionListener listener) {
@@ -44,11 +47,13 @@ public class VoucherSelectionAdapter extends RecyclerView.Adapter<VoucherSelecti
     public void updateData(List<Voucher> newVoucherList) {
         this.voucherList = newVoucherList;
         notifyDataSetChanged();
+        Log.d(TAG, "Data updated, voucher count: " + (newVoucherList != null ? newVoucherList.size() : 0));
     }
 
     public void updateOrderTotal(double newOrderTotal) {
         this.orderTotal = newOrderTotal;
         notifyDataSetChanged();
+        Log.d(TAG, "Order total updated to: " + newOrderTotal);
     }
 
     @NonNull
@@ -62,6 +67,7 @@ public class VoucherSelectionAdapter extends RecyclerView.Adapter<VoucherSelecti
     public void onBindViewHolder(@NonNull VoucherViewHolder holder, int position) {
         Voucher voucher = voucherList.get(position);
 
+        Log.d(TAG, "Binding voucher: " + voucher.getCode() + " - OrderTotal: " + orderTotal + " - MinOrder: " + voucher.getMinOrderValue());
 
         // Set voucher code
         holder.tvVoucherCode.setText(voucher.getCode());
@@ -80,82 +86,37 @@ public class VoucherSelectionAdapter extends RecyclerView.Adapter<VoucherSelecti
         holder.tvExpiryDate.setText(expiryText);
 
         // Set usage count
-        String usageText = String.format("Còn lại: %d/%d",
-                voucher.getUsageLimit() - voucher.getUsedCount(),
-                voucher.getUsageLimit());
+        int remainingUsage = voucher.getUsageLimit() - voucher.getUsedCount();
+        String usageText = String.format("Còn lại: %d/%d", remainingUsage, voucher.getUsageLimit());
         holder.tvUsageCount.setText(usageText);
 
-        // Calculate actual discount for this order
-        double actualDiscount = calculateDiscountForOrder(voucher, orderTotal);
+        // Check if voucher is applicable - CHỈ CHECK TỔNG TIỀN VÀ ĐƠN TỐI THIỂU
+        boolean isApplicable = orderTotal >= voucher.getMinOrderValue();
 
-        // Check if voucher is applicable
-        boolean isApplicable = orderTotal >= voucher.getMinOrderValue() &&
-                voucher.isAvailable() &&
-                actualDiscount > 0;
+        Log.d(TAG, "Voucher " + voucher.getCode() + " - Applicable: " + isApplicable +
+                " (OrderTotal: " + orderTotal + " >= MinOrder: " + voucher.getMinOrderValue() + ")");
+
+        // Calculate actual discount for display
+        double actualDiscount = calculateDiscountForOrder(voucher, orderTotal);
 
         // Update UI based on applicability
         updateVoucherItemUI(holder, voucher, isApplicable, actualDiscount);
 
         // Set click listener
         holder.btnUseVoucher.setOnClickListener(v -> {
+            Log.d(TAG, "Button clicked for voucher: " + voucher.getCode() + ", applicable: " + isApplicable);
             if (listener != null && isApplicable) {
                 listener.onVoucherSelected(voucher);
             }
         });
 
-        // Set voucher icon based on discount type
-        if ("percent".equals(voucher.getDiscountType()) || "percentage".equals(voucher.getDiscountType())) {
-            holder.ivVoucherIcon.setImageResource(R.drawable.ic_voucher_ticket);
-        } else {
-            holder.ivVoucherIcon.setImageResource(R.drawable.ic_voucher_ticket);
-        }
+        // Set voucher icon
+        holder.ivVoucherIcon.setImageResource(R.drawable.ic_voucher_ticket);
     }
 
-    private void updateVoucherItemUI(VoucherViewHolder holder, Voucher voucher, boolean isApplicable, double actualDiscount) {
-        if (isApplicable) {
-            // Voucher can be used
-            holder.cardVoucher.setAlpha(1.0f);
-            holder.btnUseVoucher.setEnabled(true);
-            holder.btnUseVoucher.setText("Dùng ngay");
-            holder.btnUseVoucher.setBackgroundResource(R.drawable.bg_button_rounded);
-            holder.btnUseVoucher.setBackgroundTintList(context.getResources().getColorStateList(R.color.orange));
-
-            // Show applicable status with actual savings
-            String statusText = String.format("✓ Tiết kiệm %s cho đơn hàng này", formatCurrency(actualDiscount));
-            holder.tvStatus.setText(statusText);
-            holder.tvStatus.setTextColor(context.getResources().getColor(R.color.star_gold));
-
-        } else {
-            // Voucher cannot be used
-            holder.cardVoucher.setAlpha(0.6f);
-            holder.btnUseVoucher.setEnabled(false);
-
-            // Determine why voucher cannot be used
-            String statusText;
-            int statusColor;
-
-            if (!voucher.isAvailable()) {
-                holder.btnUseVoucher.setText("Hết hạn");
-                statusText = "❌ Voucher đã hết hạn hoặc hết lượt";
-                statusColor = R.color.primary_red;
-            } else if (orderTotal < voucher.getMinOrderValue()) {
-                holder.btnUseVoucher.setText("Không đủ điều kiện");
-                double needed = voucher.getMinOrderValue() - orderTotal;
-                statusText = String.format("Cần mua thêm %s để đạt tối thiểu %s",
-                        formatCurrency(needed), formatCurrency(voucher.getMinOrderValue()));
-                statusColor = R.color.primary_red;
-            } else {
-                holder.btnUseVoucher.setText("Không áp dụng được");
-                statusText = "❌ Không thể áp dụng";
-                statusColor = R.color.primary_red;
-            }
-
-            holder.btnUseVoucher.setBackgroundResource(R.drawable.bg_voucher_disabled);
-            holder.tvStatus.setText(statusText);
-            holder.tvStatus.setTextColor(context.getResources().getColor(statusColor));
-        }
-    }
-
+    /**
+     * Tính toán số tiền giảm giá thực tế cho đơn hàng
+     */
     private double calculateDiscountForOrder(Voucher voucher, double orderTotal) {
         if (orderTotal < voucher.getMinOrderValue()) {
             return 0;
@@ -163,17 +124,78 @@ public class VoucherSelectionAdapter extends RecyclerView.Adapter<VoucherSelecti
 
         double discount = 0;
         if ("percent".equals(voucher.getDiscountType()) || "percentage".equals(voucher.getDiscountType())) {
-            discount = orderTotal * (voucher.getDiscountValue() / 100);
-            // Apply maximum discount if specified (you may need to add this field to Voucher model)
-            // if (voucher.getMaxDiscountAmount() > 0 && discount > voucher.getMaxDiscountAmount()) {
-            //     discount = voucher.getMaxDiscountAmount();
-            // }
+            // Giảm giá theo phần trăm
+            discount = orderTotal * (voucher.getDiscountValue() / 100.0);
         } else {
+            // Giảm giá cố định
             discount = voucher.getDiscountValue();
         }
 
-        // Ensure discount doesn't exceed order total
-        return Math.min(discount, orderTotal);
+        // Đảm bảo không vượt quá tổng tiền đơn hàng
+        double finalDiscount = Math.min(discount, orderTotal);
+
+        Log.d(TAG, "Calculated discount for " + voucher.getCode() + ": " + finalDiscount +
+                " (Original: " + discount + ", OrderTotal: " + orderTotal + ")");
+
+        return finalDiscount;
+    }
+
+    /**
+     * Cập nhật giao diện voucher item dựa trên trạng thái có thể sử dụng hay không
+     */
+    private void updateVoucherItemUI(VoucherViewHolder holder, Voucher voucher, boolean isApplicable, double actualDiscount) {
+        if (isApplicable) {
+            // Voucher có thể sử dụng
+            holder.cardVoucher.setAlpha(1.0f);
+            holder.btnUseVoucher.setEnabled(true);
+            holder.btnUseVoucher.setText("Dùng ngay");
+            holder.btnUseVoucher.setBackgroundResource(R.drawable.bg_button_rounded);
+
+            try {
+                holder.btnUseVoucher.setBackgroundTintList(context.getResources().getColorStateList(R.color.orange));
+            } catch (Exception e) {
+                Log.w(TAG, "Could not set background tint: " + e.getMessage());
+            }
+
+            // Hiển thị số tiền tiết kiệm thực tế
+            String statusText = String.format("✓ Tiết kiệm %s cho đơn hàng này", formatCurrency(actualDiscount));
+            holder.tvStatus.setText(statusText);
+
+            try {
+                holder.tvStatus.setTextColor(context.getResources().getColor(R.color.star_gold));
+            } catch (Exception e) {
+                holder.tvStatus.setTextColor(0xFF4CAF50); // Green fallback
+            }
+
+            Log.d(TAG, "UI updated for applicable voucher: " + voucher.getCode());
+
+        } else {
+            // Voucher không thể sử dụng - chỉ do không đủ đơn tối thiểu
+            holder.cardVoucher.setAlpha(0.6f);
+            holder.btnUseVoucher.setEnabled(false);
+            holder.btnUseVoucher.setText("Không đủ điều kiện");
+
+            try {
+                holder.btnUseVoucher.setBackgroundResource(R.drawable.bg_voucher_disabled);
+            } catch (Exception e) {
+                Log.w(TAG, "Could not set disabled background: " + e.getMessage());
+            }
+
+            // Tính số tiền cần mua thêm
+            double needed = voucher.getMinOrderValue() - orderTotal;
+            String statusText = String.format("Cần mua thêm %s để đạt tối thiểu %s",
+                    formatCurrency(needed), formatCurrency(voucher.getMinOrderValue()));
+            holder.tvStatus.setText(statusText);
+
+            try {
+                holder.tvStatus.setTextColor(context.getResources().getColor(R.color.primary_red));
+            } catch (Exception e) {
+                holder.tvStatus.setTextColor(0xFFE53E3E); // Red fallback
+            }
+
+            Log.d(TAG, "UI updated for non-applicable voucher: " + voucher.getCode() +
+                    " (Need more: " + needed + ")");
+        }
     }
 
     @Override
@@ -181,6 +203,9 @@ public class VoucherSelectionAdapter extends RecyclerView.Adapter<VoucherSelecti
         return voucherList != null ? voucherList.size() : 0;
     }
 
+    /**
+     * Lấy text hiển thị thông tin giảm giá
+     */
     private String getDiscountText(Voucher voucher) {
         if ("percent".equals(voucher.getDiscountType()) || "percentage".equals(voucher.getDiscountType())) {
             return String.format("Giảm %d%%", (int) voucher.getDiscountValue());
@@ -189,37 +214,39 @@ public class VoucherSelectionAdapter extends RecyclerView.Adapter<VoucherSelecti
         }
     }
 
+    /**
+     * Lấy text mô tả voucher với các điều kiện
+     */
     private String getDescriptionText(Voucher voucher) {
         StringBuilder description = new StringBuilder();
 
-        // Add base description if available
+        // Thêm mô tả cơ bản nếu có
         if (voucher.getDescription() != null && !voucher.getDescription().trim().isEmpty()) {
             description.append(voucher.getDescription());
         }
 
-        // Add minimum order condition - làm rõ là "từ" không phải "đúng"
-        if (voucher.getMinOrderValue() >= 0) {
-            if (description.length() >= 0) {
+        // Thêm điều kiện đơn hàng tối thiểu
+        if (voucher.getMinOrderValue() > 0) {
+            if (description.length() > 0) {
                 description.append(" • ");
             }
             description.append("Áp dụng cho đơn từ ").append(formatCurrency(voucher.getMinOrderValue()));
         }
 
-        // Add usage limit info
-        int remainingUsage = voucher.getUsageLimit() - voucher.getUsedCount();
-        if (remainingUsage <= 10) { // Show urgency for low stock
-            if (description.length() > 0) {
-                description.append(" • ");
-            }
-            description.append("Chỉ còn ").append(remainingUsage).append(" lượt");
-        }
-
-        return description.length() >= 0 ? description.toString() : "Không có điều kiện đặc biệt";
+        return description.length() > 0 ? description.toString() : "Không có điều kiện đặc biệt";
     }
 
+    /**
+     * Format số tiền theo định dạng tiền tệ
+     */
     private String formatCurrency(double amount) {
-        NumberFormat formatter = NumberFormat.getNumberInstance(Locale.US);
-        return formatter.format(amount) + "₫";
+        try {
+            NumberFormat formatter = NumberFormat.getNumberInstance(Locale.US);
+            return formatter.format(amount) + "₫";
+        } catch (Exception e) {
+            Log.w(TAG, "Error formatting currency: " + e.getMessage());
+            return String.valueOf((long)amount) + "₫";
+        }
     }
 
     static class VoucherViewHolder extends RecyclerView.ViewHolder {
@@ -235,7 +262,6 @@ public class VoucherSelectionAdapter extends RecyclerView.Adapter<VoucherSelecti
 
         public VoucherViewHolder(@NonNull View itemView) {
             super(itemView);
-
             cardVoucher = itemView.findViewById(R.id.cardVoucher);
             ivVoucherIcon = itemView.findViewById(R.id.ivVoucherIcon);
             tvVoucherCode = itemView.findViewById(R.id.tvVoucherCode);

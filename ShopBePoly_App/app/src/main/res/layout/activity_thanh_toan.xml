@@ -247,38 +247,38 @@
                     android:padding="16dp">
 
                     <!-- Input mã voucher -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical">
+<!--                    <LinearLayout-->
+<!--                        android:layout_width="match_parent"-->
+<!--                        android:layout_height="wrap_content"-->
+<!--                        android:orientation="horizontal"-->
+<!--                        android:gravity="center_vertical">-->
 
-                        <EditText
-                            android:id="@+id/etVoucherCode"
-                            android:layout_width="0dp"
-                            android:layout_height="48dp"
-                            android:layout_weight="1"
-                            android:hint="Nhập mã giảm giá"
-                            android:background="@drawable/edittext_border"
-                            android:padding="12dp"
-                            android:textSize="14sp"
-                            android:inputType="textCapCharacters"
-                            android:maxLines="1"
-                            android:imeOptions="actionDone" />
+<!--                        <EditText-->
+<!--                            android:id="@+id/etVoucherCode"-->
+<!--                            android:layout_width="0dp"-->
+<!--                            android:layout_height="48dp"-->
+<!--                            android:layout_weight="1"-->
+<!--                            android:hint="Nhập mã giảm giá"-->
+<!--                            android:background="@drawable/edittext_border"-->
+<!--                            android:padding="12dp"-->
+<!--                            android:textSize="14sp"-->
+<!--                            android:inputType="textCapCharacters"-->
+<!--                            android:maxLines="1"-->
+<!--                            android:imeOptions="actionDone" />-->
 
-                        <Button
-                            android:id="@+id/btnApplyVoucher"
-                            android:layout_width="wrap_content"
-                            android:layout_height="48dp"
-                            android:text="Áp dụng"
-                            android:textColor="#FFF"
-                            android:backgroundTint="#FF6B35"
-                            android:textStyle="bold"
-                            android:textSize="12sp"
-                            android:layout_marginStart="8dp"
-                            android:paddingStart="16dp"
-                            android:paddingEnd="16dp" />
-                    </LinearLayout>
+<!--                        <Button-->
+<!--                            android:id="@+id/btnApplyVoucher"-->
+<!--                            android:layout_width="wrap_content"-->
+<!--                            android:layout_height="48dp"-->
+<!--                            android:text="Áp dụng"-->
+<!--                            android:textColor="#FFF"-->
+<!--                            android:backgroundTint="#FF6B35"-->
+<!--                            android:textStyle="bold"-->
+<!--                            android:textSize="12sp"-->
+<!--                            android:layout_marginStart="8dp"-->
+<!--                            android:paddingStart="16dp"-->
+<!--                            android:paddingEnd="16dp" />-->
+<!--                    </LinearLayout>-->
 
                     <!-- Nút chọn từ danh sách voucher -->
                     <LinearLayout
@@ -287,7 +287,6 @@
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
                         android:gravity="center_vertical"
-                        android:layout_marginTop="12dp"
                         android:background="?attr/selectableItemBackground"
                         android:padding="8dp"
                         android:clickable="true"
