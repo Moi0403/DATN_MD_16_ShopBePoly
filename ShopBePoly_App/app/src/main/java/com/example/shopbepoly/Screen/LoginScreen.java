@@ -1,168 +1,186 @@
-    package com.example.shopbepoly.Screen;
+package com.example.shopbepoly.Screen;
 
-    import android.content.Intent;
-    import android.content.SharedPreferences;
-    import android.os.Bundle;
-    import android.text.InputType;
-    import android.util.Log;
-    import android.widget.*;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.os.Bundle;
+import android.text.InputType;
+import android.util.Log;
+import android.widget.*;
 
-    import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatActivity;
 
-    import com.example.shopbepoly.API.ApiClient;
-    import com.example.shopbepoly.API.ApiService;
-    import com.example.shopbepoly.API.WebSocketManager;
-    import com.example.shopbepoly.AppStaff;
-    import com.example.shopbepoly.DTO.LoginRequest;
-    import com.example.shopbepoly.DTO.LoginResponse;
-    import com.example.shopbepoly.R;
-    import com.example.shopbepoly.fragment.FavoriteFragment;
-    import com.example.shopbepoly.nav.HomeNavScreen;
-    import com.google.gson.Gson;
+import com.example.shopbepoly.API.ApiClient;
+import com.example.shopbepoly.API.ApiService;
+import com.example.shopbepoly.API.WebSocketManager;
+import com.example.shopbepoly.AppStaff;
+import com.example.shopbepoly.DTO.LoginRequest;
+import com.example.shopbepoly.DTO.LoginResponse;
+import com.example.shopbepoly.R;
+import com.example.shopbepoly.nav.HomeNavScreen;
+import com.google.gson.Gson;
 
-    import retrofit2.Call;
-    import retrofit2.Callback;
-    import retrofit2.Response;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
-    public class LoginScreen extends AppCompatActivity {
-        private EditText edtUsername, edtPassword;
-        private CheckBox checkboxRemember;
-        private Button btnLogin;
-        private TextView txtRegister, txtForgot;
-        private SharedPreferences sharedPreferences;
+public class LoginScreen extends AppCompatActivity {
+    private EditText edtUsername, edtPassword;
+    private CheckBox checkboxRemember;
+    private Button btnLogin;
+    private TextView txtRegister, txtForgot;
+    private SharedPreferences sharedPreferences;
 
-        private static final String PREF_NAME = "LoginPrefs";
-        private ImageView btnTogglePassword;
+    private static final String PREF_NAME = "LoginPrefs";
+    private ImageView btnTogglePassword;
 
-        @Override
-        protected void onCreate(Bundle savedInstanceState) {
-            super.onCreate(savedInstanceState);
-            setContentView(R.layout.activity_login);
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_login);
 
-            edtUsername = findViewById(R.id.edtUsername);
-            edtPassword = findViewById(R.id.edtPassword);
-            checkboxRemember = findViewById(R.id.checkboxRemember);
-            btnLogin = findViewById(R.id.btnLogin);
-            txtRegister = findViewById(R.id.txtRegister);
-            txtForgot = findViewById(R.id.txtForgotPassword);
-            btnTogglePassword = findViewById(R.id.btnTogglePassword);
+        edtUsername = findViewById(R.id.edtUsername);
+        edtPassword = findViewById(R.id.edtPassword);
+        checkboxRemember = findViewById(R.id.checkboxRemember);
+        btnLogin = findViewById(R.id.btnLogin);
+        txtRegister = findViewById(R.id.txtRegister);
+        txtForgot = findViewById(R.id.txtForgotPassword);
+        btnTogglePassword = findViewById(R.id.btnTogglePassword);
 
-            sharedPreferences = getSharedPreferences(PREF_NAME, MODE_PRIVATE);
-            loadSavedCredentials();
-            final boolean[] isPasswordVisible = {false};
+        sharedPreferences = getSharedPreferences(PREF_NAME, MODE_PRIVATE);
 
-            btnTogglePassword.setOnClickListener(v -> {
-                if (isPasswordVisible[0]) {
-                    edtPassword.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-                    btnTogglePassword.setImageResource(R.drawable.ic_eye_on);
-                } else {
-                    edtPassword.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
-                    btnTogglePassword.setImageResource(R.drawable.ic_eye_off);
-                }
-                edtPassword.setSelection(edtPassword.length());
-                isPasswordVisible[0] = !isPasswordVisible[0];
-            });
 
-            btnLogin.setOnClickListener(view -> {
-                String username = edtUsername.getText().toString().trim();
-                String password = edtPassword.getText().toString().trim();
-                boolean remember = checkboxRemember.isChecked();
+        // ⬇️ Load dữ liệu đã lưu (username, password nếu remember)
+        loadSavedCredentials();
 
-                if (username.isEmpty() || password.isEmpty()) {
-                    Toast.makeText(this, "Vui lòng nhập đầy đủ thông tin", Toast.LENGTH_SHORT).show();
-                    return;
-                }
+        boolean isLoggedIn = sharedPreferences.getBoolean("isLoggedIn", false);
 
-                loginUser(username, password, remember);
-            });
-
-            txtRegister.setOnClickListener(v ->
-                    startActivity(new Intent(this, RegisterScreen.class))
-            );
-
-            txtForgot.setOnClickListener(v ->
-                    startActivity(new Intent(this, ForgotPassword.class))
-            );
+        // ⬇️ Nếu user chưa logout thì vào thẳng Home
+        if (isLoggedIn) {
+            startActivity(new Intent(LoginScreen.this, HomeNavScreen.class));
+            finish();
+            return;
         }
 
-        private void loadSavedCredentials() {
-            String savedUsername = sharedPreferences.getString("username", "");
-            String savedPassword = sharedPreferences.getString("password", "");
-            boolean isRemembered = sharedPreferences.getBoolean("remember", false);
-
-            if (isRemembered) {
-                edtUsername.setText(savedUsername);
-                edtPassword.setText(savedPassword);
-                checkboxRemember.setChecked(true);
+        // Toggle hiển thị mật khẩu
+        final boolean[] isPasswordVisible = {false};
+        btnTogglePassword.setOnClickListener(v -> {
+            if (isPasswordVisible[0]) {
+                edtPassword.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+                btnTogglePassword.setImageResource(R.drawable.ic_eye_on);
+            } else {
+                edtPassword.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+                btnTogglePassword.setImageResource(R.drawable.ic_eye_off);
             }
-        }
+            edtPassword.setSelection(edtPassword.length());
+            isPasswordVisible[0] = !isPasswordVisible[0];
+        });
 
-        private void loginUser(String username, String password, boolean remember) {
-            ApiService apiService = ApiClient.getApiService();
-            Call<LoginResponse> call = apiService.login(new LoginRequest(username, password));
+        // Xử lý nút Login
+        btnLogin.setOnClickListener(view -> {
+            String username = edtUsername.getText().toString().trim();
+            String password = edtPassword.getText().toString().trim();
+            boolean remember = checkboxRemember.isChecked();
 
-            call.enqueue(new Callback<LoginResponse>() {
-                @Override
-                public void onResponse(Call<LoginResponse> call, Response<LoginResponse> response) {
-                    if (response.isSuccessful() && response.body() != null) {
-                        LoginResponse loginResponse = response.body();
+            if (username.isEmpty() || password.isEmpty()) {
+                Toast.makeText(this, "Vui lòng nhập đầy đủ thông tin", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
-                        SharedPreferences.Editor editor = sharedPreferences.edit();
+            loginUser(username, password, remember);
+        });
 
-                        editor.putString("userId", loginResponse.getUser().getId());
-                        editor.putString("username", loginResponse.getUser().getUsername());
-                        editor.putString("name", loginResponse.getUser().getName());
-                        editor.putString("email", loginResponse.getUser().getEmail());
-                        editor.putInt("role", loginResponse.getUser().getRole());
-                        Log.d("LoginDebug", "Saved userId = " + loginResponse.getUser().getId());
-                        Log.d("LoginDebug", "User = " + new Gson().toJson(loginResponse.getUser()));
+        // Chuyển sang màn Register
+        txtRegister.setOnClickListener(v ->
+                startActivity(new Intent(this, RegisterScreen.class))
+        );
 
-                        String userJson = new Gson().toJson(loginResponse.getUser());
-                        editor.putString("currentUser", userJson);
-                        Log.d("LoginScreen", "User saved to SharedPreferences as JSON: " + userJson);
-
-                        if (remember) {
-                            editor.putString("password", password);
-                            editor.putBoolean("remember", true);
-                        } else {
-                            editor.remove("password");
-                            editor.putBoolean("remember", false);
-                        }
-
-                        editor.apply();
-
-                        String userId = loginResponse.getUser().getId();
-                        WebSocketManager.connect(userId);
-
-                        // Log kiểm tra
-                        Log.d("LoginScreen", "Saved userId = " + loginResponse.getUser().getId());
-
-                        int role = loginResponse.getUser().getRole();
-                        Log.d("LOGIN_DEBUG", "Role nhận được: " + role);
-
-                        if (role == 1) {
-                            Toast.makeText(LoginScreen.this, "Đăng nhập nhân viên", Toast.LENGTH_SHORT).show();
-                            startActivity(new Intent(LoginScreen.this, AppStaff.class));
-                        } else {
-                            startActivity(new Intent(LoginScreen.this, HomeNavScreen.class));
-                            Toast.makeText(LoginScreen.this, "Đăng nhập thành công, role = " + role, Toast.LENGTH_SHORT).show();
-                        }
-                        finish();
-                    } else {
-                        Toast.makeText(LoginScreen.this, "Sai tài khoản hoặc mật khẩu", Toast.LENGTH_SHORT).show();
-                    }
-                }
-
-                @Override
-                public void onFailure(Call<LoginResponse> call, Throwable t) {
-                    Toast.makeText(LoginScreen.this, "Lỗi: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            });
-        }
-//        @Override
-//        protected void onDestroy() {
-//            super.onDestroy();
-//            WebSocketManager.onAppClose();
-//            Log.d("LoginScreen", "onDestroy called, WebSocket disconnected");
-//        }
+        // Chuyển sang màn ForgotPassword
+        txtForgot.setOnClickListener(v ->
+                startActivity(new Intent(this, ForgotPassword.class))
+        );
     }
+
+    /**
+     * Load username + password từ SharedPreferences vào EditText
+     */
+    private void loadSavedCredentials() {
+        String savedUsername = sharedPreferences.getString("username", "");
+        String savedPassword = sharedPreferences.getString("password", "");
+        boolean isRemembered = sharedPreferences.getBoolean("remember", false);
+
+        edtUsername.setText(savedUsername);
+        if (isRemembered) {
+            edtPassword.setText(savedPassword);
+            checkboxRemember.setChecked(true);
+        } else {
+            edtPassword.setText("");
+            checkboxRemember.setChecked(false);
+        }
+    }
+
+    /**
+     * Gọi API login
+     */
+    private void loginUser(String username, String password, boolean remember) {
+        ApiService apiService = ApiClient.getApiService();
+        Call<LoginResponse> call = apiService.login(new LoginRequest(username, password));
+
+        call.enqueue(new Callback<LoginResponse>() {
+            @Override
+            public void onResponse(Call<LoginResponse> call, Response<LoginResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    LoginResponse loginResponse = response.body();
+                    SharedPreferences.Editor editor = sharedPreferences.edit();
+
+                    // Lưu thông tin user
+                    editor.putString("userId", loginResponse.getUser().getId());
+                    editor.putString("username", loginResponse.getUser().getUsername());
+                    editor.putString("name", loginResponse.getUser().getName());
+                    editor.putString("email", loginResponse.getUser().getEmail());
+                    editor.putInt("role", loginResponse.getUser().getRole());
+
+                    String userJson = new Gson().toJson(loginResponse.getUser());
+                    editor.putString("currentUser", userJson);
+
+                    // ✅ Đánh dấu đã login
+                    editor.putBoolean("isLoggedIn", true);
+
+                    // ✅ Lưu mật khẩu nếu có remember
+                    if (remember) {
+                        editor.putString("password", password);
+                        editor.putBoolean("remember", true);
+                    } else {
+                        editor.remove("password");
+                        editor.putBoolean("remember", false);
+                    }
+
+                    editor.apply();
+
+                    // Kết nối WebSocket
+                    String userId = loginResponse.getUser().getId();
+                    WebSocketManager.connect(userId);
+
+                    Log.d("LoginScreen", "Saved userId = " + userId);
+
+                    // Điều hướng theo role
+                    int role = loginResponse.getUser().getRole();
+                    if (role == 1) {
+                        Toast.makeText(LoginScreen.this, "Đăng nhập nhân viên", Toast.LENGTH_SHORT).show();
+                        startActivity(new Intent(LoginScreen.this, AppStaff.class));
+                    } else {
+                        startActivity(new Intent(LoginScreen.this, HomeNavScreen.class));
+                        Toast.makeText(LoginScreen.this, "Đăng nhập thành công, role = " + role, Toast.LENGTH_SHORT).show();
+                    }
+                    finish();
+                } else {
+                    Toast.makeText(LoginScreen.this, "Sai tài khoản hoặc mật khẩu", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<LoginResponse> call, Throwable t) {
+                Toast.makeText(LoginScreen.this, "Lỗi: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+}

@@ -21,6 +21,7 @@ import com.bumptech.glide.load.resource.bitmap.CircleCrop;
 import com.bumptech.glide.request.RequestOptions;
 import com.bumptech.glide.signature.ObjectKey;
 import com.example.shopbepoly.ChinhSachvaQuyenRiengTu;
+import com.example.shopbepoly.DTO.LogoutResponse;
 import com.example.shopbepoly.DieuKhoanvaDieuKien;
 import com.example.shopbepoly.DoiMatKhau;
 import com.example.shopbepoly.DonMua;
@@ -37,7 +38,9 @@ import com.example.shopbepoly.API.ApiClient;
 import com.example.shopbepoly.API.ApiService;
 import com.example.shopbepoly.DTO.User;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -201,26 +204,56 @@ public class ProfileFragment extends Fragment {
 
         btnYes.setOnClickListener(view -> {
             SharedPreferences preferences = requireActivity().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
-            SharedPreferences.Editor editor = preferences.edit();
-            boolean isRemembered = preferences.getBoolean("remember", false);
-            String savedUsername = preferences.getString("username", "");
-            String savedPassword = preferences.getString("password", "");
+            String userId = preferences.getString("userId", ""); // Lưu khi login
 
-            editor.clear();
-            if (isRemembered) {
-                editor.putString("username", savedUsername);
-                editor.putString("password", savedPassword);
-                editor.putBoolean("remember", true);
-            }
-            editor.apply();
-            Intent intent = new Intent(getActivity(), LoginScreen.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(intent);
+            // ✅ Tạo Map gửi lên server
+            Map<String, String> body = new HashMap<>();
+            body.put("userId", userId);
+
+            // 1️⃣ Gọi API logout server
+            ApiService apiService = ApiClient.getApiService();
+            Call<LogoutResponse> call = apiService.logout(body);
+            call.enqueue(new Callback<LogoutResponse>() {
+                @Override
+                public void onResponse(Call<LogoutResponse> call, Response<LogoutResponse> response) {
+                    // API thành công, tiếp tục logout local
+                    clearLocalAndGoToLogin(preferences);
+                }
+
+                @Override
+                public void onFailure(Call<LogoutResponse> call, Throwable t) {
+                    // API lỗi vẫn logout local
+                    clearLocalAndGoToLogin(preferences);
+                }
+            });
+
             dialog.dismiss();
         });
 
         btnNo.setOnClickListener(view -> dialog.dismiss());
         dialog.show();
+    }
 
+    // Hàm clear SharedPreferences và chuyển về LoginScreen
+    private void clearLocalAndGoToLogin(SharedPreferences preferences) {
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean("isLoggedIn", false);
+
+        boolean isRemembered = preferences.getBoolean("remember", false);
+        if (isRemembered) {
+            editor.putString("username", preferences.getString("username", ""));
+            editor.putString("password", preferences.getString("password", ""));
+            editor.putBoolean("remember", true);
+        } else {
+            editor.putString("username", "");
+            editor.putString("password", "");
+            editor.putBoolean("remember", false);
+        }
+
+        editor.apply();
+
+        Intent intent = new Intent(getActivity(), LoginScreen.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
     }
 }

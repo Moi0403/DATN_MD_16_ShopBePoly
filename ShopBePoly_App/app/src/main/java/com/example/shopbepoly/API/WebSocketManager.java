@@ -12,7 +12,7 @@ import okio.ByteString;
 import java.util.concurrent.TimeUnit;
 
 public class WebSocketManager {
-    private static final String TAG = "WebSocket";
+    private static final String TAG = "WebSocketManager";
     private static final OkHttpClient client = new OkHttpClient.Builder()
             .readTimeout(10, TimeUnit.SECONDS)
             .build();
@@ -23,7 +23,7 @@ public class WebSocketManager {
     private static final int HEARTBEAT_INTERVAL = 3000;
     private static String currentUserId;
 
-    // Listener để Chat.java nhận tin mới
+    // Listener để nhận message từ server
     public interface MessageListener {
         void onMessageReceived(String message);
     }
@@ -33,9 +33,12 @@ public class WebSocketManager {
         listener = l;
     }
 
+    /**
+     * Kết nối WebSocket với userId
+     */
     public static void connect(String userId) {
         currentUserId = userId;
-        disconnect();
+        disconnect(); // Ngắt WS cũ nếu còn
 
         String wsUrl = "ws://" + ApiClient.IPV4 + ":3000/ws?userId=" + userId;
         Request request = new Request.Builder().url(wsUrl).build();
@@ -61,6 +64,7 @@ public class WebSocketManager {
 
             @Override
             public void onClosing(WebSocket ws, int code, String reason) {
+                Log.d(TAG, "WS Closing: " + reason);
                 stopHeartbeat();
                 isConnected = false;
             }
@@ -74,14 +78,22 @@ public class WebSocketManager {
         });
     }
 
-    public static void reconnect() {
-        if (currentUserId != null) {
-            connect(currentUserId);
+    /**
+     * Gửi tin nhắn đến server
+     */
+    public static void sendMessage(String message) {
+        if (webSocket != null && isConnected) {
+            webSocket.send(message);
+        } else {
+            Log.w(TAG, "Cannot send message. WS not connected.");
         }
     }
 
+    /**
+     * Ngắt kết nối WebSocket
+     */
     public static void disconnect() {
-        if (webSocket != null && isConnected) {
+        if (webSocket != null) {
             stopHeartbeat();
             try {
                 webSocket.close(1000, "App closed");
@@ -93,6 +105,26 @@ public class WebSocketManager {
         webSocket = null;
     }
 
+    /**
+     * Khi app tắt hoặc background
+     */
+    public static void onAppClose() {
+        disconnect();
+    }
+
+    /**
+     * Reconnect WS khi app resume hoặc cần reconnect
+     */
+    public static void reconnect() {
+        if (currentUserId != null && !isConnected) {
+            Log.d(TAG, "WebSocket reconnect called for " + currentUserId);
+            connect(currentUserId);
+        }
+    }
+
+    /**
+     * Heartbeat giữ kết nối
+     */
     private static void startHeartbeat() {
         if (heartbeatThread != null && heartbeatThread.isAlive()) return;
 

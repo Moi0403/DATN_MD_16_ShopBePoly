@@ -132,7 +132,7 @@
                 <ImageView
                     android:layout_width="80dp"
                     android:layout_height="80dp"
-                    android:src="@drawable/ic_voucher_check"
+                    android:src="@drawable/ic_voucher_ticket"
                     app:tint="#cccccc" />
 
                 <TextView

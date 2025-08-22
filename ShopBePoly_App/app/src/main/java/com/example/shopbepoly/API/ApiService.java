@@ -32,6 +32,9 @@ public interface ApiService {
     @POST("login")
     Call<LoginResponse> login(@Body LoginRequest request);
 
+    @POST("logout")
+    Call<LogoutResponse> logout(@Body Map<String, String> body);
+
     @PUT("up_password/{userId}")
     Call<ResponseBody> changePassword(@Path("userId") String userId, @Body RequestBody body);
 
