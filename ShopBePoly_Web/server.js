@@ -705,17 +705,20 @@ router.post('/login', async (req, res) => {
 });
 
 router.post('/logout', async (req, res) => {
-    const { userId } = req.body;
-    try {
-        const user = await userModel.findById(userId);
-        if (!user) return res.status(404).json({ message: 'Người dùng không tồn tại' });
-        user.isOnline = false;
-        await user.save();
-        res.json({ message: 'Đăng xuất thành công' });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Lỗi server khi đăng xuất' });
+  const { userId } = req.body;
+  try {
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Người dùng không tồn tại' });
     }
+
+    user.isOnline = false;
+    await user.save();
+
+    return res.json({ success: true, message: 'Đăng xuất thành công' });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Lỗi server khi logout' });
+  }
 });
 
 router.get('/users_online', async (req, res) => {
