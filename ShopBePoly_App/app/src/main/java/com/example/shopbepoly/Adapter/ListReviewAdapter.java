@@ -1,6 +1,7 @@
 package com.example.shopbepoly.Adapter;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,11 +14,17 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.example.shopbepoly.API.ApiClient;
 import com.example.shopbepoly.DTO.ListReview;
+import com.example.shopbepoly.DTO.User;
 import com.example.shopbepoly.R;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+import java.util.TimeZone;
 
 public class ListReviewAdapter extends RecyclerView.Adapter<ListReviewAdapter.ReviewViewHolder> {
 
@@ -54,12 +61,22 @@ public class ListReviewAdapter extends RecyclerView.Adapter<ListReviewAdapter.Re
     @Override
     public void onBindViewHolder(@NonNull ReviewViewHolder holder, int position) {
         ListReview review = reviewList.get(position);
+        if (review == null) return;
+
+        User user = review.getUser();
+        if (user != null) {
+            Log.d("ListReviewAdapter", "UserId: " + user.getId()
+                    + " | Name: " + user.getName()
+                    + " | Avatar: " + user.getAvatar());
+        } else {
+            Log.d("ListReviewAdapter", "User NULL for reviewId=" + review.getId());
+        }
 
         // ✅ Hiển thị tên user
-        holder.tvName.setText(getDisplayName(review));
+        holder.tvName.setText(getDisplayName(user));
 
         // ✅ Hiển thị avatar user
-        String avatarUrl = getAvatarUrl(review);
+        String avatarUrl = getAvatarUrl(user);
         if (avatarUrl != null) {
             Glide.with(context)
                     .load(avatarUrl)
@@ -72,7 +89,10 @@ public class ListReviewAdapter extends RecyclerView.Adapter<ListReviewAdapter.Re
         }
 
         // ✅ Hiển thị rating
-        float ratingValue = review.getRating() > 5 ? 5f : Math.max(review.getRating(), 0f);
+        float ratingValue = review.getRating();
+        if (ratingValue < 0) ratingValue = 0f;
+        if (ratingValue > 5) ratingValue = 5f;
+
         holder.ratingBar.setIsIndicator(true);
         holder.ratingBar.setStepSize(0.5f);
         holder.ratingBar.setNumStars(5);
@@ -85,45 +105,32 @@ public class ListReviewAdapter extends RecyclerView.Adapter<ListReviewAdapter.Re
         holder.tvDate.setText(formatIsoUtcToLocal(review.getCreatedAt()));
 
         // ✅ Chỉ chủ review mới được sửa
-        String reviewUserId = getReviewUserId(review);
-        boolean isMyReview = currentUserId != null && currentUserId.equals(reviewUserId);
-
+        boolean isMyReview = currentUserId != null && currentUserId.equals(review.getUserId());
         holder.btnEdit.setVisibility(isMyReview ? View.VISIBLE : View.GONE);
-        if (isMyReview) {
-            holder.btnEdit.setOnClickListener(v -> {
-                if (editClickListener != null) editClickListener.onEditClick(review);
-            });
-        } else {
-            holder.btnEdit.setOnClickListener(null);
-        }
+        holder.btnEdit.setOnClickListener(isMyReview ? v -> {
+            if (editClickListener != null) editClickListener.onEditClick(review);
+        } : null);
     }
 
-    private String getDisplayName(ListReview r) {
-        if (r.getUserId() != null) {
-            if (r.getUserId().getName() != null && !r.getUserId().getName().isEmpty()) {
-                return r.getUserId().getName();
-            }
-            if (r.getUserId().getUsername() != null && !r.getUserId().getUsername().isEmpty()) {
-                return r.getUserId().getUsername();
-            }
+    private String getDisplayName(User u) {
+        if (u != null) {
+            if (u.getName() != null && !u.getName().isEmpty()) return u.getName();
         }
         return "Người dùng";
     }
 
-    private String getAvatarUrl(ListReview r) {
-        if (r.getUserId() != null && r.getUserId().getAvatar() != null && !r.getUserId().getAvatar().isEmpty()) {
-            String avtUrl = r.getUserId().getAvatar();
-            if (!avtUrl.startsWith("http")) {
-                avtUrl = "https://yourdomain.com/" + avtUrl; // ⚠️ thay bằng domain API thật của bạn
+    private String getAvatarUrl(User u) {
+        if (u != null) {
+            String avatarFile = u.getAvatar();
+            Log.d("ListReviewAdapter", "Avatar raw = " + avatarFile);
+            if (avatarFile != null && !avatarFile.isEmpty()) {
+                // Nếu API trả full URL thì dùng trực tiếp
+                if (avatarFile.startsWith("http")) {
+                    return avatarFile;
+                }
+                // Nếu chỉ trả fileName thì nối với base URL
+                return ApiClient.IMAGE_URL + avatarFile + "?t=" + System.currentTimeMillis();
             }
-            return avtUrl;
-        }
-        return null;
-    }
-
-    private String getReviewUserId(ListReview r) {
-        if (r.getUserId() != null) {
-            return r.getUserId().getId();
         }
         return null;
     }
@@ -131,15 +138,15 @@ public class ListReviewAdapter extends RecyclerView.Adapter<ListReviewAdapter.Re
     private String formatIsoUtcToLocal(String isoUtc) {
         if (isoUtc == null || isoUtc.isEmpty()) return "";
         try {
-            java.text.SimpleDateFormat in = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX", java.util.Locale.US);
-            in.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
-            java.util.Date d = in.parse(isoUtc);
+            SimpleDateFormat in = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX", Locale.US);
+            in.setTimeZone(TimeZone.getTimeZone("UTC"));
+            Date d = in.parse(isoUtc);
 
-            java.text.SimpleDateFormat out = new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault());
-            out.setTimeZone(java.util.TimeZone.getDefault());
+            SimpleDateFormat out = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
+            out.setTimeZone(TimeZone.getDefault());
             return out.format(d);
         } catch (Exception e) {
-            return isoUtc;
+            return isoUtc; // fallback
         }
     }
 

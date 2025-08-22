@@ -1,37 +1,54 @@
 package com.example.shopbepoly.DTO;
 
+import com.google.gson.annotations.SerializedName;
 import java.util.List;
 import java.util.Objects;
 
 public class ListReview {
-    private String _id;
-    private User userId;   // user (server populate)
+    @SerializedName("_id")
+    private String id;
+
+    @SerializedName("user")
+    private User user;  // server trả về "user": { _id, name, avt_user }
+
+    @SerializedName("productId")
     private String productId;
+
+    @SerializedName("orderId")
     private String orderId;
+
+    @SerializedName("rating")
     private int rating;
+
+    @SerializedName("comment")
     private String comment;
+
+    @SerializedName("images")
     private List<String> images;
+
+    @SerializedName("createdAt")
     private String createdAt;
 
-    // ---- Getter/Setter ----
-    public String getId() {  // ✅ thay get_id() -> getId()
-        return _id;
+    // ---- Getter & Setter ----
+    public String getId() {
+        return id;
     }
 
     public void setId(String id) {
-        this._id = id;
+        this.id = id;
     }
 
-    public User getUserId() {
-        return userId;
+    public User getUser() {
+        return user;
     }
 
-    public void setUserId(User userId) {
-        this.userId = userId;
+    public void setUser(User user) {
+        this.user = user;
     }
 
-    public String getUser() {   // ✅ tiện cho so sánh currentUserId
-        return userId != null ? userId.getId() : null;
+    // tiện cho so sánh currentUserId
+    public String getUserId() {
+        return user != null ? user.getId() : null;
     }
 
     public String getProductId() {
@@ -82,17 +99,45 @@ public class ListReview {
         this.createdAt = createdAt;
     }
 
-    // ---- equals & hashCode để merge không trùng _id ----
+    // ---- Helper để lấy tên & avatar ----
+    public String getDisplayName() {
+        return user != null && user.getName() != null
+                ? user.getName()
+                : "Người dùng";
+    }
+
+    public String getAvatar() {
+        return user != null && user.getAvatar() != null
+                ? user.getAvatar()
+                : "https://default-avatar.png";
+    }
+
+    // ---- equals & hashCode dựa vào id ----
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof ListReview)) return false;
         ListReview that = (ListReview) o;
-        return _id != null && _id.equals(that._id);
+        return Objects.equals(id, that.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(_id);
+        return Objects.hash(id);
+    }
+
+    // ---- toString để debug ----
+    @Override
+    public String toString() {
+        return "ListReview{" +
+                "id='" + id + '\'' +
+                ", user=" + (user != null ? user.getId() : "null") +
+                ", productId='" + productId + '\'' +
+                ", orderId='" + orderId + '\'' +
+                ", rating=" + rating +
+                ", comment='" + comment + '\'' +
+                ", images=" + images +
+                ", createdAt='" + createdAt + '\'' +
+                '}';
     }
 }
