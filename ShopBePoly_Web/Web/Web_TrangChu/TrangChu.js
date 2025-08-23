@@ -1,3 +1,4 @@
+// API and uploads base URLs
 const API_BASE = `http://${config.host}:${config.port}/api`;
 const UPLOADS_BASE = `http://${config.host}:${config.port}/uploads`;
 
@@ -10,8 +11,8 @@ let pendingOrdersData = [];
 let previousTodayStats = { totalOrders: 0, totalRevenue: 0 };
 let currentStagnantPage = 1;
 let totalStagnantPages = 1;
-let onlineUsersIntervalId = null; // Biến toàn cục để lưu interval ID
-let userModalInstance = null; // Biến để lưu instance của modal
+let onlineUsersIntervalId = null; // Global variable to store interval ID
+let userModalInstance = null; // Variable to store modal instance
 
 // Utility to set text content safely
 function setTextIfExists(id, text) {
@@ -83,11 +84,8 @@ async function fetchOnlineCount() {
             return;
         }
         const data = await fetchWithRetry(`${API_BASE}/list/users_online`);
-        console.log('Raw API response:', data);
         const users = Array.isArray(data.users) ? data.users : [];
-        console.log('Filtered users:', users);
         const role0Users = users.filter(user => user.role === 0);
-        console.log('Users with role 0:', role0Users);
         setTextIfExists('user_online', role0Users.length);
     } catch (error) {
         console.error('Error fetching online user count:', error);
@@ -115,8 +113,6 @@ async function fetchAndDisplayOnlineUsers() {
     try {
         const data = await fetchWithRetry(`${API_BASE}/list/users_online`, 3, 1000, 20000);
         const users = Array.isArray(data.users) ? data.users.filter(user => user.role === 0) : [];
-        console.log('Fetched users (role = 0):', users);
-
         const currentUsernames = users.map(user => user.username || '').sort();
         const previousUsernames = previousOnlineUsers.map(user => user.username || '').sort();
         if (JSON.stringify(currentUsernames) === JSON.stringify(previousUsernames)) {
@@ -126,8 +122,8 @@ async function fetchAndDisplayOnlineUsers() {
         previousOnlineUsers = users;
 
         let html = users.length
-            ? users.map(user => `
-                <tr>
+            ? users.map((user, index) => `
+                <tr class="${index % 2 === 0 ? 'bg-white' : 'bg-light'}">
                     <td>${user.username || '---'}</td>
                     <td>${user.name || '---'}</td>
                     <td>${user.email || '---'}</td>
@@ -214,14 +210,15 @@ async function fetchLowStockProducts() {
 
         const html = data.data
             .filter(item => item.variations.some(v => v.stock <= threshold))
-            .map(item => {
+            .map((item, index) => {
                 const lowStockVariations = item.variations.filter(v => v.stock <= threshold);
                 const sizesHtml = lowStockVariations.map(v => v.size || '---').join('<br>');
                 const stockHtml = lowStockVariations.map(v => v.stock || 0).join('<br>');
                 const colorHtml = item.color || '-';
+                const rowClass = index % 2 === 0 ? 'bg-white' : 'bg-light'; // Xen kẽ màu sắc
 
                 return `
-                    <tr class="table-danger">
+                    <tr class="table-danger ${rowClass}">
                         <td>${item.name || '---'}</td>
                         <td>${item.category || '---'}</td>
                         <td>${colorHtml}</td>
@@ -265,8 +262,6 @@ const debouncedFetchStagnantProducts = debounce(async (page = 1) => {
         const res = await fetchWithRetry(`${API_BASE}/products/stagnant?days=${days}&soldLimit=${soldLimit}&page=${page}&limit=10`);
         const { data, pagination } = res;
 
-        console.log('Stagnant products response:', res);
-
         if (JSON.stringify(data) === JSON.stringify(previousStagnantData)) {
             console.log('No changes in stagnant products data, skipping DOM update');
             return;
@@ -289,9 +284,9 @@ const debouncedFetchStagnantProducts = debounce(async (page = 1) => {
         }
 
         const fragment = document.createDocumentFragment();
-        data.forEach(product => {
+        data.forEach((product, index) => {
             const tr = document.createElement('tr');
-            tr.className = 'table-warning';
+            tr.className = `table-warning ${index % 2 === 0 ? 'bg-white' : 'bg-light'}`; // Xen kẽ màu sắc
             const variationsHtml = Object.entries(product.variationsByColor || {}).map(([color, { variations }]) =>
                 variations.map(v =>
                     `Size: ${v.size || '---'}, Tồn: ${v.stock || 0}, Đã bán: ${v.sold || 0} <br>
@@ -412,8 +407,8 @@ async function fetchAndDisplayOrdersToday() {
         todayOrdersData = allOrders.filter(order => new Date(order.date) >= today);
 
         const html = todayOrdersData.length
-            ? todayOrdersData.map(order => `
-                <tr>
+            ? todayOrdersData.map((order, index) => `
+                <tr class="${index % 2 === 0 ? 'bg-white' : 'bg-light'}">
                     <td>${order.id_order || order._id || 'N/A'}</td>
                     <td>${order.id_user?.name || 'N/A'}</td>
                     <td>${Number(order.total || 0).toLocaleString('vi-VN')} ₫</td>
@@ -497,10 +492,10 @@ function renderPendingOrdersTable() {
         return;
     }
 
-    const html = pendingOrdersData.map(order => {
+    const html = pendingOrdersData.map((order, index) => {
         const totalQuantity = order.products.reduce((acc, p) => acc + (p.quantity || 0), 0);
         return `
-            <tr>
+            <tr class="${index % 2 === 0 ? 'bg-white' : 'bg-light'}">
                 <td>${order.id_order || 'N/A'}</td>
                 <td>${order.id_user?.name || 'N/A'}</td>
                 <td>${totalQuantity}</td>
@@ -561,21 +556,35 @@ const debouncedClickOnlineUsers = debounce(async () => {
         return;
     }
 
-    // Dispose modal cũ nếu tồn tại
-    if (userModalInstance) {
-        userModalInstance.dispose();
-        console.log('Previous modal instance disposed');
-        userModalInstance = null;
+    if (!API_BASE || API_BASE.includes('undefined')) {
+        console.error('API_BASE is not defined or invalid');
+        Toastify({
+            text: "Lỗi: API base URL không hợp lệ",
+            duration: 3000,
+            gravity: "top",
+            position: "right",
+            backgroundColor: "#dc3545"
+        }).showToast();
+        return;
     }
 
-    // Tạo modal mới
+    if (onlineUsersIntervalId) {
+        clearInterval(onlineUsersIntervalId);
+        onlineUsersIntervalId = null;
+        console.log('Cleared previous interval');
+    }
+
+    if (userModalInstance) {
+        userModalInstance.dispose();
+        userModalInstance = null;
+        console.log('Previous modal instance disposed');
+    }
+
     userModalInstance = new bootstrap.Modal(userModalElement, {
         backdrop: 'static',
         keyboard: true
     });
-    userModalInstance.show();
 
-    // Reset modal content
     const modalBody = document.querySelector('#userModal .modal-body');
     if (modalBody) {
         modalBody.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
@@ -584,31 +593,25 @@ const debouncedClickOnlineUsers = debounce(async () => {
         return;
     }
 
-    // Dọn dẹp interval cũ
-    if (onlineUsersIntervalId) {
-        clearInterval(onlineUsersIntervalId);
-        onlineUsersIntervalId = null;
-        console.log('Cleared previous interval');
-    }
+    userModalInstance.show();
 
-    // Fetch dữ liệu
     try {
         await fetchAndDisplayOnlineUsers();
-        // Chỉ thiết lập interval nếu fetch thành công
-        onlineUsersIntervalId = setInterval(() => {
+        onlineUsersIntervalId = setInterval(async () => {
             if (userModalInstance && userModalInstance._isShown) {
-                fetchAndDisplayOnlineUsers();
+                await fetchAndDisplayOnlineUsers();
             } else {
-                console.log('Modal is not shown, skipping interval fetch');
+                console.log('Modal is not shown, clearing interval');
+                clearInterval(onlineUsersIntervalId);
+                onlineUsersIntervalId = null;
             }
-        }, 60000); // Tăng lên 60 giây
+        }, 120000);
         console.log('New interval set:', onlineUsersIntervalId);
     } catch (error) {
         console.error('Initial fetch failed, not setting interval:', error);
         modalBody.innerHTML = '<p class="text-center text-danger">Lỗi tải dữ liệu người dùng online: ' + (error.message || 'Unknown error') + '</p>';
     }
 
-    // Dọn dẹp khi modal đóng
     userModalElement.addEventListener('hidden.bs.modal', () => {
         console.log('Modal hidden, cleaning up');
         if (onlineUsersIntervalId) {
@@ -621,9 +624,13 @@ const debouncedClickOnlineUsers = debounce(async () => {
             userModalInstance = null;
             console.log('Modal instance disposed on close');
         }
-        // Xóa backdrop
+        if (modalBody) {
+            modalBody.innerHTML = '';
+            previousOnlineUsers = [];
+        }
         document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
         document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
     }, { once: true });
 }, 300);
 
@@ -645,14 +652,12 @@ document.getElementById('pendingOrdersCard')?.addEventListener('click', async ()
     await fetchPendingOrders();
 });
 
-// Clean up modal backdrops
 document.addEventListener('hidden.bs.modal', () => {
     console.log('Cleaning up modal backdrops');
     document.body.classList.remove('modal-open');
     document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
 });
 
-// Load sidebar
 fetch('../Style_Sidebar/Sidebar.html')
     .then(res => res.text())
     .then(data => {
@@ -671,7 +676,6 @@ fetch('../Style_Sidebar/Sidebar.html')
     })
     .catch(error => console.error('Error loading sidebar:', error));
 
-// Refresh dashboard with prioritized loading
 async function refreshDashboard() {
     try {
         await debouncedFetchStagnantProducts(currentStagnantPage);
@@ -693,7 +697,6 @@ async function refreshDashboard() {
     }
 }
 
-// Initialize dashboard
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM fully loaded, initializing dashboard');
     if (!localStorage.getItem('stagnantDays')) localStorage.setItem('stagnantDays', 7);
