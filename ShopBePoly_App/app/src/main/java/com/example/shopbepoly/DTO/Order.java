@@ -4,7 +4,6 @@ import com.google.gson.annotations.SerializedName;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.Map;
 
 public class Order implements Serializable {
     private String _id;
@@ -14,10 +13,11 @@ public class Order implements Serializable {
     private User id_user;
     @SerializedName("products")
     private List<ProductInOrder> products;
+    @SerializedName("deliveryConfirmedBy")
+    private String deliveryConfirmedBy;
+    @SerializedName("deliveryConfirmedAt") // ✅ THÊM TRƯỜNG NÀY (backup)
+    private String deliveryConfirmedAt;
 
-
-    //    @SerializedName("products")
-//    private List<Map<String, Object>> products;
     private int quantity_order;
     private String date;
     private String total;
@@ -31,6 +31,7 @@ public class Order implements Serializable {
     public Order() {
     }
 
+    // Getters and setters
     public String get_id() {
         return _id;
     }
@@ -94,6 +95,7 @@ public class Order implements Serializable {
     public void setStatus(String status) {
         this.status = status;
     }
+
     public String getCancelReason() {
         return cancelReason;
     }
@@ -101,7 +103,6 @@ public class Order implements Serializable {
     public void setCancelReason(String cancelReason) {
         this.cancelReason = cancelReason;
     }
-
 
     public String getAddress() {
         return address;
@@ -133,5 +134,22 @@ public class Order implements Serializable {
 
     public void setCheckedAt(String checkedAt) {
         this.checkedAt = checkedAt;
+    }
+
+    public String getDeliveryConfirmedBy() {
+        return deliveryConfirmedBy;
+    }
+
+    public void setDeliveryConfirmedBy(String deliveryConfirmedBy) {
+        this.deliveryConfirmedBy = deliveryConfirmedBy;
+    }
+
+    // ✅ GETTER/SETTER CHO deliveryConfirmedAt (backup field)
+    public String getDeliveryConfirmedAt() {
+        return deliveryConfirmedAt;
+    }
+
+    public void setDeliveryConfirmedAt(String deliveryConfirmedAt) {
+        this.deliveryConfirmedAt = deliveryConfirmedAt;
     }
 }
