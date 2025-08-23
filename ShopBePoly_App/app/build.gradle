@@ -54,6 +54,7 @@ dependencies {
     implementation fileTree(dir: 'C:\\Users\\abc\\Desktop\\Zalopay', include: ['*.aar', '*.jar'], exclude: [])
     implementation fileTree(dir: 'C:\\Users\\NQA\\OneDrive\\Máy tính\\Zalopay', include: ['*.aar', '*.jar'], exclude: [])
     implementation fileTree(dir: '/Users/buiquanguy/Desktop/Zalopay', include: ['*.aar', '*.jar'], exclude: [])
+    implementation fileTree(dir: 'E:\\Zalopay', include: ['*.aar', '*.jar'], exclude: [])
 
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
