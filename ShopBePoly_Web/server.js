@@ -38,6 +38,29 @@ const Banner = require('./Database/bannerModel');
 const reviewModel = require("./Database/reviewModel");
 const voucherModel = require('./Database/voucherModel');
 
+const DEFAULT_AVATAR = "https://default-avatar.png";
+const DELIVERED_STATUSES = ["delivered", "completed", "received", "Đã giao", "Đã giao hàng"];
+
+const formatReview = (r) => ({
+  _id: r._id,
+  rating: r.rating,
+  comment: r.comment,
+  images: Array.isArray(r.images) ? r.images : [],
+  createdAt: r.createdAt,
+  user: {
+    _id: r.userId ? r.userId._id : undefined,
+    name: r.userId?.name || "Người dùng",
+    avt_user: r.userId?.avt_user || DEFAULT_AVATAR,
+  },
+  product: r.productId
+    ? {
+        _id: r.productId._id,
+        name: r.productId.nameproduct,
+        avt_img: r.productId.avt_imgproduct,
+      }
+    : null,
+});
+
 
 const uri = COMOMJS.uri;
 
@@ -2195,7 +2218,6 @@ router.post("/add_review", async (req, res) => {
     if (!userId || !productId || !orderId || !rating || !comment) {
       return res.status(400).json({ message: "Thiếu dữ liệu bắt buộc" });
     }
-
     if (rating < 1 || rating > 5) {
       return res.status(400).json({ message: "Số sao không hợp lệ (1-5)" });
     }
@@ -2204,44 +2226,30 @@ router.post("/add_review", async (req, res) => {
       userId = new mongoose.Types.ObjectId(userId);
       productId = new mongoose.Types.ObjectId(productId);
       orderId = new mongoose.Types.ObjectId(orderId);
-    } catch (e) {
+    } catch {
       return res.status(400).json({ message: "ID không hợp lệ" });
     }
 
-    console.log("[AddReview Input]", {
-      userId,
-      productId,
-      orderId,
-      rating,
-      comment,
-      images,
-    });
-
+    // Kiểm tra đơn hàng hợp lệ
     const order = await orderModel.findOne({
       _id: orderId,
       id_user: userId,
       "products.id_product": productId,
-      status: { $in: ["Đã giao", "delivered"] },
+      status: { $in: DELIVERED_STATUSES },
     });
-
     if (!order) {
-      return res.status(400).json({
-        message: "Bạn chưa mua sản phẩm này hoặc đơn hàng chưa hoàn tất",
-      });
+      return res
+        .status(400)
+        .json({ message: "Bạn chưa mua sản phẩm này hoặc đơn hàng chưa hoàn tất" });
     }
 
-    const existedReview = await reviewModel.findOne({
-      userId,
-      productId,
-      orderId,
-    });
-
+    // Kiểm tra đã đánh giá chưa
+    const existedReview = await reviewModel.findOne({ userId, productId, orderId });
     if (existedReview) {
-      return res.status(400).json({
-        message: "Bạn đã đánh giá sản phẩm này rồi",
-      });
+      return res.status(400).json({ message: "Bạn đã đánh giá sản phẩm này rồi" });
     }
 
+    // Tạo review mới
     const newReview = new reviewModel({
       userId,
       productId,
@@ -2249,24 +2257,19 @@ router.post("/add_review", async (req, res) => {
       rating,
       comment,
       images: Array.isArray(images) ? images : [],
-      createdAt: new Date(),
     });
-
     await newReview.save();
 
-    res.status(200).json({
+    // Populate user để trả về đầy đủ name + avatar cho Android
+    const populated = await newReview.populate("userId", "name avt_user");
+
+    return res.status(200).json({
       message: "Đánh giá thành công",
-      review: newReview,
+      review: formatReview(populated),
     });
-
-    console.log("[AddReview Success]", newReview);
-
   } catch (error) {
-    console.error("Add review error:", error);
-    res.status(500).json({
-      message: "Lỗi server",
-      error: error.message,
-    });
+    console.error("[AddReview Error]", error);
+    return res.status(500).json({ message: "Lỗi server", error: error.message });
   }
 });
 
@@ -2289,7 +2292,7 @@ router.post("/order_reviews/:orderId", async (req, res) => {
     const results = [];
 
     for (const r of reviews) {
-      const { userId, productId, rating, comment, images } = r;
+      const { userId, productId, rating, comment, images } = r || {};
 
       if (!userId || !productId || !rating || !comment) {
         results.push({ productId, success: false, message: "Thiếu dữ liệu bắt buộc" });
@@ -2309,29 +2312,34 @@ router.post("/order_reviews/:orderId", async (req, res) => {
         continue;
       }
 
+      // Check order hợp lệ
       const order = await orderModel.findOne({
         _id: orderObjId,
         id_user: userObjId,
         "products.id_product": productObjId,
-        status: { $in: ["Đã giao", "delivered"] },
+        status: { $in: DELIVERED_STATUSES },
       });
-
       if (!order) {
-        results.push({ productId, success: false, message: "Sản phẩm chưa mua hoặc đơn hàng chưa hoàn tất" });
+        results.push({
+          productId,
+          success: false,
+          message: "Sản phẩm chưa mua hoặc đơn hàng chưa hoàn tất",
+        });
         continue;
       }
 
+      // Check đã review chưa
       const existedReview = await reviewModel.findOne({
         userId: userObjId,
         productId: productObjId,
         orderId: orderObjId,
       });
-
       if (existedReview) {
         results.push({ productId, success: false, message: "Sản phẩm đã được đánh giá" });
         continue;
       }
 
+      // Save review
       const newReview = new reviewModel({
         userId: userObjId,
         productId: productObjId,
@@ -2339,21 +2347,23 @@ router.post("/order_reviews/:orderId", async (req, res) => {
         rating,
         comment,
         images: Array.isArray(images) ? images : [],
-        createdAt: new Date(),
       });
-
       await newReview.save();
-      results.push({ productId, success: true, message: "Đánh giá thành công" });
+
+      const populated = await newReview.populate("userId", "name avt_user");
+
+      results.push({
+        productId,
+        success: true,
+        message: "Đánh giá thành công",
+        review: formatReview(populated),
+      });
     }
 
-    res.status(200).json({
-      message: "Hoàn tất gửi đánh giá",
-      results,
-    });
-
+    return res.status(200).json({ message: "Hoàn tất gửi đánh giá", results });
   } catch (error) {
     console.error("[OrderReviews Error]", error);
-    res.status(500).json({ message: "Lỗi server", error: error.message });
+    return res.status(500).json({ message: "Lỗi server", error: error.message });
   }
 });
 
@@ -2361,28 +2371,22 @@ router.get("/reviews/:productId", async (req, res) => {
   try {
     const { productId } = req.params;
 
+    let productObjId;
+    try {
+      productObjId = new mongoose.Types.ObjectId(productId);
+    } catch {
+      return res.status(400).json({ message: "Product ID không hợp lệ" });
+    }
+
     const reviews = await reviewModel
-      .find({ productId: new mongoose.Types.ObjectId(productId) })
+      .find({ productId: productObjId })
       .populate("userId", "name avt_user")
       .sort({ createdAt: -1 });
 
-    const formatted = reviews.map(r => ({
-      _id: r._id,
-      rating: r.rating,
-      comment: r.comment,
-      images: r.images || [],
-      createdAt: r.createdAt,
-      user: {
-        _id: r.userId?._id,
-        name: r.userId?.name,
-        avt_user: r.userId?.avt_user
-      }
-    }));
-
-    res.status(200).json(formatted);
+    return res.status(200).json(reviews.map(formatReview));
   } catch (err) {
     console.error("[GetReviewsByProduct Error]", err);
-    res.status(500).json({ message: "Lỗi khi lấy đánh giá", error: err.message });
+    return res.status(500).json({ message: "Lỗi khi lấy đánh giá", error: err.message });
   }
 });
 
@@ -2390,86 +2394,72 @@ router.get("/reviews/order/:orderId", async (req, res) => {
   try {
     const { orderId } = req.params;
 
+    let orderObjId;
+    try {
+      orderObjId = new mongoose.Types.ObjectId(orderId);
+    } catch {
+      return res.status(400).json({ message: "Order ID không hợp lệ" });
+    }
+
     const order = await orderModel
-      .findById(orderId)
-      .populate({
-        path: "products.id_product",
-        select: "nameproduct avt_imgproduct",
-      });
+      .findById(orderObjId)
+      .populate("products.id_product", "nameproduct avt_imgproduct");
 
     if (!order) {
       return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
     }
 
     const productIds = order.products
-      .map(p => p.id_product?._id)
+      .map((p) => p?.id_product?._id)
       .filter(Boolean);
 
     const reviews = await reviewModel
-      .find({ productId: { $in: productIds }, orderId })
+      .find({ productId: { $in: productIds }, orderId: orderObjId })
       .populate("userId", "name avt_user")
       .populate("productId", "nameproduct avt_imgproduct")
       .sort({ createdAt: -1 });
 
-    const formatted = reviews.map(r => ({
-      _id: r._id,
-      rating: r.rating,
-      comment: r.comment,
-      images: r.images || [],
-      createdAt: r.createdAt,
-      user: {
-        _id: r.userId?._id,
-        name: r.userId?.name,
-        avt_user: r.userId?.avt_user
-      },
-      product: r.productId
-        ? {
-            _id: r.productId._id,
-            name: r.productId.nameproduct,
-            avt_img: r.productId.avt_imgproduct
-          }
-        : null
-    }));
-
-    res.status(200).json(formatted);
+    return res.status(200).json(reviews.map(formatReview));
   } catch (err) {
     console.error("[GetReviewsByOrder Error]", err);
-    res.status(500).json({ message: "Lỗi khi lấy đánh giá", error: err.message });
+    return res.status(500).json({ message: "Lỗi khi lấy đánh giá", error: err.message });
   }
 });
 
 router.put("/update_review/:id", async (req, res) => {
-    try {
-        const reviewId = req.params.id;
-        const { rating, comment, images } = req.body;
+  try {
+    const { id: reviewId } = req.params;
+    const { rating, comment, images } = req.body;
 
-        if (!rating && !comment && !images) {
-            return res.status(400).json({ message: "Không có dữ liệu để cập nhật" });
-        }
-
-        const updatedReview = await Review.findByIdAndUpdate(
-            reviewId,
-            {
-                ...(rating !== undefined && { rating }),
-                ...(comment !== undefined && { comment }),
-                ...(images !== undefined && { images })
-            },
-            { new: true }
-        );
-
-        if (!updatedReview) {
-            return res.status(404).json({ message: "Không tìm thấy review" });
-        }
-
-        res.json({
-            message: "Cập nhật đánh giá thành công",
-            review: updatedReview
-        });
-
-    } catch (error) {
-        console.error("[UpdateReview Error]", error);
-        res.status(500).json({ message: "Lỗi server khi cập nhật đánh giá" });
+    if (rating === undefined && comment === undefined && images === undefined) {
+      return res.status(400).json({ message: "Không có dữ liệu để cập nhật" });
     }
+
+    const updated = await reviewModel
+      .findByIdAndUpdate(
+        reviewId,
+        {
+          ...(rating !== undefined && { rating }),
+          ...(comment !== undefined && { comment }),
+          ...(images !== undefined && { images }),
+        },
+        { new: true }
+      )
+      .populate("userId", "name avt_user")
+      .populate("productId", "nameproduct avt_imgproduct");
+
+    if (!updated) {
+      return res.status(404).json({ message: "Không tìm thấy review" });
+    }
+
+    return res.status(200).json({
+      message: "Cập nhật đánh giá thành công",
+      review: formatReview(updated),
+    });
+  } catch (error) {
+    console.error("[UpdateReview Error]", error);
+    return res.status(500).json({ message: "Lỗi server khi cập nhật đánh giá" });
+  }
 });
 
 router.get("/reviews", async (req, res) => {
@@ -2480,30 +2470,10 @@ router.get("/reviews", async (req, res) => {
       .populate("productId", "nameproduct avt_imgproduct")
       .sort({ createdAt: -1 });
 
-    const formatted = reviews.map(r => ({
-      _id: r._id,
-      rating: r.rating,
-      comment: r.comment,
-      images: r.images || [],
-      createdAt: r.createdAt,
-      user: {
-        _id: r.userId?._id,
-        name: r.userId?.name,
-        avt_user: r.userId?.avt_user
-      },
-      product: r.productId
-        ? {
-            _id: r.productId._id,
-            name: r.productId.nameproduct,
-            avt_img: r.productId.avt_imgproduct
-          }
-        : null
-    }));
-
-    res.status(200).json(formatted);
+    return res.status(200).json(reviews.map(formatReview));
   } catch (err) {
     console.error("[GetAllReviews Error]", err);
-    res.status(500).json({ message: "Lỗi khi lấy đánh giá", error: err.message });
+    return res.status(500).json({ message: "Lỗi khi lấy đánh giá", error: err.message });
   }
 });
 
