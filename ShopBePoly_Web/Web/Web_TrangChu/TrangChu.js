@@ -10,11 +10,18 @@ let pendingOrdersData = [];
 let previousTodayStats = { totalOrders: 0, totalRevenue: 0 };
 let currentStagnantPage = 1;
 let totalStagnantPages = 1;
+let onlineUsersIntervalId = null; // Biến toàn cục để lưu interval ID
+let userModalInstance = null; // Biến để lưu instance của modal
 
 // Utility to set text content safely
 function setTextIfExists(id, text) {
     const elem = document.getElementById(id);
-    if (elem) elem.textContent = text || '0';
+    if (elem) {
+        elem.textContent = text || '0';
+        console.log(`Updated ${id} with value: ${text}`);
+    } else {
+        console.error(`Element with id ${id} not found in DOM`);
+    }
 }
 
 // Utility to format currency in VND
@@ -22,12 +29,19 @@ function formatCurrency(value) {
     return value ? Number(value).toLocaleString('vi-VN', { style: 'currency', currency: 'VND' }) : '0 ₫';
 }
 
-// Utility for fetching with retry
-async function fetchWithRetry(url, retries = 3, delay = 1000) {
+// Utility for fetching with retry and timeout
+async function fetchWithRetry(url, retries = 3, delay = 1000, timeout = 20000) {
+    if (!url || url.includes('undefined')) {
+        console.error('Invalid URL:', url);
+        throw new Error('Invalid API base URL');
+    }
     for (let i = 0; i < retries; i++) {
         try {
-            console.log(`Fetching URL: ${url}`);
-            const res = await fetch(url);
+            console.log(`Fetching URL: ${url}, attempt ${i + 1}`);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeout);
+            const res = await fetch(url, { signal: controller.signal });
+            clearTimeout(timeoutId);
             if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
             const data = await res.json();
             console.log(`Response from ${url}:`, data);
@@ -42,7 +56,12 @@ async function fetchWithRetry(url, retries = 3, delay = 1000) {
 
 // Sanitize HTML to prevent XSS
 function sanitizeHtml(html) {
-    return window.DOMPurify ? DOMPurify.sanitize(html) : html;
+    if (window.DOMPurify) {
+        return DOMPurify.sanitize(html);
+    } else {
+        console.warn('DOMPurify not loaded, rendering unsanitized HTML');
+        return html;
+    }
 }
 
 // Debounce utility to limit API calls
@@ -56,14 +75,25 @@ function debounce(func, wait) {
 
 // Fetch online user count
 async function fetchOnlineCount() {
+    console.log('Fetching online user count...');
     try {
-        const data = await fetchWithRetry(`${API_BASE}/users_online`);
-        setTextIfExists('user_online', data.online ?? '0');
+        if (!API_BASE) {
+            console.error('API_BASE is not defined');
+            setTextIfExists('user_online', 'Error');
+            return;
+        }
+        const data = await fetchWithRetry(`${API_BASE}/list/users_online`);
+        console.log('Raw API response:', data);
+        const users = Array.isArray(data.users) ? data.users : [];
+        console.log('Filtered users:', users);
+        const role0Users = users.filter(user => user.role === 0);
+        console.log('Users with role 0:', role0Users);
+        setTextIfExists('user_online', role0Users.length);
     } catch (error) {
         console.error('Error fetching online user count:', error);
         setTextIfExists('user_online', 'Error');
         Toastify({
-            text: "Lỗi tải số lượng người dùng online!",
+            text: "Lỗi tải số lượng người dùng online: " + (error.message || 'Unknown error'),
             duration: 3000,
             gravity: "top",
             position: "right",
@@ -75,15 +105,24 @@ async function fetchOnlineCount() {
 // Fetch and display online users in modal
 async function fetchAndDisplayOnlineUsers() {
     const modalBody = document.querySelector('#userModal .modal-body');
-    if (!modalBody) return;
+    if (!modalBody) {
+        console.error('Modal body not found for #userModal');
+        return;
+    }
 
-    modalBody.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"></div></div>';
+    modalBody.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
 
     try {
-        const data = await fetchWithRetry(`${API_BASE}/list/users_online`);
-        const users = data.users || [];
+        const data = await fetchWithRetry(`${API_BASE}/list/users_online`, 3, 1000, 20000);
+        const users = Array.isArray(data.users) ? data.users.filter(user => user.role === 0) : [];
+        console.log('Fetched users (role = 0):', users);
 
-        if (JSON.stringify(users) === JSON.stringify(previousOnlineUsers)) return;
+        const currentUsernames = users.map(user => user.username || '').sort();
+        const previousUsernames = previousOnlineUsers.map(user => user.username || '').sort();
+        if (JSON.stringify(currentUsernames) === JSON.stringify(previousUsernames)) {
+            console.log('No changes in online users, skipping DOM update');
+            return;
+        }
         previousOnlineUsers = users;
 
         let html = users.length
@@ -99,7 +138,7 @@ async function fetchAndDisplayOnlineUsers() {
                     </td>
                 </tr>
             `).join('')
-            : '<tr><td colspan="5" class="text-center">Không có người dùng online</td></tr>';
+            : '<tr><td colspan="5" class="text-center">Không có người dùng online (role = 0)</td></tr>';
 
         modalBody.innerHTML = sanitizeHtml(`
             <div class="table-responsive">
@@ -119,9 +158,9 @@ async function fetchAndDisplayOnlineUsers() {
         `);
     } catch (error) {
         console.error('Error fetching online users:', error);
-        modalBody.innerHTML = '<p class="text-center text-danger">Lỗi tải dữ liệu người dùng online.</p>';
+        modalBody.innerHTML = '<p class="text-center text-danger">Lỗi tải dữ liệu người dùng online: ' + (error.message || 'Unknown error') + '</p>';
         Toastify({
-            text: "Lỗi tải danh sách người dùng online!",
+            text: "Lỗi tải danh sách người dùng online: " + (error.message || 'Unknown error'),
             duration: 3000,
             gravity: "top",
             position: "right",
@@ -249,7 +288,6 @@ const debouncedFetchStagnantProducts = debounce(async (page = 1) => {
             return;
         }
 
-        // Optimize DOM updates by creating document fragment
         const fragment = document.createDocumentFragment();
         data.forEach(product => {
             const tr = document.createElement('tr');
@@ -280,13 +318,11 @@ const debouncedFetchStagnantProducts = debounce(async (page = 1) => {
 
         tableBody.appendChild(fragment);
 
-        // Remove the pagination information from the DOM
         const wrapper = document.getElementById('stagnantTableWrapper');
         const existingPagination = wrapper.nextElementSibling;
         if (existingPagination && existingPagination.classList.contains('pagination-info')) {
             existingPagination.remove();
         }
-
     } catch (error) {
         console.error('Error fetching stagnant products:', error);
         tableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Lỗi tải dữ liệu sản phẩm tồn kho lâu</td></tr>';
@@ -434,7 +470,7 @@ async function fetchAndDisplayOrdersToday() {
 async function fetchPendingOrders() {
     try {
         const data = await fetchWithRetry(`${API_BASE}/orders/pending`);
-        pendingOrdersData = data.orders || [];
+        pendingOrdersData = Array.isArray(data.orders) ? data.orders : [];
         setTextIfExists('pendingOrders', pendingOrdersData.length);
         renderPendingOrdersTable();
     } catch (error) {
@@ -509,33 +545,109 @@ function renderPendingOrdersTable() {
 
 // Event listeners for modals
 document.querySelector('.border-left-danger')?.addEventListener('click', async () => {
-    const pendingModal = new bootstrap.Modal(document.getElementById('pendingOrdersModal'));
+    const pendingModalElement = document.getElementById('pendingOrdersModal');
+    if (!pendingModalElement) return;
+    const pendingModal = new bootstrap.Modal(pendingModalElement);
     pendingModal.show();
     await fetchPendingOrders();
 });
 
-document.getElementById('user_online')?.addEventListener('click', () => {
-    const userModal = new bootstrap.Modal(document.getElementById('userModal'));
-    userModal.show();
-    fetchAndDisplayOnlineUsers();
-    const intervalId = setInterval(fetchAndDisplayOnlineUsers, 30000); // Increased to 30s
-    document.getElementById('userModal').addEventListener('hidden.bs.modal', () => clearInterval(intervalId), { once: true });
-});
+// Debounce click event for online users
+const debouncedClickOnlineUsers = debounce(async () => {
+    console.log('Opening user modal');
+    const userModalElement = document.getElementById('userModal');
+    if (!userModalElement) {
+        console.error('User modal element not found');
+        return;
+    }
+
+    // Dispose modal cũ nếu tồn tại
+    if (userModalInstance) {
+        userModalInstance.dispose();
+        console.log('Previous modal instance disposed');
+        userModalInstance = null;
+    }
+
+    // Tạo modal mới
+    userModalInstance = new bootstrap.Modal(userModalElement, {
+        backdrop: 'static',
+        keyboard: true
+    });
+    userModalInstance.show();
+
+    // Reset modal content
+    const modalBody = document.querySelector('#userModal .modal-body');
+    if (modalBody) {
+        modalBody.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+    } else {
+        console.error('Modal body not found');
+        return;
+    }
+
+    // Dọn dẹp interval cũ
+    if (onlineUsersIntervalId) {
+        clearInterval(onlineUsersIntervalId);
+        onlineUsersIntervalId = null;
+        console.log('Cleared previous interval');
+    }
+
+    // Fetch dữ liệu
+    try {
+        await fetchAndDisplayOnlineUsers();
+        // Chỉ thiết lập interval nếu fetch thành công
+        onlineUsersIntervalId = setInterval(() => {
+            if (userModalInstance && userModalInstance._isShown) {
+                fetchAndDisplayOnlineUsers();
+            } else {
+                console.log('Modal is not shown, skipping interval fetch');
+            }
+        }, 60000); // Tăng lên 60 giây
+        console.log('New interval set:', onlineUsersIntervalId);
+    } catch (error) {
+        console.error('Initial fetch failed, not setting interval:', error);
+        modalBody.innerHTML = '<p class="text-center text-danger">Lỗi tải dữ liệu người dùng online: ' + (error.message || 'Unknown error') + '</p>';
+    }
+
+    // Dọn dẹp khi modal đóng
+    userModalElement.addEventListener('hidden.bs.modal', () => {
+        console.log('Modal hidden, cleaning up');
+        if (onlineUsersIntervalId) {
+            clearInterval(onlineUsersIntervalId);
+            onlineUsersIntervalId = null;
+            console.log('Interval cleared on modal close');
+        }
+        if (userModalInstance) {
+            userModalInstance.dispose();
+            userModalInstance = null;
+            console.log('Modal instance disposed on close');
+        }
+        // Xóa backdrop
+        document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
+        document.body.classList.remove('modal-open');
+    }, { once: true });
+}, 300);
+
+document.getElementById('user_online')?.addEventListener('click', debouncedClickOnlineUsers);
 
 document.getElementById('todayOrdersCard')?.addEventListener('click', async () => {
-    const orderModal = new bootstrap.Modal(document.getElementById('orderModal'));
+    const orderModalElement = document.getElementById('orderModal');
+    if (!orderModalElement) return;
+    const orderModal = new bootstrap.Modal(orderModalElement);
     orderModal.show();
     await fetchAndDisplayOrdersToday();
 });
 
 document.getElementById('pendingOrdersCard')?.addEventListener('click', async () => {
-    const pendingModal = new bootstrap.Modal(document.getElementById('pendingOrdersModal'));
+    const pendingModalElement = document.getElementById('pendingOrdersModal');
+    if (!pendingModalElement) return;
+    const pendingModal = new bootstrap.Modal(pendingModalElement);
     pendingModal.show();
     await fetchPendingOrders();
 });
 
 // Clean up modal backdrops
 document.addEventListener('hidden.bs.modal', () => {
+    console.log('Cleaning up modal backdrops');
     document.body.classList.remove('modal-open');
     document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
 });
@@ -562,9 +674,7 @@ fetch('../Style_Sidebar/Sidebar.html')
 // Refresh dashboard with prioritized loading
 async function refreshDashboard() {
     try {
-        // Prioritize stagnant products
         await debouncedFetchStagnantProducts(currentStagnantPage);
-        // Then load other data
         await Promise.all([
             fetchOnlineCount(),
             fetchTodayStatistics(),
@@ -585,9 +695,8 @@ async function refreshDashboard() {
 
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', () => {
-    // Set default stagnant product parameters
+    console.log('DOM fully loaded, initializing dashboard');
     if (!localStorage.getItem('stagnantDays')) localStorage.setItem('stagnantDays', 7);
     if (!localStorage.getItem('stagnantSoldLimit')) localStorage.setItem('stagnantSoldLimit', 50);
-
     refreshDashboard();
 });

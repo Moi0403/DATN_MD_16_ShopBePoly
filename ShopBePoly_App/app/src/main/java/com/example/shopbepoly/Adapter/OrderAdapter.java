@@ -652,7 +652,7 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
     private String formatDate(String isoDate) {
         try {
             SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault());
-            inputFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+//            inputFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
 
             SimpleDateFormat outputFormat = new SimpleDateFormat("dd/MM/yyyy - HH:mm", Locale.getDefault());
             outputFormat.setTimeZone(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
