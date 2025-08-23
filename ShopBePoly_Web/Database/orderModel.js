@@ -30,22 +30,28 @@ const orderSchema = new mongoose.Schema({
     status: String,
     address: String,
     pay: String,
-
-    // ✅ Thêm trường lý do hủy
     cancelReason: {
         type: String,
         default: ""
     },
     checkedAt: {
-        type: Date, // Sử dụng Date để đồng bộ với timestamps
-        default: "" // Mặc định là null, chỉ cập nhật khi check
+        type: Date,
+        default: null // Thời gian chuyển từ "Đang xử lý" sang "Đang giao hàng"
     },
     checkedBy: {
         type: String,
         default: ""
+    },
+    // ✅ THÊM TRƯỜNG MỚI
+    deliveryConfirmedAt: {
+        type: Date,
+        default: null // Thời gian staff xác nhận đã giao hàng thành công
+    },
+    deliveryConfirmedBy: {
+        type: String,
+        default: "" // ID của staff xác nhận giao hàng
     }
-    
- }, { timestamps: true });
+}, { timestamps: true });
 
 const orderModel = mongoose.model('order', orderSchema);
 module.exports = orderModel;
