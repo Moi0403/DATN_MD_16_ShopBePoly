@@ -97,7 +97,7 @@ public class Chitietdonhang extends AppCompatActivity {
         txtSL.setText(String.valueOf(order.getQuantity_order()));
         int amountToDisplay = 0;
         try {
-            if (isStaff && isZaloPayPaid(order.getPay())) {
+            if (isZaloPayPaid(order.getPay())) {
                 amountToDisplay = 0;
             } else {
                 amountToDisplay = Integer.parseInt(order.getTotal());
