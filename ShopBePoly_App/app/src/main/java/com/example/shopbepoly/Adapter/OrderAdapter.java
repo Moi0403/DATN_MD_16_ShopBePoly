@@ -112,7 +112,7 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
         String totalStr = order.getTotal();
         int amountToDisplay = 0;
         try {
-            if (isStaff && isZaloPayPaid(order.getPay())) {
+            if (isZaloPayPaid(order.getPay())) {
                 amountToDisplay = 0;
             } else if (totalStr != null && !totalStr.isEmpty()) {
                 amountToDisplay = Integer.parseInt(totalStr);
