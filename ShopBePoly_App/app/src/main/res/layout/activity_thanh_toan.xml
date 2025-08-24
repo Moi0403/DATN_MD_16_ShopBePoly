@@ -3,7 +3,6 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
-    android:fitsSystemWindows="true"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#FFF"
@@ -17,9 +16,6 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toTopOf="@id/bottomBar"
         android:fillViewport="true"
-        android:paddingStart="24dp"
-        android:paddingEnd="24dp"
-        android:paddingTop="24dp"
         android:paddingBottom="8dp">
 
         <LinearLayout
@@ -30,31 +26,30 @@
             <!-- Nút back và tiêu đề -->
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="48dp"
+                android:layout_height="56dp"
+                android:background="@drawable/header_home"
+                android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <ImageButton
+                android:padding="16dp">
+                <ImageView
                     android:id="@+id/btnBack"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Back"
-                    android:src="@drawable/ic_back" />
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_back"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
+                    android:padding="4dp" />
 
                 <TextView
-                    android:id="@+id/txtTitle"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:gravity="center_horizontal"
                     android:text="Thanh toán"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
-
-                <View
-                    android:layout_width="24dp"
-                    android:layout_height="24dp" />
+                    android:textColor="#FFFFFF"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="40dp" />
             </LinearLayout>
 
             <!-- Danh sách sản phẩm nếu đi từ giỏ hàng -->
