@@ -48,13 +48,12 @@ public class LoginScreen extends AppCompatActivity {
 
         sharedPreferences = getSharedPreferences(PREF_NAME, MODE_PRIVATE);
 
-
-        // ⬇️ Load dữ liệu đã lưu (username, password nếu remember)
         loadSavedCredentials();
+
+        handleRegisteredAccount();
 
         boolean isLoggedIn = sharedPreferences.getBoolean("isLoggedIn", false);
 
-        // ⬇️ Nếu user chưa logout thì vào thẳng Home
         if (isLoggedIn) {
             startActivity(new Intent(LoginScreen.this, HomeNavScreen.class));
             finish();
@@ -100,9 +99,6 @@ public class LoginScreen extends AppCompatActivity {
         );
     }
 
-    /**
-     * Load username + password từ SharedPreferences vào EditText
-     */
     private void loadSavedCredentials() {
         String savedUsername = sharedPreferences.getString("username", "");
         String savedPassword = sharedPreferences.getString("password", "");
@@ -115,6 +111,20 @@ public class LoginScreen extends AppCompatActivity {
         } else {
             edtPassword.setText("");
             checkboxRemember.setChecked(false);
+        }
+    }
+
+    private void handleRegisteredAccount() {
+        Intent intent = getIntent();
+        if (intent != null) {
+            String regUsername = intent.getStringExtra("username");
+            String regPassword = intent.getStringExtra("password");
+
+            if (regUsername != null && regPassword != null) {
+                edtUsername.setText(regUsername);
+                edtPassword.setText(regPassword);
+                checkboxRemember.setChecked(true); // Tự đánh dấu lưu mật khẩu
+            }
         }
     }
 
@@ -142,10 +152,8 @@ public class LoginScreen extends AppCompatActivity {
                     String userJson = new Gson().toJson(loginResponse.getUser());
                     editor.putString("currentUser", userJson);
 
-                    // ✅ Đánh dấu đã login
                     editor.putBoolean("isLoggedIn", true);
 
-                    // ✅ Lưu mật khẩu nếu có remember
                     if (remember) {
                         editor.putString("password", password);
                         editor.putBoolean("remember", true);
@@ -162,7 +170,6 @@ public class LoginScreen extends AppCompatActivity {
 
                     Log.d("LoginScreen", "Saved userId = " + userId);
 
-                    // Điều hướng theo role
                     int role = loginResponse.getUser().getRole();
                     if (role == 1) {
                         Toast.makeText(LoginScreen.this, "Đăng nhập nhân viên", Toast.LENGTH_SHORT).show();

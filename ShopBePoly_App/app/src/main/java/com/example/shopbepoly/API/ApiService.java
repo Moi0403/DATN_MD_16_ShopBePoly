@@ -29,6 +29,12 @@ public interface ApiService {
     @POST("register")
     Call<Void> register(@Body User user);
 
+    @POST("check-email")
+    Call<CheckEmailResponse> checkEmailExists(@Body Map<String, String> body);
+
+    @POST("check-username")
+    Call<CheckUsernameResponse> checkUsernameExists(@Body Map<String, String> body);
+
     @POST("login")
     Call<LoginResponse> login(@Body LoginRequest request);
 
@@ -409,5 +415,4 @@ public interface ApiService {
         public int getTotal() { return total; }
         public void setTotal(int total) { this.total = total; }
     }
-
 }
