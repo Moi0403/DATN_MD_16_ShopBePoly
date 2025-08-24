@@ -664,16 +664,23 @@ router.post('/register', async (req, res) => {
     phone_number = Number(phone_number);
 
     try {
-        const existingUser = await userModel.findOne({ username });
-        if (existingUser) {
+        // Kiểm tra username trùng
+        const existingUserByUsername = await userModel.findOne({ username });
+        if (existingUserByUsername) {
             return res.status(400).json({ message: 'Tên người dùng đã tồn tại' });
+        }
+
+        // Kiểm tra email trùng
+        const existingUserByEmail = await userModel.findOne({ email: email.trim().toLowerCase() });
+        if (existingUserByEmail) {
+            return res.status(400).json({ message: 'Email đã được sử dụng' });
         }
 
         const newUser = await userModel.create({
             username,
             password,
             name,
-            email,
+            email: email.trim().toLowerCase(),
             phone_number,
             birthday: birthday || null,
             gender: gender || '',
@@ -1844,37 +1851,92 @@ router.get('/favorites/:userId', async (req, res) => {
 
 
 router.post('/send-verification-code', async (req, res) => {
-    const { email } = req.body;
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-
     try {
-        await VerifyCode.create({ email: email.trim().toLowerCase(), code });
+        let { email } = req.body;
+        if (!email) {
+            return res.status(400).json({ message: 'Email là bắt buộc' });
+        }
+
+        email = email.trim().toLowerCase();
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+        await VerifyCode.deleteMany({ email });
+
+        await VerifyCode.create({ email, code });
+
         await sendEmail(email, 'Mã xác nhận', `Mã xác nhận của bạn là: ${code}`);
-        return res.sendStatus(200);
+
+        return res.status(200).json({ message: 'Mã xác nhận đã được gửi' });
     } catch (err) {
         console.error('Lỗi gửi mã xác minh:', err);
         return res.status(500).json({ message: 'Lỗi máy chủ' });
     }
 });
 
+// Xác minh mã
 router.post('/verify-code', async (req, res) => {
-    const { email, code } = req.body;
-
     try {
-        const record = await VerifyCode.findOne({
-            email: email.trim().toLowerCase(),
-            code: code.trim()
-        });
+        let { email, code } = req.body;
+
+        if (!email || !code) {
+            return res.status(400).json({ message: 'Email và mã xác nhận là bắt buộc' });
+        }
+
+        email = email.trim().toLowerCase();
+        code = code.trim();
+
+        const record = await VerifyCode.findOne({ email, code });
 
         if (!record) {
-            return res.status(400).json({ message: 'Không tìm thấy mã xác minh' });
+            return res.status(400).json({ message: 'Mã xác nhận không hợp lệ hoặc đã hết hạn' });
         }
 
         await VerifyCode.deleteOne({ _id: record._id });
+
         return res.status(200).json({ message: 'Xác minh thành công' });
     } catch (err) {
         console.error('Lỗi xác minh mã:', err);
         return res.status(500).json({ message: 'Lỗi máy chủ' });
+    }
+});
+
+//Check trùng email
+router.post('/check-email', async (req, res) => {
+    try {
+        let { email } = req.body;
+        if (!email) {
+            return res.status(400).json({ message: 'Email là bắt buộc' });
+        }
+
+        email = email.trim().toLowerCase();
+        const existingUser = await userModel.findOne({ email });
+
+        if (existingUser) {
+            return res.status(400).json({ message: 'Email đã được sử dụng' });
+        } else {
+            return res.status(200).json({ message: 'Email có thể sử dụng' });
+        }
+    } catch (err) {
+        console.error('Lỗi kiểm tra email:', err);
+        return res.status(500).json({ message: 'Lỗi server' });
+    }
+});
+
+//check trùng tên đăng nhập
+router.post('/check-username', async (req, res) => {
+    try {
+        const { username } = req.body;
+        if (!username) return res.status(400).json({ message: 'Thiếu username' });
+
+        const existingUser = await userModel.findOne({ username });
+        if (existingUser) {
+            return res.status(400).json({ message: 'Username đã tồn tại' });
+        } else {
+            return res.status(200).json({ message: 'Username có thể sử dụng' });
+        }
+    } catch (err) {
+        console.error('Lỗi kiểm tra username:', err);
+        return res.status(500).json({ message: 'Lỗi server' });
     }
 });
 
