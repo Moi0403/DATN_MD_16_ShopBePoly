@@ -304,7 +304,45 @@ public class ThanhToan extends AppCompatActivity {
 //        });
 //    }
 
+
+
+    private void applyVoucher(Voucher voucher) {
+        appliedVoucher = voucher;
+        double currentOrderTotal = getCurrentOrderTotal();
+
+        // Tính toán giảm giá
+        if ("percent".equals(voucher.getDiscountType()) || "percentage".equals(voucher.getDiscountType())) {
+            voucherDiscount = currentOrderTotal * (voucher.getDiscountValue() / 100);
+        } else {
+            voucherDiscount = voucher.getDiscountValue();
+        }
+
+        // Đảm bảo giảm giá không vượt quá tổng đơn hàng
+        if (voucherDiscount > currentOrderTotal) {
+            voucherDiscount = currentOrderTotal;
+        }
+
+        // Cập nhật UI
+        updateVoucherUI();
+        updateTotalPriceDisplay();
+
+        // Clear input
+//        etVoucherCode.setText("");
+
+        Toast.makeText(this, "Áp dụng voucher thành công!", Toast.LENGTH_SHORT).show();
+    }
     private void validateAndApplyVoucher(Voucher voucher) {
+        if (voucher == null) {
+            Toast.makeText(this, "Voucher không hợp lệ", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Kiểm tra voucher đã được sử dụng bởi user này chưa
+        if (isVoucherAlreadyUsedByCurrentUser(voucher.getId())) {
+            Toast.makeText(this, "Bạn đã sử dụng voucher này rồi!", Toast.LENGTH_LONG).show();
+            return;
+        }
+
         double currentOrderTotal = getCurrentOrderTotal();
 
         // Kiểm tra voucher có hợp lệ không
@@ -334,33 +372,6 @@ public class ThanhToan extends AppCompatActivity {
         // Áp dụng voucher
         applyVoucher(voucher);
     }
-
-    private void applyVoucher(Voucher voucher) {
-        appliedVoucher = voucher;
-        double currentOrderTotal = getCurrentOrderTotal();
-
-        // Tính toán giảm giá
-        if ("percent".equals(voucher.getDiscountType()) || "percentage".equals(voucher.getDiscountType())) {
-            voucherDiscount = currentOrderTotal * (voucher.getDiscountValue() / 100);
-        } else {
-            voucherDiscount = voucher.getDiscountValue();
-        }
-
-        // Đảm bảo giảm giá không vượt quá tổng đơn hàng
-        if (voucherDiscount > currentOrderTotal) {
-            voucherDiscount = currentOrderTotal;
-        }
-
-        // Cập nhật UI
-        updateVoucherUI();
-        updateTotalPriceDisplay();
-
-        // Clear input
-//        etVoucherCode.setText("");
-
-        Toast.makeText(this, "Áp dụng voucher thành công!", Toast.LENGTH_SHORT).show();
-    }
-
     private void removeAppliedVoucher() {
         appliedVoucher = null;
         voucherDiscount = 0;
@@ -1108,31 +1119,54 @@ public class ThanhToan extends AppCompatActivity {
             }
         });
     }
-
-    private void markVoucherAsUsed() {
-        if (appliedVoucher == null || userId.isEmpty()) {
-            return;
+    private boolean isVoucherAlreadyUsedByCurrentUser(String voucherId) {
+        if (TextUtils.isEmpty(voucherId) || TextUtils.isEmpty(userId)) {
+            return false;
         }
 
         SharedPreferences voucherPrefs = getSharedPreferences("VoucherPrefs", MODE_PRIVATE);
-
-        // Remove from saved vouchers
-        String savedKey = "saved_vouchers_" + userId;
-        Set<String> savedVouchers = voucherPrefs.getStringSet(savedKey, new HashSet<>());
-        savedVouchers = new HashSet<>(savedVouchers);
-        savedVouchers.remove(appliedVoucher.getId());
-
-        // Add to used vouchers
         String usedKey = "used_vouchers_" + userId;
         Set<String> usedVouchers = voucherPrefs.getStringSet(usedKey, new HashSet<>());
-        usedVouchers = new HashSet<>(usedVouchers);
-        usedVouchers.add(appliedVoucher.getId());
 
-        // Save changes
-        SharedPreferences.Editor editor = voucherPrefs.edit();
-        editor.putStringSet(savedKey, savedVouchers);
-        editor.putStringSet(usedKey, usedVouchers);
-        editor.apply();
+        return usedVouchers.contains(voucherId);
+    }
+    private void markVoucherAsUsed() {
+        if (appliedVoucher == null || TextUtils.isEmpty(userId)) {
+            Log.w(TAG, "Cannot mark voucher as used: voucher or userId is null/empty");
+            return;
+        }
+
+        try {
+            SharedPreferences voucherPrefs = getSharedPreferences("VoucherPrefs", MODE_PRIVATE);
+            SharedPreferences.Editor editor = voucherPrefs.edit();
+
+            // Remove from saved vouchers
+            String savedKey = "saved_vouchers_" + userId;
+            Set<String> savedVouchers = voucherPrefs.getStringSet(savedKey, new HashSet<>());
+            savedVouchers = new HashSet<>(savedVouchers);
+            savedVouchers.remove(appliedVoucher.getId());
+
+            // Add to used vouchers
+            String usedKey = "used_vouchers_" + userId;
+            Set<String> usedVouchers = voucherPrefs.getStringSet(usedKey, new HashSet<>());
+            usedVouchers = new HashSet<>(usedVouchers);
+            usedVouchers.add(appliedVoucher.getId());
+
+            // Save used order info (optional - để tracking chi tiết hơn)
+            String orderVoucherKey = "voucher_order_" + appliedVoucher.getId() + "_" + userId;
+            String orderInfo = getCurrentDate() + "|" + (pendingOrderId != null ? pendingOrderId : generateRandomOrderId());
+            editor.putString(orderVoucherKey, orderInfo);
+
+            // Save all changes
+            editor.putStringSet(savedKey, savedVouchers);
+            editor.putStringSet(usedKey, usedVouchers);
+            editor.apply();
+
+            Log.d(TAG, "Voucher marked as used: " + appliedVoucher.getId() + " by user: " + userId);
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error marking voucher as used", e);
+        }
     }
 
     private void sendLocalNotification() {

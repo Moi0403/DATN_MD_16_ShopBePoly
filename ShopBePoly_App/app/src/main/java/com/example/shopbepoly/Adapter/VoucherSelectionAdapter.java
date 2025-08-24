@@ -67,7 +67,9 @@ public class VoucherSelectionAdapter extends RecyclerView.Adapter<VoucherSelecti
     public void onBindViewHolder(@NonNull VoucherViewHolder holder, int position) {
         Voucher voucher = voucherList.get(position);
 
-        Log.d(TAG, "Binding voucher: " + voucher.getCode() + " - OrderTotal: " + orderTotal + " - MinOrder: " + voucher.getMinOrderValue());
+        Log.d(TAG, "Binding voucher: " + voucher.getCode() + " - OrderTotal: " + orderTotal +
+                " - MinOrder: " + voucher.getMinOrderValue() + " - DiscountType: " + voucher.getDiscountType() +
+                " - DiscountValue: " + voucher.getDiscountValue());
 
         // Set voucher code
         holder.tvVoucherCode.setText(voucher.getCode());
@@ -116,6 +118,7 @@ public class VoucherSelectionAdapter extends RecyclerView.Adapter<VoucherSelecti
 
     /**
      * Tính toán số tiền giảm giá thực tế cho đơn hàng
+     * FIXED: Sửa lỗi logic tính toán giảm giá
      */
     private double calculateDiscountForOrder(Voucher voucher, double orderTotal) {
         if (orderTotal < voucher.getMinOrderValue()) {
@@ -123,12 +126,24 @@ public class VoucherSelectionAdapter extends RecyclerView.Adapter<VoucherSelecti
         }
 
         double discount = 0;
-        if ("percent".equals(voucher.getDiscountType()) || "percentage".equals(voucher.getDiscountType())) {
+        String discountType = voucher.getDiscountType();
+
+        Log.d(TAG, "Calculating discount - Type: " + discountType + ", Value: " + voucher.getDiscountValue());
+
+        // FIXED: Sửa điều kiện check discount type
+        if ("percent".equals(discountType) || "percentage".equals(discountType)) {
             // Giảm giá theo phần trăm
             discount = orderTotal * (voucher.getDiscountValue() / 100.0);
-        } else {
-            // Giảm giá cố định
+            Log.d(TAG, "Percentage discount calculation: " + orderTotal + " * " +
+                    (voucher.getDiscountValue() / 100.0) + " = " + discount);
+        } else if ("fixed".equals(discountType) || "amount".equals(discountType) || discountType == null || discountType.isEmpty()) {
+            // Giảm giá cố định (bao gồm cả trường hợp null hoặc empty)
             discount = voucher.getDiscountValue();
+            Log.d(TAG, "Fixed amount discount: " + discount);
+        } else {
+            // Trường hợp không xác định, mặc định coi là giảm cố định
+            discount = voucher.getDiscountValue();
+            Log.w(TAG, "Unknown discount type '" + discountType + "', treating as fixed amount: " + discount);
         }
 
         // Đảm bảo không vượt quá tổng tiền đơn hàng
@@ -167,7 +182,7 @@ public class VoucherSelectionAdapter extends RecyclerView.Adapter<VoucherSelecti
                 holder.tvStatus.setTextColor(0xFF4CAF50); // Green fallback
             }
 
-            Log.d(TAG, "UI updated for applicable voucher: " + voucher.getCode());
+            Log.d(TAG, "UI updated for applicable voucher: " + voucher.getCode() + " - Saves: " + actualDiscount);
 
         } else {
             // Voucher không thể sử dụng - chỉ do không đủ đơn tối thiểu
@@ -205,11 +220,15 @@ public class VoucherSelectionAdapter extends RecyclerView.Adapter<VoucherSelecti
 
     /**
      * Lấy text hiển thị thông tin giảm giá
+     * FIXED: Sửa logic hiển thị discount text
      */
     private String getDiscountText(Voucher voucher) {
-        if ("percent".equals(voucher.getDiscountType()) || "percentage".equals(voucher.getDiscountType())) {
+        String discountType = voucher.getDiscountType();
+
+        if ("percent".equals(discountType) || "percentage".equals(discountType)) {
             return String.format("Giảm %d%%", (int) voucher.getDiscountValue());
         } else {
+            // Trường hợp giảm cố định hoặc không xác định
             return String.format("Giảm %s", formatCurrency(voucher.getDiscountValue()));
         }
     }

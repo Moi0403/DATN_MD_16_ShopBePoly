@@ -13,7 +13,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.shopbepoly.API.ApiClient;
 import com.example.shopbepoly.API.ApiService;
-import com.example.shopbepoly.API.ApiService.VoucherUsageResponse;
 import com.example.shopbepoly.DTO.Voucher;
 import com.example.shopbepoly.R;
 
@@ -24,16 +23,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-
 public class VoucherAdapter extends RecyclerView.Adapter<VoucherAdapter.VoucherViewHolder> {
     private Context context;
     private List<Voucher> voucherList;
     private OnVoucherClickListener listener;
     private SharedPreferences sharedPreferences;
-    private ApiService apiService;
     private String currentUserId;
 
     public interface OnVoucherClickListener {
@@ -46,7 +40,6 @@ public class VoucherAdapter extends RecyclerView.Adapter<VoucherAdapter.VoucherV
         this.context = context;
         this.voucherList = voucherList;
         this.sharedPreferences = context.getSharedPreferences("VoucherPrefs", Context.MODE_PRIVATE);
-        this.apiService = ApiClient.getApiService();
 
         // Lấy user ID hiện tại
         SharedPreferences userPrefs = context.getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
@@ -111,92 +104,18 @@ public class VoucherAdapter extends RecyclerView.Adapter<VoucherAdapter.VoucherV
             String dateTimeRange = formatDateTimeRange(voucher.getStartDate(), voucher.getEndDate());
             tvVoucherExpiry.setText(dateTimeRange);
 
-            // Check if voucher is saved for current user
+            // Check voucher status
             boolean isSaved = isVoucherSavedForCurrentUser(voucher.getId());
-
-            // Kiểm tra xem voucher còn lượt sử dụng không
+            boolean isUsed = isVoucherUsedByCurrentUser(voucher.getId());
             boolean hasRemainingUsage = voucher.getUsedCount() < voucher.getUsageLimit();
+            boolean isExpired = voucher.isExpired();
+            boolean isActive = voucher.isActive();
 
-            if (!hasRemainingUsage) {
-                // Voucher đã hết lượt sử dụng
-                btnSaveVoucher.setText("Đã hết");
-                btnSaveVoucher.setBackgroundResource(R.drawable.disabled_button_bg);
-                btnSaveVoucher.setTextColor(context.getResources().getColor(R.color.gray));
-                btnSaveVoucher.setEnabled(false);
-            } else if (isSaved) {
-                btnSaveVoucher.setText("Đã lưu");
-                btnSaveVoucher.setBackgroundResource(R.drawable.saved_button_bg);
-                btnSaveVoucher.setTextColor(context.getResources().getColor(R.color.gray));
-                btnSaveVoucher.setEnabled(true);
-            } else {
-                btnSaveVoucher.setText("Lưu");
-                btnSaveVoucher.setBackgroundResource(R.drawable.save_button_bg);
-                btnSaveVoucher.setTextColor(context.getResources().getColor(R.color.white));
-                btnSaveVoucher.setEnabled(true);
-            }
+            // Update button state based on voucher status
+            updateButtonState(voucher, isSaved, isUsed, hasRemainingUsage, isExpired, isActive);
 
             // Handle save button click
-            btnSaveVoucher.setOnClickListener(v -> {
-                if (currentUserId.isEmpty()) {
-                    Toast.makeText(context, "Vui lòng đăng nhập để lưu voucher!", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-
-                if (!hasRemainingUsage) {
-                    Toast.makeText(context, "Mã giảm giá đã hết lượt sử dụng!", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-
-                if (!isSaved) {
-                    // Gọi API để sử dụng voucher trước khi lưu
-                    useVoucherOnServer(voucher, new VoucherUsageCallback() {
-                        @Override
-                        public void onSuccess(Voucher updatedVoucher) {
-                            // Cập nhật voucher trong list
-                            int position = getAdapterPosition();
-                            if (position != RecyclerView.NO_POSITION && position < voucherList.size()) {
-                                voucherList.set(position, updatedVoucher);
-                            }
-
-                            // Lưu voucher cho user hiện tại
-                            saveVoucherForCurrentUser(updatedVoucher.getId());
-
-                            // Cập nhật UI
-                            btnSaveVoucher.setText("Đã lưu");
-                            btnSaveVoucher.setBackgroundResource(R.drawable.saved_button_bg);
-                            btnSaveVoucher.setTextColor(context.getResources().getColor(R.color.gray));
-
-                            Toast.makeText(context, "Đã lưu mã giảm giá!", Toast.LENGTH_SHORT).show();
-
-                            // Gọi callback nếu có
-                            if (listener != null) {
-                                listener.onSaveVoucherClick(updatedVoucher);
-                            }
-                        }
-
-                        @Override
-                        public void onError(String errorMessage) {
-                            if (errorMessage.contains("hết") || errorMessage.contains("limit")) {
-                                // Voucher đã hết lượt sử dụng
-                                btnSaveVoucher.setText("Đã hết");
-                                btnSaveVoucher.setBackgroundResource(R.drawable.disabled_button_bg);
-                                btnSaveVoucher.setTextColor(context.getResources().getColor(R.color.gray));
-                                btnSaveVoucher.setEnabled(false);
-
-                                Toast.makeText(context, "Mã giảm giá đã hết lượt sử dụng!", Toast.LENGTH_SHORT).show();
-
-                                if (listener != null) {
-                                    listener.onVoucherUsageLimitReached(voucher);
-                                }
-                            } else {
-                                Toast.makeText(context, "Lỗi: " + errorMessage, Toast.LENGTH_SHORT).show();
-                            }
-                        }
-                    });
-                } else {
-                    Toast.makeText(context, "Mã đã được lưu trước đó", Toast.LENGTH_SHORT).show();
-                }
-            });
+            btnSaveVoucher.setOnClickListener(v -> handleSaveButtonClick(voucher, isSaved, isUsed, hasRemainingUsage, isExpired, isActive));
 
             // Handle item click
             itemView.setOnClickListener(v -> {
@@ -204,6 +123,90 @@ public class VoucherAdapter extends RecyclerView.Adapter<VoucherAdapter.VoucherV
                     listener.onVoucherClick(voucher);
                 }
             });
+        }
+
+        // Method cập nhật trạng thái button
+        private void updateButtonState(Voucher voucher, boolean isSaved, boolean isUsed, boolean hasRemainingUsage, boolean isExpired, boolean isActive) {
+            if (isUsed) {
+                // Voucher đã được sử dụng bởi user này
+                btnSaveVoucher.setText("Đã sử dụng");
+                btnSaveVoucher.setBackgroundResource(R.drawable.used_button_bg);
+                btnSaveVoucher.setTextColor(context.getResources().getColor(R.color.primary_red));
+                btnSaveVoucher.setEnabled(false);
+
+                // Làm mờ toàn bộ item
+                itemView.setAlpha(0.6f);
+            } else if (!isActive || isExpired) {
+                // Voucher không hoạt động hoặc đã hết hạn
+                btnSaveVoucher.setText("Đã hết hạn");
+                btnSaveVoucher.setBackgroundResource(R.drawable.disabled_button_bg);
+                btnSaveVoucher.setTextColor(context.getResources().getColor(R.color.gray));
+                btnSaveVoucher.setEnabled(false);
+                itemView.setAlpha(0.6f);
+            } else if (!hasRemainingUsage) {
+                // Voucher đã hết lượt sử dụng tổng thể
+                btnSaveVoucher.setText("Đã hết");
+                btnSaveVoucher.setBackgroundResource(R.drawable.disabled_button_bg);
+                btnSaveVoucher.setTextColor(context.getResources().getColor(R.color.gray));
+                btnSaveVoucher.setEnabled(false);
+                itemView.setAlpha(0.6f);
+            } else if (isSaved) {
+                // Voucher đã được lưu nhưng chưa sử dụng
+                btnSaveVoucher.setText("Đã lưu");
+                btnSaveVoucher.setBackgroundResource(R.drawable.saved_button_bg);
+                btnSaveVoucher.setTextColor(context.getResources().getColor(R.color.primary_color));
+                btnSaveVoucher.setEnabled(true);
+                itemView.setAlpha(1.0f);
+            } else {
+                // Voucher có thể lưu
+                btnSaveVoucher.setText("Lưu");
+                btnSaveVoucher.setBackgroundResource(R.drawable.save_button_bg);
+                btnSaveVoucher.setTextColor(context.getResources().getColor(R.color.white));
+                btnSaveVoucher.setEnabled(true);
+                itemView.setAlpha(1.0f);
+            }
+        }
+
+        // Method xử lý click button lưu
+        private void handleSaveButtonClick(Voucher voucher, boolean isSaved, boolean isUsed, boolean hasRemainingUsage, boolean isExpired, boolean isActive) {
+            if (currentUserId.isEmpty()) {
+                Toast.makeText(context, "Vui lòng đăng nhập để lưu voucher!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (isUsed) {
+                Toast.makeText(context, "Bạn đã sử dụng mã giảm giá này rồi!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (!isActive || isExpired) {
+                Toast.makeText(context, "Mã giảm giá đã hết hạn!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (!hasRemainingUsage) {
+                Toast.makeText(context, "Mã giảm giá đã hết lượt sử dụng!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (!isSaved) {
+                // Lưu voucher mà không cần gọi API useVoucher
+                saveVoucherForCurrentUser(voucher.getId());
+
+                // Cập nhật UI
+                btnSaveVoucher.setText("Đã lưu");
+                btnSaveVoucher.setBackgroundResource(R.drawable.saved_button_bg);
+                btnSaveVoucher.setTextColor(context.getResources().getColor(R.color.primary_color));
+
+                Toast.makeText(context, "Đã lưu mã giảm giá!", Toast.LENGTH_SHORT).show();
+
+                // Gọi callback nếu có
+                if (listener != null) {
+                    listener.onSaveVoucherClick(voucher);
+                }
+            } else {
+                Toast.makeText(context, "Mã đã được lưu trước đó", Toast.LENGTH_SHORT).show();
+            }
         }
 
         // Check voucher đã lưu cho user hiện tại chưa
@@ -217,6 +220,17 @@ public class VoucherAdapter extends RecyclerView.Adapter<VoucherAdapter.VoucherV
             return savedVouchers.contains(voucherId);
         }
 
+        // Check voucher đã được sử dụng bởi user hiện tại chưa
+        private boolean isVoucherUsedByCurrentUser(String voucherId) {
+            if (currentUserId.isEmpty()) {
+                return false;
+            }
+
+            String key = "used_vouchers_" + currentUserId;
+            Set<String> usedVouchers = sharedPreferences.getStringSet(key, new HashSet<>());
+            return usedVouchers.contains(voucherId);
+        }
+
         // Lưu voucher cho user hiện tại
         private void saveVoucherForCurrentUser(String voucherId) {
             if (currentUserId.isEmpty()) {
@@ -228,30 +242,6 @@ public class VoucherAdapter extends RecyclerView.Adapter<VoucherAdapter.VoucherV
             savedVouchers = new HashSet<>(savedVouchers); // Create new set to avoid modification issues
             savedVouchers.add(voucherId);
             sharedPreferences.edit().putStringSet(key, savedVouchers).apply();
-        }
-
-        private void useVoucherOnServer(Voucher voucher, VoucherUsageCallback callback) {
-            Call<VoucherUsageResponse> call = apiService.useVoucher(voucher.getId());
-            call.enqueue(new Callback<VoucherUsageResponse>() {
-                @Override
-                public void onResponse(Call<VoucherUsageResponse> call, Response<VoucherUsageResponse> response) {
-                    if (response.isSuccessful() && response.body() != null) {
-                        VoucherUsageResponse voucherResponse = response.body();
-                        if (voucherResponse.isSuccess()) {
-                            callback.onSuccess(voucherResponse.getVoucher());
-                        } else {
-                            callback.onError(voucherResponse.getMessage());
-                        }
-                    } else {
-                        callback.onError("Không thể kết nối đến server");
-                    }
-                }
-
-                @Override
-                public void onFailure(Call<VoucherUsageResponse> call, Throwable t) {
-                    callback.onError("Lỗi kết nối: " + t.getMessage());
-                }
-            });
         }
 
         private String formatPrice(double price) {
@@ -286,11 +276,5 @@ public class VoucherAdapter extends RecyclerView.Adapter<VoucherAdapter.VoucherV
                         dateTimeFormat.format(endDate));
             }
         }
-    }
-
-    // Callback interface cho việc sử dụng voucher
-    private interface VoucherUsageCallback {
-        void onSuccess(Voucher updatedVoucher);
-        void onError(String errorMessage);
     }
 }

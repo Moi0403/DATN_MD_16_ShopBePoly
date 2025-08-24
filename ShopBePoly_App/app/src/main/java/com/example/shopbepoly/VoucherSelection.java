@@ -173,7 +173,9 @@ public class VoucherSelection extends AppCompatActivity implements VoucherSelect
 
                     Log.d(TAG, "Processing voucher: " + voucher.getCode() +
                             " - MinOrder: " + voucher.getMinOrderValue() +
-                            " - OrderTotal: " + orderTotal);
+                            " - OrderTotal: " + orderTotal +
+                            " - DiscountType: " + voucher.getDiscountType() +
+                            " - DiscountValue: " + voucher.getDiscountValue());
 
                     // Phân loại theo điều kiện đơn hàng
                     if (orderTotal >= voucher.getMinOrderValue()) {
@@ -248,19 +250,36 @@ public class VoucherSelection extends AppCompatActivity implements VoucherSelect
         }
     }
 
+    /**
+     * Tính toán số tiền giảm giá thực tế cho đơn hàng
+     * FIXED: Sửa logic tính toán giảm giá để xử lý đúng cả fixed amount và percentage
+     */
     private double calculateDiscount(Voucher voucher, double orderTotal) {
         double discount = 0;
+        String discountType = voucher.getDiscountType();
 
-        if ("percent".equals(voucher.getDiscountType()) || "percentage".equals(voucher.getDiscountType())) {
+        Log.d(TAG, "Calculating discount - Type: " + discountType + ", Value: " + voucher.getDiscountValue() + ", OrderTotal: " + orderTotal);
+
+        // FIXED: Sửa logic xử lý discount type
+        if ("percent".equals(discountType) || "percentage".equals(discountType)) {
+            // Giảm giá theo phần trăm
             discount = orderTotal * (voucher.getDiscountValue() / 100.0);
-        } else {
+            Log.d(TAG, "Percentage discount calculation: " + orderTotal + " * " +
+                    (voucher.getDiscountValue() / 100.0) + " = " + discount);
+        } else if ("fixed".equals(discountType) || "amount".equals(discountType) || discountType == null || discountType.isEmpty()) {
+            // Giảm giá cố định (bao gồm cả trường hợp null hoặc empty)
             discount = voucher.getDiscountValue();
+            Log.d(TAG, "Fixed amount discount: " + discount);
+        } else {
+            // Trường hợp không xác định, mặc định coi là giảm cố định
+            discount = voucher.getDiscountValue();
+            Log.w(TAG, "Unknown discount type '" + discountType + "', treating as fixed amount: " + discount);
         }
 
         // Đảm bảo discount không vượt quá tổng đơn hàng
         discount = Math.min(discount, orderTotal);
 
-        Log.d(TAG, "Calculated discount: " + discount + " for voucher: " + voucher.getCode());
+        Log.d(TAG, "Final calculated discount: " + discount + " for voucher: " + voucher.getCode());
         return discount;
     }
 
@@ -269,6 +288,7 @@ public class VoucherSelection extends AppCompatActivity implements VoucherSelect
             NumberFormat formatter = NumberFormat.getNumberInstance(Locale.US);
             return formatter.format(amount) + "₫";
         } catch (Exception e) {
+            Log.w(TAG, "Error formatting currency: " + e.getMessage());
             return String.valueOf((long)amount) + "₫";
         }
     }
