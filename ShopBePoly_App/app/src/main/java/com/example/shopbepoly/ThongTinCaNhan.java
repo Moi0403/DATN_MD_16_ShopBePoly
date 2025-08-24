@@ -33,7 +33,7 @@ import java.util.Locale;
 public class ThongTinCaNhan extends AppCompatActivity {
     private static final int REQUEST_CODE_UPDATE = 1001;
 
-    ImageButton btnBack;
+    ImageView btnBack;
     Button btnUpdate;
     TextView txtUser, txtGioitinh, txtNgaysinh, txtSodienthoai, txtEmailTTCN;
     ImageView imgAvatar;
