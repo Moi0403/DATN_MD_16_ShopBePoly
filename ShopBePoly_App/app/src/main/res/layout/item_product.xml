@@ -145,7 +145,7 @@
                     android:layout_width="22dp"
                     android:layout_height="22dp"
                     android:layout_margin="6dp"
-                    android:src="@drawable/ic_shopping_cart"
+                    android:src="@drawable/ic_cart"
                     android:contentDescription="Add to cart" />
             </LinearLayout>
 
