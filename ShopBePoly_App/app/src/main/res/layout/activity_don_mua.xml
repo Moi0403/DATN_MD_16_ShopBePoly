@@ -46,7 +46,7 @@
                 android:layout_height="24dp"
                 android:background="?android:attr/selectableItemBackgroundBorderless"
                 android:padding="4dp"
-                android:src="@drawable/ic_search" />
+                android:src="@drawable/search" />
         </LinearLayout>
 
         <!-- Tab Layout -->

@@ -6,21 +6,17 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".TimDonHang"
-    android:layout_marginTop="10dp">
+    android:fitsSystemWindows="true">
 
     <!-- Header: Nút back + ô tìm kiếm -->
     <LinearLayout
         android:id="@+id/header_search"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:layout_marginTop="16dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        android:padding="12dp"
+        android:background="@drawable/header_home">
 
         <ImageButton
             android:id="@+id/btn_back"
@@ -47,9 +43,9 @@
                 android:padding="8dp">
 
                 <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@android:drawable/ic_menu_search"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/search"
                     />
 
                 <EditText

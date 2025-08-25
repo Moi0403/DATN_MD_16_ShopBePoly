@@ -16,6 +16,7 @@ import com.example.shopbepoly.API.ApiClient;
 import com.example.shopbepoly.API.ApiService;
 import com.example.shopbepoly.DTO.CheckEmailResponse;
 import com.example.shopbepoly.DTO.CheckUsernameResponse;
+import com.example.shopbepoly.DieuKhoanvaDieuKien;
 import com.example.shopbepoly.R;
 import com.example.shopbepoly.VerifyCodeScreen;
 
@@ -29,7 +30,7 @@ import retrofit2.Response;
 
 public class RegisterScreen extends AppCompatActivity {
 
-    private TextView tvLogin;
+    private TextView tvLogin, tvTerms;
     private EditText edt_userName, edtName, edtEmail, edtPhone, edtPassword, edtConfirmPassword;
     private Button btnRegister;
     private CheckBox checkBoxRegister;
@@ -49,6 +50,7 @@ public class RegisterScreen extends AppCompatActivity {
         checkBoxRegister = findViewById(R.id.checkBoxRegister);
         btnRegister = findViewById(R.id.btnRegister);
         tvLogin = findViewById(R.id.tvLogin);
+        tvTerms = findViewById(R.id.tvTerms);
 
         edtPhone.setFilters(new InputFilter[]{new InputFilter.LengthFilter(10)});
 
@@ -69,6 +71,11 @@ public class RegisterScreen extends AppCompatActivity {
         tvLogin.setOnClickListener(v -> {
             startActivity(new Intent(RegisterScreen.this, LoginScreen.class));
             finish();
+        });
+
+        tvTerms.setOnClickListener(view -> {
+            Intent intent = new Intent(RegisterScreen.this, DieuKhoanvaDieuKien.class);
+            startActivity(intent);
         });
 
         btnRegister.setOnClickListener(v -> handleRegister());

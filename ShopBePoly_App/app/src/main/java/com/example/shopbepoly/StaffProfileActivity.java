@@ -257,14 +257,14 @@ public class StaffProfileActivity extends AppCompatActivity {
     private void showLogoutConfirmDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         LayoutInflater inflater = getLayoutInflater();
-        View dialogView = inflater.inflate(R.layout.dialog_logout_confirm, null);
+        View dialogView = inflater.inflate(R.layout.dialog_logout, null);
         builder.setView(dialogView);
 
         AlertDialog dialog = builder.create();
 
         // Tìm các view trong dialog
-        Button btnCancelLogout = dialogView.findViewById(R.id.btnCancelLogout);
-        Button btnConfirmLogout = dialogView.findViewById(R.id.btnConfirmLogout);
+        Button btnCancelLogout = dialogView.findViewById(R.id.btnNo);
+        Button btnConfirmLogout = dialogView.findViewById(R.id.btnYes);
 
         // Xử lý nút hủy
         btnCancelLogout.setOnClickListener(v -> dialog.dismiss());

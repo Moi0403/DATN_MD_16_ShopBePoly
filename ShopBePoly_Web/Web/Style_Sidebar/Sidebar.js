@@ -29,14 +29,66 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
-  // // Ẩn menu "Tài khoản" nếu không phải admin
-  // const role = localStorage.getItem('userRole');
-  // if (role !== '2') {
-  //   const menuQLTK = document.getElementById('menu-ql-tk');
-  //   if (menuQLTK) {
-  //     menuQLTK.style.display = 'none';
-  //   }
-  // }
+  const menuHome = document.getElementById('menu-home');
+  const menuBanner = document.getElementById('menu-banner');
+  const menuCategory = document.getElementById('menu-category');
+  const menuProduct = document.getElementById('menu-product');
+  const menuQlTk = document.getElementById('menu-ql-tk');
+  const menuVoucher = document.getElementById('menu-voucher');
+  const menuXndh = document.getElementById('menu-xndh');
+  const menuGh = document.getElementById('menu-gh');
+  const menuGhtc = document.getElementById('menu-ghtc');
+  const menuDh = document.getElementById('menu-dh');
+  const menuStats = document.getElementById('menu-stats');
+  const menuTop10 = document.getElementById('menu-top10');
+  const menuContact = document.getElementById('menu-contact');
+  const quantri = document.getElementById('quantri');
+  const donhang = document.getElementById('donhang');
+  const thongke = document.getElementById('thongke');
+  const lienhe = document.getElementById('lienhe');
+
+  const hideElement = (element) => {
+      if (element) element.style.display = 'none';
+  }
+    hideElement(menuHome);
+    hideElement(menuBanner);
+    hideElement(menuCategory);
+    hideElement(menuProduct);
+    hideElement(menuQlTk);
+    hideElement(menuVoucher);
+    hideElement(menuXndh);
+    hideElement(menuGh);
+    hideElement(menuGhtc);
+    hideElement(menuDh);
+    hideElement(menuStats);
+    hideElement(menuTop10);
+    hideElement(menuContact);
+    hideElement(quantri);
+    hideElement(donhang);
+    hideElement(thongke);
+    hideElement(lienhe);
+
+  if (userData.role === 1){
+      document.getElementById('menu-home').style.display = 'block';
+      document.getElementById('quantri').style.display = 'block';
+      document.getElementById('menu-banner').style.display = 'block';
+      document.getElementById('menu-category').style.display = 'block';
+      document.getElementById('menu-product').style.display = 'block';
+      document.getElementById('menu-ql-tk').style.display = 'block';
+      document.getElementById('menu-voucher').style.display = 'block';
+      document.getElementById('donhang').style.display = 'block';
+      document.getElementById('menu-xndh').style.display = 'block';
+      document.getElementById('menu-gh').style.display = 'block';
+      document.getElementById('menu-ghtc').style.display = 'block';
+      document.getElementById('menu-dh').style.display = 'block';
+      document.getElementById('lienhe').style.display = 'block';
+      document.getElementById('menu-contact').style.display = 'block';
+  } else if (userData.role === 2){
+      document.getElementById('menu-home').style.display = 'block';
+      document.getElementById('thongke').style.display = 'block';
+      document.getElementById('menu-stats').style.display = 'block';
+      document.getElementById('menu-top10').style.display = 'block';
+  }
 
   // Xử lý trạng thái active cho link navigation
   const navLinks = document.querySelectorAll('.sidebar-nav a');

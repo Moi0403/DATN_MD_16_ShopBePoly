@@ -10,8 +10,11 @@
     <!-- Header -->
     <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:background="@color/white">
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="12dp"
+        android:background="@drawable/header_home">
 
         <ImageView
             android:id="@+id/btn_back"
@@ -26,6 +29,7 @@
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
             android:text="Đánh giá chung"
+            android:textColor="@color/white"
             android:textSize="18sp"
             android:textStyle="bold" />
     </RelativeLayout>

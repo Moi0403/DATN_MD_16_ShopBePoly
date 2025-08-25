@@ -212,6 +212,7 @@
                 android:textColor="#000000"/>
 
             <TextView
+                android:id="@+id/tvTerms"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Điều khoản sử dụng"

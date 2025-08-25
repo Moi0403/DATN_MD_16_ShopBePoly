@@ -55,7 +55,12 @@ public class LoginScreen extends AppCompatActivity {
         boolean isLoggedIn = sharedPreferences.getBoolean("isLoggedIn", false);
 
         if (isLoggedIn) {
-            startActivity(new Intent(LoginScreen.this, HomeNavScreen.class));
+            int role = sharedPreferences.getInt("role", 0); // default 0
+            if (role == 1) {
+                startActivity(new Intent(LoginScreen.this, AppStaff.class));
+            } else {
+                startActivity(new Intent(LoginScreen.this, HomeNavScreen.class));
+            }
             finish();
             return;
         }
@@ -176,7 +181,7 @@ public class LoginScreen extends AppCompatActivity {
                         startActivity(new Intent(LoginScreen.this, AppStaff.class));
                     } else {
                         startActivity(new Intent(LoginScreen.this, HomeNavScreen.class));
-                        Toast.makeText(LoginScreen.this, "Đăng nhập thành công, role = " + role, Toast.LENGTH_SHORT).show();
+                        Toast.makeText(LoginScreen.this, "Chào mừng bạn đến mua sắm!" + role, Toast.LENGTH_SHORT).show();
                     }
                     finish();
                 } else {
