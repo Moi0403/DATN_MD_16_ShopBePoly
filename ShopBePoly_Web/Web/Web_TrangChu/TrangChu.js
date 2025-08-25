@@ -1,8 +1,6 @@
-// API and uploads base URLs
 const API_BASE = `http://${config.host}:${config.port}/api`;
-const UPLOADS_BASE = `http://${config.host}:${config.port}/uploads`;
+const UPLOADS_BASE = `http://${config.host}:${config.port}/Uploads`;
 
-// Cache for data to prevent unnecessary DOM updates
 let previousLowStockData = [];
 let previousStagnantData = [];
 let previousOnlineUsers = [];
@@ -11,10 +9,9 @@ let pendingOrdersData = [];
 let previousTodayStats = { totalOrders: 0, totalRevenue: 0 };
 let currentStagnantPage = 1;
 let totalStagnantPages = 1;
-let onlineUsersIntervalId = null; // Global variable to store interval ID
-let userModalInstance = null; // Variable to store modal instance
+let onlineUsersIntervalId = null; 
+let userModalInstance = null; 
 
-// Utility to set text content safely
 function setTextIfExists(id, text) {
     const elem = document.getElementById(id);
     if (elem) {
@@ -25,12 +22,10 @@ function setTextIfExists(id, text) {
     }
 }
 
-// Utility to format currency in VND
 function formatCurrency(value) {
     return value ? Number(value).toLocaleString('vi-VN', { style: 'currency', currency: 'VND' }) : '0 ₫';
 }
 
-// Utility for fetching with retry and timeout
 async function fetchWithRetry(url, retries = 3, delay = 1000, timeout = 20000) {
     if (!url || url.includes('undefined')) {
         console.error('Invalid URL:', url);
@@ -55,7 +50,6 @@ async function fetchWithRetry(url, retries = 3, delay = 1000, timeout = 20000) {
     }
 }
 
-// Sanitize HTML to prevent XSS
 function sanitizeHtml(html) {
     if (window.DOMPurify) {
         return DOMPurify.sanitize(html);
@@ -65,7 +59,6 @@ function sanitizeHtml(html) {
     }
 }
 
-// Debounce utility to limit API calls
 function debounce(func, wait) {
     let timeout;
     return function (...args) {
@@ -74,7 +67,6 @@ function debounce(func, wait) {
     };
 }
 
-// Fetch online user count
 async function fetchOnlineCount() {
     console.log('Fetching online user count...');
     try {
@@ -100,7 +92,6 @@ async function fetchOnlineCount() {
     }
 }
 
-// Fetch and display online users in modal
 async function fetchAndDisplayOnlineUsers() {
     const modalBody = document.querySelector('#userModal .modal-body');
     if (!modalBody) {
@@ -123,7 +114,7 @@ async function fetchAndDisplayOnlineUsers() {
 
         let html = users.length
             ? users.map((user, index) => `
-                <tr class="${index % 2 === 0 ? 'bg-white' : 'bg-light'}">
+                <tr class="${index % 2 === 0 ? 'row-white' : 'row-black'}">
                     <td>${user.username || '---'}</td>
                     <td>${user.name || '---'}</td>
                     <td>${user.email || '---'}</td>
@@ -165,7 +156,6 @@ async function fetchAndDisplayOnlineUsers() {
     }
 }
 
-// Fetch today's statistics
 async function fetchTodayStatistics() {
     try {
         const data = await fetchWithRetry(`${API_BASE}/statistics-today`);
@@ -188,7 +178,6 @@ async function fetchTodayStatistics() {
     }
 }
 
-// Fetch low-stock products
 async function fetchLowStockProducts() {
     const tableBody = document.getElementById('lowStockTable');
     if (!tableBody) return;
@@ -215,10 +204,10 @@ async function fetchLowStockProducts() {
                 const sizesHtml = lowStockVariations.map(v => v.size || '---').join('<br>');
                 const stockHtml = lowStockVariations.map(v => v.stock || 0).join('<br>');
                 const colorHtml = item.color || '-';
-                const rowClass = index % 2 === 0 ? 'bg-white' : 'bg-light'; // Xen kẽ màu sắc
+                const rowClass = index % 2 === 0 ? 'row-white' : 'row-black'; // Xen kẽ màu trắng đen
 
                 return `
-                    <tr class="table-danger ${rowClass}">
+                    <tr class="${rowClass}">
                         <td>${item.name || '---'}</td>
                         <td>${item.category || '---'}</td>
                         <td>${colorHtml}</td>
@@ -248,7 +237,6 @@ async function fetchLowStockProducts() {
     }
 }
 
-// Fetch stagnant products with pagination and optimization
 const debouncedFetchStagnantProducts = debounce(async (page = 1) => {
     const tableBody = document.getElementById('stagnantTable');
     if (!tableBody) return;
@@ -286,7 +274,7 @@ const debouncedFetchStagnantProducts = debounce(async (page = 1) => {
         const fragment = document.createDocumentFragment();
         data.forEach((product, index) => {
             const tr = document.createElement('tr');
-            tr.className = `table-warning ${index % 2 === 0 ? 'bg-white' : 'bg-light'}`; // Xen kẽ màu sắc
+            tr.className = index % 2 === 0 ? 'row-white' : 'row-black'; // Xen kẽ màu trắng đen
             const variationsHtml = Object.entries(product.variationsByColor || {}).map(([color, { variations }]) =>
                 variations.map(v =>
                     `Size: ${v.size || '---'}, Tồn: ${v.stock || 0}, Đã bán: ${v.sold || 0} <br>
@@ -331,7 +319,6 @@ const debouncedFetchStagnantProducts = debounce(async (page = 1) => {
     }
 }, 300);
 
-// Display order details in modal
 function displayOrderDetail(order) {
     const modalBody = document.querySelector('#orderModal .modal-body');
     const modalTitle = document.querySelector('#orderModal .modal-title');
@@ -391,7 +378,6 @@ function displayOrderDetail(order) {
     });
 }
 
-// Fetch and display today's orders
 async function fetchAndDisplayOrdersToday() {
     const modalBody = document.querySelector('#orderModal .modal-body');
     const modalTitle = document.querySelector('#orderModal .modal-title');
@@ -408,7 +394,7 @@ async function fetchAndDisplayOrdersToday() {
 
         const html = todayOrdersData.length
             ? todayOrdersData.map((order, index) => `
-                <tr class="${index % 2 === 0 ? 'bg-white' : 'bg-light'}">
+                <tr class="${index % 2 === 0 ? 'row-white' : 'row-black'}">
                     <td>${order.id_order || order._id || 'N/A'}</td>
                     <td>${order.id_user?.name || 'N/A'}</td>
                     <td>${Number(order.total || 0).toLocaleString('vi-VN')} ₫</td>
@@ -461,7 +447,6 @@ async function fetchAndDisplayOrdersToday() {
     }
 }
 
-// Fetch and render pending orders
 async function fetchPendingOrders() {
     try {
         const data = await fetchWithRetry(`${API_BASE}/orders/pending`);
@@ -495,7 +480,7 @@ function renderPendingOrdersTable() {
     const html = pendingOrdersData.map((order, index) => {
         const totalQuantity = order.products.reduce((acc, p) => acc + (p.quantity || 0), 0);
         return `
-            <tr class="${index % 2 === 0 ? 'bg-white' : 'bg-light'}">
+            <tr class="${index % 2 === 0 ? 'row-white' : 'row-black'}">
                 <td>${order.id_order || 'N/A'}</td>
                 <td>${order.id_user?.name || 'N/A'}</td>
                 <td>${totalQuantity}</td>
@@ -538,7 +523,6 @@ function renderPendingOrdersTable() {
     });
 }
 
-// Event listeners for modals
 document.querySelector('.border-left-danger')?.addEventListener('click', async () => {
     const pendingModalElement = document.getElementById('pendingOrdersModal');
     if (!pendingModalElement) return;
@@ -547,7 +531,6 @@ document.querySelector('.border-left-danger')?.addEventListener('click', async (
     await fetchPendingOrders();
 });
 
-// Debounce click event for online users
 const debouncedClickOnlineUsers = debounce(async () => {
     console.log('Opening user modal');
     const userModalElement = document.getElementById('userModal');

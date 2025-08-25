@@ -146,3 +146,144 @@ document.addEventListener('DOMContentLoaded', () => {
         startDateInput.max = today;
     }, 60000); // 60000ms = 1 phút
 });
+
+// function sendVoucher(userId) {
+//     const modal = new bootstrap.Modal(document.getElementById('giftVoucherModal'));
+//     const confirmGiftBtn = document.getElementById('confirmGift');
+
+//     confirmGiftBtn.onclick = async () => {
+//         const voucherCode = document.getElementById('voucherCode').value.trim();
+//         const discountValue = parseFloat(document.getElementById('discountValue').value);
+//         const discountType = document.getElementById('discountType').value;
+//         const minOrderValue = parseFloat(document.getElementById('minOrderValue').value) || 0;
+
+//         const startDateRaw = document.getElementById('startDate').value;
+//         const endDateRaw = document.getElementById('endDate').value;
+
+//         console.log("Start date raw:", startDateRaw);
+//         console.log("End date raw:", endDateRaw);
+
+//         let startDateISO = null;
+//         let endDateISO = null;
+
+//         if (startDateRaw) {
+//             startDateISO = new Date(startDateRaw.replace(" ", "T")).toISOString();
+//         }
+//         if (endDateRaw) {
+//             endDateISO = new Date(endDateRaw.replace(" ", "T")).toISOString();
+//         }
+
+//         try {
+//             const response = await fetch(`http://${config.host}:${config.port}/api/send-voucher`, {
+//                 method: 'POST',
+//                 headers: { 'Content-Type': 'application/json' },
+//                 body: JSON.stringify({
+//                     userId,
+//                     voucherCode,
+//                     discountValue,
+//                     discountType,
+//                     minOrderValue,
+//                     startDate: startDateISO,
+//                     endDate: endDateISO,
+//                 })
+//             });
+
+//             if (!response.ok) {
+//                 const errorData = await response.json();
+//                 throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
+//             }
+
+//             const result = await response.json();
+//             alert(`${result.message}. Voucher đã được kích hoạt và sẵn sàng sử dụng ngay!`);
+//             modal.hide();
+
+//             // Reset form
+//             document.getElementById('voucherCode').value = '';
+//             document.getElementById('discountValue').value = '';
+//             document.getElementById('minOrderValue').value = '';
+//             document.getElementById('startDate').value = '';
+//             document.getElementById('endDate').value = '';
+
+//         } catch (error) {
+//             console.error('Lỗi khi tặng voucher:', error);
+//             alert('Đã xảy ra lỗi khi tặng voucher: ' + error.message);
+//         }
+//     };
+
+//     modal.show();
+// }
+
+function sendVoucher(userId) {
+    const modal = new bootstrap.Modal(document.getElementById('giftVoucherModal'));
+    const form = document.getElementById('tangVoucher');
+    if (!form) {
+        console.error('Form với ID "tangVoucher" không tồn tại');
+        return;
+    }
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+
+        const formData = {
+            code: form.voucherCode.value.trim(),
+            discountType: form.discountType.value,
+            discountValue: parseFloat(form.discountValue.value),
+            minOrderValue: parseFloat(form.minOrderValue.value),
+            startDate: new Date(form.startDate.value).toISOString(),
+            endDate: new Date(form.endDate.value).toISOString(),
+        };
+
+        // Kiểm tra trường bắt buộc
+        if (!formData.code) {
+            alert('Vui lòng nhập mã voucher');
+            return;
+        }
+        if (isNaN(formData.discountValue) || formData.discountValue <= 0) {
+            alert('Giá trị giảm phải là số dương');
+            return;
+        }
+        if (isNaN(formData.minOrderValue) || formData.minOrderValue < 0) {
+            alert('Giá trị đơn hàng tối thiểu không hợp lệ');
+            return;
+        }
+        if (!formData.startDate || !formData.endDate) {
+            alert('Vui lòng chọn ngày bắt đầu và ngày hết hạn');
+            return;
+        }
+        if (new Date(formData.startDate) >= new Date(formData.endDate)) {
+            alert('Ngày bắt đầu phải trước ngày hết hạn');
+            return;
+        }
+
+        try {
+            const submitButton = form.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            submitButton.textContent = 'Đang xử lý...';
+
+            const response = await fetch(`http://${config.host}:${config.port}/api/send-voucher`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...formData, userId, voucherCode: formData.code })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            alert('Tặng voucher thành công!');
+            modal.hide();
+        } catch (error) {
+            console.error('Lỗi khi tặng voucher:', error);
+            alert('Lỗi khi tặng voucher: ' + error.message);
+        } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Xác nhận';
+        }
+    });
+    modal.show();
+}
+
+
