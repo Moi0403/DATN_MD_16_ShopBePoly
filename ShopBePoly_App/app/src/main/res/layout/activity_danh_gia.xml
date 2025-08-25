@@ -8,9 +8,11 @@
     <!-- Toolbar -->
     <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:background="#FFFFFF"
-        android:elevation="2dp">
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="12dp"
+        android:background="@drawable/header_home">
 
         <ImageView
             android:id="@+id/btn_back"
@@ -18,7 +20,7 @@
             android:layout_height="24dp"
             android:layout_centerVertical="true"
             android:layout_marginStart="16dp"
-            android:src="@drawable/back"
+            android:src="@drawable/back_yeu_thich"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:padding="4dp" />
 
@@ -28,7 +30,7 @@
             android:layout_centerInParent="true"
             android:text="Viết đánh giá"
             android:textSize="18sp"
-            android:textColor="#000000"
+            android:textColor="#FFFFFF"
             android:textStyle="bold" />
     </RelativeLayout>
 

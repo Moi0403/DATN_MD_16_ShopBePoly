@@ -3,7 +3,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
     android:background="#FFFFFF">
 
     <!-- Header with back button -->
@@ -12,7 +11,8 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:layout_marginBottom="16dp">
+        android:padding="12dp"
+        android:background="@drawable/header_home">
 
         <ImageButton
             android:id="@+id/btnBack"
@@ -29,6 +29,7 @@
             android:layout_weight="1"
             android:text="Thông tin nhân viên"
             android:textSize="18sp"
+            android:textColor="@color/white"
             android:textStyle="bold"
             android:gravity="center" />
 
@@ -40,8 +41,9 @@
 
     <ImageView
         android:id="@+id/imgAvatar"
-        android:layout_width="96dp"
-        android:layout_height="96dp"
+        android:layout_width="110dp"
+        android:layout_height="110dp"
+        android:paddingTop="20dp"
         android:layout_gravity="center_horizontal"
         android:src="@drawable/ic_avatar" />
 
@@ -62,7 +64,7 @@
         android:orientation="vertical"
         android:layout_marginTop="32dp"
         android:background="@drawable/bg_white_rounded"
-        android:padding="8dp">
+        android:padding="18dp">
 
         <!-- Thông tin cá nhân -->
         <LinearLayout
@@ -94,7 +96,7 @@
                 android:layout_width="16dp"
                 android:layout_height="16dp"
                 android:src="@drawable/baseline_navigate_next_24"
-                android:tint="#CCCCCC" />
+                />
 
         </LinearLayout>
 
@@ -123,18 +125,17 @@
                 android:layout_marginEnd="16dp" />
 
             <TextView
-                android:layout_width="0dp"
+                android:layout_width="295dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Đổi mật khẩu"
-                android:textSize="16sp"
-                android:textColor="#333333" />
+                android:textColor="#333333"
+                android:textSize="16sp" />
 
             <ImageView
                 android:layout_width="16dp"
                 android:layout_height="16dp"
-                android:src="@drawable/baseline_navigate_next_24"
-                android:tint="#CCCCCC" />
+                android:src="@drawable/baseline_navigate_next_24" />
 
         </LinearLayout>
 
@@ -173,8 +174,7 @@
             <ImageView
                 android:layout_width="16dp"
                 android:layout_height="16dp"
-                android:src="@drawable/baseline_navigate_next_24"
-                android:tint="#CCCCCC" />
+                android:src="@drawable/baseline_navigate_next_24" />
 
         </LinearLayout>
 
