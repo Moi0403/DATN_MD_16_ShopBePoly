@@ -353,6 +353,12 @@ public class HomeFragment extends Fragment {
             return false;
         }
 
+        // THÊM: Kiểm tra voucher đã được sử dụng bởi user hiện tại chưa
+        // Nếu đã sử dụng thì không hiển thị nữa
+        if (isVoucherUsedByCurrentUser(voucher.getId())) {
+            return false;
+        }
+
         return true;
     }
 
@@ -475,15 +481,18 @@ public class HomeFragment extends Fragment {
                 startActivity(new Intent(getActivity(), LoginScreen.class));
             });
         } else {
-            // Kiểm tra voucher đã được lưu chưa
+            // Vì voucher đã used sẽ không hiển thị ở HomeFragment (đã lọc trong isVoucherValid)
+            // nên chỉ cần kiểm tra đã lưu hay chưa
             boolean isSaved = isVoucherSaved(voucher.getId());
 
             if (isSaved) {
+                // Voucher đã được lưu nhưng chưa sử dụng
                 saveButton.setText("Đã lưu");
                 saveButton.setTextColor(getResources().getColor(R.color.gray));
                 saveButton.setBackground(getResources().getDrawable(R.drawable.saved_button_bg));
                 saveButton.setEnabled(false);
             } else {
+                // Voucher có thể lưu
                 saveButton.setText("Lưu");
                 saveButton.setTextColor(Color.WHITE);
                 saveButton.setBackground(getResources().getDrawable(R.drawable.save_voucher_bg));
@@ -544,6 +553,18 @@ public class HomeFragment extends Fragment {
         return savedVouchers.contains(voucherId);
     }
 
+    // THÊM METHOD MỚI: Kiểm tra voucher đã được sử dụng chưa - THỐNG NHẤT với ThanhToan
+    private boolean isVoucherUsedByCurrentUser(String voucherId) {
+        if (currentUserId.isEmpty()) {
+            return false;
+        }
+
+        // Sử dụng key với userId giống như trong ThanhToan.markVoucherAsUsed()
+        String key = "used_vouchers_" + currentUserId;
+        Set<String> usedVouchers = voucherPrefs.getStringSet(key, new HashSet<>());
+        return usedVouchers.contains(voucherId);
+    }
+
     // Method lưu voucher - THỐNG NHẤT với VoucherActivity
     private void saveVoucher(Voucher voucher) {
         if (currentUserId.isEmpty()) {
@@ -589,7 +610,7 @@ public class HomeFragment extends Fragment {
         }
         updateNotificationCount();
 
-        // Reload vouchers để cập nhật trạng thái "đã lưu"
+        // Reload vouchers để cập nhật trạng thái "đã lưu" và "đã sử dụng"
         if (!voucherList.isEmpty()) {
             displayVouchers();
         } else {

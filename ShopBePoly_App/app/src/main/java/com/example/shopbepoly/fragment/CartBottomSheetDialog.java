@@ -18,6 +18,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -154,7 +155,7 @@ public class CartBottomSheetDialog extends BottomSheetDialogFragment {
                 loadExistingCartData(userId, layoutColorContainer, layoutSizeContainer, tvKho, tvQuantity, tvGia);
             }
         } else {
-            showColors(layoutColorContainer, layoutSizeContainer, tvKho, true);
+            showAvailableColors(layoutColorContainer, layoutSizeContainer, tvKho);
             showSizes(layoutSizeContainer, tvKho, true);
         }
 
@@ -186,9 +187,202 @@ public class CartBottomSheetDialog extends BottomSheetDialogFragment {
         return view;
     }
 
-    /**
-     * Improved stock display method similar to ChiTietSanPham
-     */
+    // PHƯƠNG THỨC CHỌN MÀU ĐƯỢC CẢI THIỆN GIỐNG ChiTietSanPham
+    private void showAvailableColors(LinearLayout layoutColorContainer, LinearLayout layoutSizeContainer, TextView tvKho) {
+        if (product == null || product.getVariations() == null) return;
+
+        layoutColorContainer.removeAllViews();
+
+        Map<String, String> colorMap = new LinkedHashMap<>();
+        for (Variation variation : product.getVariations()) {
+            if (variation.getColor() != null) {
+                String code = variation.getColor().getCode();
+                String name = variation.getColor().getName();
+                if (!colorMap.containsKey(code)) {
+                    colorMap.put(code, name);
+                }
+            }
+        }
+
+        for (Map.Entry<String, String> entry : colorMap.entrySet()) {
+            String code = entry.getKey();
+            String name = entry.getValue();
+
+            // Container chính cho mỗi màu
+            LinearLayout itemLayout = new LinearLayout(context);
+            itemLayout.setOrientation(LinearLayout.VERTICAL);
+            itemLayout.setGravity(Gravity.CENTER);
+            itemLayout.setPadding(16, 8, 16, 8);
+
+            // Container cho color circle với shadow effect
+            FrameLayout colorContainer = new FrameLayout(context);
+            int containerSize = getResources().getDimensionPixelSize(R.dimen.color_circle_size) + 20;
+            LinearLayout.LayoutParams containerParams = new LinearLayout.LayoutParams(containerSize, containerSize);
+            containerParams.setMargins(8, 8, 8, 4);
+            colorContainer.setLayoutParams(containerParams);
+
+            // Shadow view (tạo hiệu ứng đổ bóng)
+            View shadowView = new View(context);
+            FrameLayout.LayoutParams shadowParams = new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT
+            );
+            shadowParams.setMargins(2, 2, 0, 0);
+            shadowView.setLayoutParams(shadowParams);
+            shadowView.setBackgroundResource(R.drawable.color_circle_background);
+            shadowView.setAlpha(0.3f);
+            shadowView.setBackgroundTintList(ColorStateList.valueOf(Color.GRAY));
+
+            // Main color circle
+            View colorCircle = new View(context);
+            int circleSize = getResources().getDimensionPixelSize(R.dimen.color_circle_size);
+            FrameLayout.LayoutParams circleParams = new FrameLayout.LayoutParams(circleSize, circleSize);
+            circleParams.gravity = Gravity.CENTER;
+            colorCircle.setLayoutParams(circleParams);
+            colorCircle.setBackgroundResource(R.drawable.color_circle_background);
+            colorCircle.setTag(code);
+
+            // Set màu cho circle với border màu trắng
+            try {
+                int color = Color.parseColor(code);
+                // Tạo gradient drawable với border trắng
+                android.graphics.drawable.GradientDrawable drawable = new android.graphics.drawable.GradientDrawable();
+                drawable.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+                drawable.setColor(color);
+                drawable.setStroke(3, Color.WHITE); // Border trắng 3px
+                colorCircle.setBackground(drawable);
+            } catch (IllegalArgumentException e) {
+                colorCircle.setBackgroundTintList(ColorStateList.valueOf(Color.GRAY));
+            }
+
+            // Checkmark icon (ẩn ban đầu)
+            ImageView checkMark = new ImageView(context);
+            FrameLayout.LayoutParams checkParams = new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT
+            );
+            checkParams.gravity = Gravity.CENTER;
+            checkMark.setLayoutParams(checkParams);
+            checkMark.setImageResource(R.drawable.ic_check_white); // Thêm icon checkmark
+            checkMark.setVisibility(View.GONE);
+            checkMark.setTag("checkmark_" + code);
+
+            // Text tên màu với styling
+            TextView tvName = new TextView(context);
+            tvName.setText(name);
+            tvName.setTextSize(12);
+            tvName.setTextColor(Color.BLACK);
+            tvName.setGravity(Gravity.CENTER);
+            tvName.setTypeface(null, android.graphics.Typeface.NORMAL);
+            tvName.setPadding(4, 4, 4, 4);
+
+            // Sự kiện click cho color circle
+            colorCircle.setOnClickListener(v -> {
+                String clickedCode = (String) v.getTag();
+                handleColorSelection(clickedCode, name, layoutColorContainer, layoutSizeContainer, tvKho);
+            });
+
+            // Assemble views
+            colorContainer.addView(shadowView);
+            colorContainer.addView(colorCircle);
+            colorContainer.addView(checkMark);
+
+            itemLayout.addView(colorContainer);
+            itemLayout.addView(tvName);
+            layoutColorContainer.addView(itemLayout);
+        }
+    }
+
+    // Phương thức xử lý chọn màu được cải thiện
+    private void handleColorSelection(String clickedCode, String colorName, LinearLayout layoutColorContainer,
+                                      LinearLayout layoutSizeContainer, TextView tvKho) {
+        if (clickedCode.equals(selectedColorCode)) {
+            // Bỏ chọn màu hiện tại
+            selectedColorCode = "";
+            selectedColorName = "";
+            selectedSize = "";
+            highlightSelectedColor(layoutColorContainer, "");
+            updateImageByColor(); // Show default image
+            resetSizeSelections(layoutSizeContainer);
+        } else {
+            // Chọn màu mới
+            selectedColorCode = clickedCode;
+            selectedColorName = colorName;
+            selectedSize = ""; // Reset size when selecting new color
+            highlightSelectedColor(layoutColorContainer, clickedCode);
+            updateImageByColor();
+            resetSizeSelections(layoutSizeContainer);
+        }
+
+        showSizes(layoutSizeContainer, tvKho, true);
+        updateStockDisplay(tvKho);
+    }
+
+    // Phương thức highlight được cải thiện giống ChiTietSanPham
+    private void highlightSelectedColor(LinearLayout layoutColorContainer, String selectedCode) {
+        for (int i = 0; i < layoutColorContainer.getChildCount(); i++) {
+            LinearLayout itemLayout = (LinearLayout) layoutColorContainer.getChildAt(i);
+            if (itemLayout.getChildCount() >= 2) {
+                FrameLayout colorContainer = (FrameLayout) itemLayout.getChildAt(0);
+                TextView nameText = (TextView) itemLayout.getChildAt(1);
+
+                if (colorContainer.getChildCount() >= 3) {
+                    View colorCircle = colorContainer.getChildAt(1); // Main color circle
+                    ImageView checkMark = (ImageView) colorContainer.getChildAt(2);
+                    String tagCode = (String) colorCircle.getTag();
+
+                    if (selectedCode != null && selectedCode.equals(tagCode)) {
+                        // Highlight selected color
+                        try {
+                            int color = Color.parseColor(tagCode);
+                            android.graphics.drawable.GradientDrawable selectedDrawable = new android.graphics.drawable.GradientDrawable();
+                            selectedDrawable.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+                            selectedDrawable.setColor(color);
+                            selectedDrawable.setStroke(5, Color.parseColor("#FF4444")); // Red border for selection
+                            colorCircle.setBackground(selectedDrawable);
+
+                            // Show checkmark
+                            checkMark.setVisibility(View.VISIBLE);
+
+                            // Bold text
+                            nameText.setTypeface(null, android.graphics.Typeface.BOLD);
+                            nameText.setTextColor(Color.parseColor("#FF4444"));
+                        } catch (IllegalArgumentException e) {
+                            colorCircle.setBackgroundTintList(ColorStateList.valueOf(Color.GRAY));
+                        }
+                    } else {
+                        // Reset to unselected state
+                        try {
+                            int color = Color.parseColor(tagCode);
+                            android.graphics.drawable.GradientDrawable normalDrawable = new android.graphics.drawable.GradientDrawable();
+                            normalDrawable.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+                            normalDrawable.setColor(color);
+                            normalDrawable.setStroke(3, Color.WHITE); // White border
+                            colorCircle.setBackground(normalDrawable);
+
+                            // Hide checkmark
+                            checkMark.setVisibility(View.GONE);
+
+                            // Normal text
+                            nameText.setTypeface(null, android.graphics.Typeface.NORMAL);
+                            nameText.setTextColor(Color.BLACK);
+                        } catch (IllegalArgumentException e) {
+                            colorCircle.setBackgroundTintList(ColorStateList.valueOf(Color.GRAY));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private void resetSizeSelections(LinearLayout layoutSizeContainer) {
+        for (int i = 0; i < layoutSizeContainer.getChildCount(); i++) {
+            TextView sizeView = (TextView) layoutSizeContainer.getChildAt(i);
+            sizeView.setBackgroundResource(R.drawable.size_selector);
+            sizeView.setTextColor(ContextCompat.getColor(context, R.color.size_text_default));
+        }
+    }
+
     private void updateStockDisplay(TextView tvKho) {
         if (product == null || product.getVariations() == null) {
             tvKho.setText("Kho: 0");
@@ -231,9 +425,6 @@ public class CartBottomSheetDialog extends BottomSheetDialogFragment {
         tvKho.setText("Kho: 0 (Hết hàng)");
     }
 
-    /**
-     * Validate selection before processing
-     */
     private boolean validateSelection() {
         if (selectedColorName == null || selectedColorName.isEmpty()) {
             Toast.makeText(context, "Vui lòng chọn màu", Toast.LENGTH_SHORT).show();
@@ -253,9 +444,6 @@ public class CartBottomSheetDialog extends BottomSheetDialogFragment {
         return true;
     }
 
-    /**
-     * Load existing cart data for editing
-     */
     private void loadExistingCartData(String userId, LinearLayout layoutColorContainer,
                                       LinearLayout layoutSizeContainer, TextView tvKho,
                                       TextView tvQuantity, TextView tvGia) {
@@ -282,7 +470,7 @@ public class CartBottomSheetDialog extends BottomSheetDialogFragment {
                             tvQuantity.setText(String.valueOf(quantity));
                             updatePriceDisplay(tvGia, quantity);
 
-                            showColors(layoutColorContainer, layoutSizeContainer, tvKho, false);
+                            showAvailableColors(layoutColorContainer, layoutSizeContainer, tvKho);
                             highlightSelectedColor(layoutColorContainer, selectedColorCode);
                             showSizes(layoutSizeContainer, tvKho, false);
                             updateStockDisplay(tvKho);
@@ -341,104 +529,6 @@ public class CartBottomSheetDialog extends BottomSheetDialogFragment {
         }
     }
 
-    /**
-     * Improved color display with better stock management
-     */
-    private void showColors(LinearLayout layoutColorContainer, LinearLayout layoutSizeContainer, TextView tvKho, boolean autoSelect) {
-        layoutColorContainer.removeAllViews();
-
-        // Use LinkedHashMap to maintain order and avoid duplicates
-        Map<String, String> colorMap = new LinkedHashMap<>();
-
-        for (Variation v : product.getVariations()) {
-            if (v.getColor() != null && v.getStock() > 0) { // Only show colors with stock
-                String code = v.getColor().getCode();
-                String name = v.getColor().getName();
-
-                if (!colorMap.containsKey(code)) {
-                    colorMap.put(code, name);
-                }
-            }
-        }
-
-        for (Map.Entry<String, String> entry : colorMap.entrySet()) {
-            String code = entry.getKey();
-            String name = entry.getValue();
-
-            LinearLayout itemLayout = new LinearLayout(context);
-            itemLayout.setOrientation(LinearLayout.VERTICAL);
-            itemLayout.setPadding(16, 0, 16, 0);
-            itemLayout.setGravity(Gravity.CENTER);
-
-            View colorCircle = new View(context);
-            int sizePx = getResources().getDimensionPixelSize(R.dimen.color_circle_size);
-            LinearLayout.LayoutParams circleParams = new LinearLayout.LayoutParams(sizePx, sizePx);
-            circleParams.setMargins(8, 8, 8, 4);
-            colorCircle.setLayoutParams(circleParams);
-            colorCircle.setTag(code);
-
-            colorCircle.setBackgroundResource(R.drawable.color_circle_background);
-            colorCircle.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor(code)));
-
-            colorCircle.setOnClickListener(view -> {
-                String clickedCode = (String) view.getTag();
-
-                if (clickedCode.equals(selectedColorCode)) {
-                    // Deselect color
-                    selectedColorCode = "";
-                    selectedColorName = "";
-                    selectedSize = ""; // Reset size when deselecting color
-                    highlightSelectedColor(layoutColorContainer, "");
-                    updateImageByColor(); // Show default image
-                } else {
-                    // Select new color
-                    selectedColorCode = clickedCode;
-                    selectedColorName = name;
-                    selectedSize = ""; // Reset size when selecting new color
-                    highlightSelectedColor(layoutColorContainer, selectedColorCode);
-                    updateImageByColor();
-                }
-
-                showSizes(layoutSizeContainer, tvKho, true);
-                updateStockDisplay(tvKho);
-            });
-
-            TextView tvName = new TextView(context);
-            tvName.setText(name);
-            tvName.setTextSize(12);
-            tvName.setTextColor(Color.BLACK);
-            tvName.setGravity(Gravity.CENTER);
-
-            itemLayout.addView(colorCircle);
-            itemLayout.addView(tvName);
-            layoutColorContainer.addView(itemLayout);
-
-            // Auto-select first color if needed
-            if (autoSelect && selectedColorCode.isEmpty() && layoutColorContainer.getChildCount() == 1) {
-                colorCircle.performClick();
-            }
-        }
-    }
-
-    private void highlightSelectedColor(LinearLayout container, String selected) {
-        for (int i = 0; i < container.getChildCount(); i++) {
-            LinearLayout layout = (LinearLayout) container.getChildAt(i);
-            View circle = layout.getChildAt(0);
-            String code = (String) circle.getTag();
-
-            if (selected.equals(code)) {
-                circle.setBackgroundResource(R.drawable.color_circle_selected);
-            } else {
-                circle.setBackgroundResource(R.drawable.color_circle_background);
-            }
-
-            circle.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor(code)));
-        }
-    }
-
-    /**
-     * Show sizes based on selected color and stock availability
-     */
     private void showSizes(LinearLayout layoutSizeContainer, TextView tvKho, boolean autoSelect) {
         layoutSizeContainer.removeAllViews();
 
@@ -508,9 +598,6 @@ public class CartBottomSheetDialog extends BottomSheetDialogFragment {
         selectedView.setTextColor(Color.WHITE);
     }
 
-    /**
-     * Highlight selected size in container (for editing mode)
-     */
     private void highlightSelectedSizeInContainer(LinearLayout container) {
         for (int i = 0; i < container.getChildCount(); i++) {
             TextView sizeView = (TextView) container.getChildAt(i);
@@ -522,10 +609,34 @@ public class CartBottomSheetDialog extends BottomSheetDialogFragment {
     }
 
     private void updateImageByColor() {
+        if (selectedColorCode.isEmpty()) {
+            // Show default image
+            Glide.with(context)
+                    .load(ApiClient.IMAGE_URL + product.getAvt_imgproduct())
+                    .placeholder(R.drawable.ic_launcher_background)
+                    .error(R.drawable.ic_launcher_foreground)
+                    .override(300, 300)
+                    .centerCrop()
+                    .into(img);
+            return;
+        }
+
+        // Find image for selected color
         for (Variation v : product.getVariations()) {
             if (v.getColor() != null && v.getColor().getCode().equals(selectedColorCode)) {
-                if (v.getList_imgproduct() != null && !v.getList_imgproduct().isEmpty()) {
-                    selectedImageUrl = ApiClient.IMAGE_URL + v.getList_imgproduct().get(0);
+                String imageUrl = null;
+
+                // Try variation image first
+                if (v.getImage() != null && !v.getImage().trim().isEmpty()) {
+                    imageUrl = ApiClient.IMAGE_URL + v.getImage().trim();
+                }
+                // Then try list images
+                else if (v.getList_imgproduct() != null && !v.getList_imgproduct().isEmpty()) {
+                    imageUrl = ApiClient.IMAGE_URL + v.getList_imgproduct().get(0);
+                }
+
+                if (imageUrl != null) {
+                    selectedImageUrl = imageUrl;
                     Glide.with(context)
                             .load(selectedImageUrl)
                             .placeholder(R.drawable.ic_launcher_background)
@@ -549,9 +660,6 @@ public class CartBottomSheetDialog extends BottomSheetDialogFragment {
                 .into(img);
     }
 
-    /**
-     * Get current stock for selected color and size combination
-     */
     private int getCurrentStock() {
         if (selectedColorCode.isEmpty() || selectedSize.isEmpty()) {
             return 0;
@@ -567,9 +675,6 @@ public class CartBottomSheetDialog extends BottomSheetDialogFragment {
         return 0;
     }
 
-    /**
-     * Process cart add/update operation
-     */
     private void processCartOperation(String userId) {
         String selectedImageUrl = product.getAvt_imgproduct();
         int selectedPrice = (product.getPrice_sale() > 0) ? product.getPrice_sale() : product.getPrice();
