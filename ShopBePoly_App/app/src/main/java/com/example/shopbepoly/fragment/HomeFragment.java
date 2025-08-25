@@ -528,7 +528,7 @@ public class HomeFragment extends Fragment {
     private String formatDescriptionText(Voucher voucher) {
         if ("percent".equals(voucher.getDiscountType()) || "percent".equals(voucher.getDiscountType())) {
             if (voucher.getMinOrderValue() > 0) {
-                return "Tối đa " + formatCurrency(voucher.getMinOrderValue());
+                return "Đơn tối thiểu " + formatCurrency(voucher.getMinOrderValue());
             } else {
                 return "Không giới hạn";
             }

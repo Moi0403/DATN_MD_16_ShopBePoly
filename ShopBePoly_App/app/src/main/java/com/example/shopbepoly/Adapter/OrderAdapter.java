@@ -122,12 +122,17 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
         }
         holder.tvthanhTien.setText(String.format("Thành tiền: %,d đ", amountToDisplay));
         holder.tvSoLuongSP.setText("Tổng số lượng sản phẩm: " + order.getQuantity_order());
-        holder.tvngayMua.setText("Thời gian mua: " + formatDate(order.getDate()));
         holder.tvTT.setText("Trạng thái: " + order.getStatus());
-        if (order.getStatus().equals("Đang xử lý")){
-            holder.tvTimeUp.setVisibility(View.GONE);
+        if (isStaff) {
+            holder.tvngayMua.setText("Thời gian mua: " + formatDateForStaff(order.getDate()));
+            if (!order.getStatus().equals("Đang xử lý")) {
+                holder.tvTimeUp.setText("Xác nhận: " + formatDateForStaff(order.getCheckedAt()));
+            }
         } else {
-            holder.tvTimeUp.setText(formatDate(order.getCheckedAt())+"");
+            holder.tvngayMua.setText("Thời gian mua: " + formatDateForUser(order.getDate()));
+            if (!order.getStatus().equals("Đang xử lý")) {
+                holder.tvTimeUp.setText("Xác nhận: " + formatDateForUser(order.getCheckedAt()));
+            }
         }
 
         // Hiển thị thông tin khách hàng nếu là staff
@@ -408,6 +413,8 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
                 orderUpdate.setStatus("Đã giao hàng");
                 updateOrder(orderUpdate);
 
+                orderUpdate.setCheckedAt(getCurrentUtcTime(order.getDate()));
+
                 Intent intent = new Intent(context, DanhGia.class);
                 intent.putExtra("orderId", order.get_id());
                 intent.putExtra("listProductInOrder", new ArrayList<>(order.getProducts()));
@@ -415,6 +422,22 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
             });
             builder.setNegativeButton("Hủy", null);
             builder.show();
+        }
+    }
+    // ✅ Hàm trả về giờ hiện tại ở UTC (đúng chuẩn ISO)
+    private String getCurrentUtcTime(String isoDate) {
+        try {
+            SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
+//            inputFormat.setTimeZone(TimeZone.getTimeZone("UTC")); // parse đúng UTC
+
+            Date date = inputFormat.parse(isoDate);
+
+            SimpleDateFormat outputFormat = new SimpleDateFormat("dd/MM/yyyy - HH:mm", Locale.getDefault());
+            outputFormat.setTimeZone(TimeZone.getTimeZone("Asia/Ho_Chi_Minh")); // VN timezone
+            return outputFormat.format(date);
+        } catch (Exception e) {
+            Log.e(TAG, "Error formatting user date: " + isoDate, e);
+            return isoDate;
         }
     }
 
@@ -649,21 +672,55 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
         return imageUrl;
     }
 
-    private String formatDate(String isoDate) {
+// User: luôn convert UTC → VN
+    private String formatDateForUser(String isoDate) {
         try {
-            SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault());
-            inputFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-
-            SimpleDateFormat outputFormat = new SimpleDateFormat("dd/MM/yyyy - HH:mm", Locale.getDefault());
-            outputFormat.setTimeZone(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
+            SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
+            inputFormat.setTimeZone(TimeZone.getTimeZone("UTC")); // parse đúng UTC
 
             Date date = inputFormat.parse(isoDate);
+
+            SimpleDateFormat outputFormat = new SimpleDateFormat("dd/MM/yyyy - HH:mm", Locale.getDefault());
+            outputFormat.setTimeZone(TimeZone.getTimeZone("Asia/Ho_Chi_Minh")); // VN timezone
             return outputFormat.format(date);
         } catch (Exception e) {
-            Log.e(TAG, "Error formatting date: " + isoDate, e);
+            Log.e(TAG, "Error formatting user date: " + isoDate, e);
             return isoDate;
         }
     }
+
+    // Staff: cũng convert UTC → VN (nếu muốn hiển thị đúng giờ thực tế tại VN)
+    private String formatDateForStaff(String isoDate) {
+        try {
+            SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
+            inputFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+            Date date = inputFormat.parse(isoDate);
+
+            SimpleDateFormat outputFormat = new SimpleDateFormat("dd/MM/yyyy - HH:mm", Locale.getDefault());
+            outputFormat.setTimeZone(TimeZone.getTimeZone("Asia/Ho_Chi_Minh")); // giữ đúng VN
+            return outputFormat.format(date);
+        } catch (Exception e) {
+            Log.e(TAG, "Error formatting staff date: " + isoDate, e);
+            return isoDate;
+        }
+    }
+
+//    private String formatDateForXN(String isoDate) {
+//        try {
+//            SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
+//            inputFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+//
+//            Date date = inputFormat.parse(isoDate);
+//
+//            SimpleDateFormat outputFormat = new SimpleDateFormat("dd/MM/yyyy - HH:mm", Locale.getDefault());
+//            outputFormat.setTimeZone(TimeZone.getTimeZone("Asia/Ho_Chi_Minh")); // giữ đúng VN
+//            return outputFormat.format(date);
+//        } catch (Exception e) {
+//            Log.e(TAG, "Error formatting staff date: " + isoDate, e);
+//            return isoDate;
+//        }
+//    }
 
     private void updateOrder(Order order) {
         ApiService apiService = ApiClient.getApiService();

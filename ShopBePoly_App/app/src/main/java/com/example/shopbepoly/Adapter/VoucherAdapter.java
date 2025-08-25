@@ -91,7 +91,7 @@ public class VoucherAdapter extends RecyclerView.Adapter<VoucherAdapter.VoucherV
             // Set description
             String description = "";
             if (voucher.getMinOrderValue() > 0) {
-                description = "Cho đơn hàng từ " + formatPrice(voucher.getMinOrderValue());
+                description = "Đơn tối thiểu " + formatPrice(voucher.getMinOrderValue());
             } else {
                 description = voucher.getDescription();
             }

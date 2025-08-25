@@ -1160,106 +1160,68 @@ router.get('/order/:orderId', async (req, res) => {
 router.get('/search_order', async (req, res) => {
     try {
         const { code } = req.query;
-        
+
         if (!code) {
             return res.status(400).json({ error: 'Code parameter is required' });
         }
 
-        console.log('Searching for order with code:', code);
-        console.log('Is valid ObjectId:', mongoose.Types.ObjectId.isValid(code));
+        console.log('Searching orders with keyword:', code);
 
         let orders = [];
 
-        // Kiểm tra xem code có phải là ObjectId hợp lệ không
+        // Nếu nhập đúng ObjectId => tìm trực tiếp theo _id
         if (mongoose.Types.ObjectId.isValid(code)) {
-            console.log('Searching by ObjectId...');
-            // Tìm đơn hàng theo ObjectId chính xác
             const order = await orderModel.findById(code)
                 .populate('id_user', 'name phone_number')
                 .populate({
                     path: 'products.id_product',
                     select: 'nameproduct avt_imgproduct variations id_category',
-                    populate: {
-                        path: 'id_category',
-                        select: 'title'
-                    }
+                    populate: { path: 'id_category', select: 'title' }
                 });
 
-            console.log('Order found by ID:', order ? 'YES' : 'NO');
             if (order) {
                 orders = [order];
             }
-        } else {
-            console.log('Searching by partial ID, text fields, or product names...');
-            // Tìm kiếm theo một phần của ID, các trường khác, hoặc tên sản phẩm
-            orders = await orderModel.aggregate([
-                {
-                    $lookup: {
-                        from: 'users',
-                        localField: 'id_user',
-                        foreignField: '_id',
-                        as: 'user'
-                    }
-                },
-                {
-                    $lookup: {
-                        from: 'products',
-                        localField: 'products.id_product',
-                        foreignField: '_id',
-                        as: 'productDetails'
-                    }
-                },
-                {
-                    $lookup: {
-                        from: 'categories',
-                        localField: 'productDetails.id_category',
-                        foreignField: '_id',
-                        as: 'categoryDetails'
-                    }
-                },
-                {
-                    $match: {
-                        $or: [
-                            { $expr: { $regexMatch: { input: { $toString: "$_id" }, regex: code, options: "i" } } },
-                            { status: { $regex: code, $options: 'i' } },
-                            { address: { $regex: code, $options: 'i' } },
-                            { pay: { $regex: code, $options: 'i' } },
-                            { total: { $regex: code, $options: 'i' } },
-                            { 'productDetails.nameproduct': { $regex: code, $options: 'i' } }
-                        ]
-                    }
-                },
-                {
-                    $limit: 10
-                }
-            ]);
+        }
 
-            // Chuyển đổi kết quả aggregation về format tương tự như populate
-            orders = orders.map(order => {
-                const user = order.user[0] || {};
-                const products = order.products.map(product => {
-                    const productDetail = order.productDetails.find(p => p._id.toString() === product.id_product.toString()) || {};
-                    const category = order.categoryDetails.find(c => c._id.toString() === productDetail.id_category?.toString()) || {};
-                    
-                    return {
-                        ...product,
-                        id_product: {
-                            ...productDetail,
-                            id_category: category
-                        }
-                    };
+        // Nếu chưa tìm thấy => tìm bằng idOrder, tên sản phẩm, status, address...
+        if (orders.length === 0) {
+            orders = await orderModel.find({
+                $or: [
+                    { idOrder: { $regex: code, $options: 'i' } },   // tìm theo mã đơn hàng
+                    { status: { $regex: code, $options: 'i' } },
+                    { address: { $regex: code, $options: 'i' } },
+                    { pay: { $regex: code, $options: 'i' } },
+                    { total: { $regex: code, $options: 'i' } },
+                ]
+            })
+                .populate('id_user', 'name phone_number')
+                .populate({
+                    path: 'products.id_product',
+                    select: 'nameproduct avt_imgproduct variations id_category',
+                    populate: { path: 'id_category', select: 'title' }
                 });
 
-                return {
-                    ...order,
-                    id_user: user,
-                    products: products
-                };
-            });
+            // Sau khi populate products, lọc tiếp theo tên sản phẩm
+            if (orders.length > 0) {
+                orders = orders.filter(order =>
+                    order.products.some(p =>
+                        p.id_product &&
+                        p.id_product.nameproduct &&
+                        p.id_product.nameproduct.toLowerCase().includes(code.toLowerCase())
+                    ) ||
+                    order.idOrder?.toLowerCase().includes(code.toLowerCase()) ||
+                    order.status?.toLowerCase().includes(code.toLowerCase()) ||
+                    order.address?.toLowerCase().includes(code.toLowerCase()) ||
+                    order.pay?.toLowerCase().includes(code.toLowerCase()) ||
+                    order.total?.toString().includes(code)
+                );
+            }
         }
 
         console.log('Total orders found:', orders.length);
         res.json(orders);
+
     } catch (error) {
         console.error('Search orders error:', error);
         res.status(500).json({ error: 'Internal server error' });
