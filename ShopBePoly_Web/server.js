@@ -1336,21 +1336,29 @@ router.put('/cancel_order/:id', async (req, res) => {
 router.put('/updateOrderStatus/:orderId', async (req, res) => {
     try {
         const orderId = req.params.orderId;
-        const { status, cancelReason, checkedBy } = req.body; // Thêm checkedBy từ request
+        const { status, cancelReason, checkedAt, deliveryConfirmedBy } = req.body;
 
         if (!status) {
             return res.status(400).json({ message: 'Trạng thái không được để trống' });
         }
 
         const updateData = { status };
+        
         if (cancelReason) {
             updateData.cancelReason = cancelReason;
         }
 
-        // Nếu có checkedBy, cập nhật thông tin kiểm tra
-        if (checkedBy) {
-            updateData.checkedAt = new Date(); // Cập nhật thời gian kiểm tra
-            updateData.checkedBy = checkedBy;  // Cập nhật người kiểm tra
+        // Xác nhận đơn hàng (chuyển từ "Đang xử lý" → "Đang giao hàng")
+        if (checkedAt) {
+            updateData.checkedAt = new Date(checkedAt);
+            console.log('Setting checkedAt for order:', orderId, 'at time:', checkedAt);
+        }
+
+        // Xác nhận giao hàng (staff đã giao hàng thành công)
+        if (deliveryConfirmedBy) {
+            updateData.deliveryConfirmedBy = deliveryConfirmedBy;
+            updateData.deliveryConfirmedAt = new Date(); // Cũng set time để backup
+            console.log('Setting deliveryConfirmedBy for order:', orderId, 'by:', deliveryConfirmedBy);
         }
 
         const updatedOrder = await orderModel.findByIdAndUpdate(
@@ -1369,7 +1377,6 @@ router.put('/updateOrderStatus/:orderId', async (req, res) => {
             .populate('products.id_product');
 
         // Tạo thông báo khi đơn hàng được giao thành công
-        console.log('Order status update:', status);
         if (status === 'Đã giao' || status === 'delivered' || status === 'Đã giao hàng') {
             console.log('Creating delivery success notification for order:', orderId);
             const newNotification = new notificationModel({
@@ -1388,7 +1395,6 @@ router.put('/updateOrderStatus/:orderId', async (req, res) => {
             });
 
             await newNotification.save();
-            console.log('Notification created successfully');
         }
 
         return res.status(200).json({ message: 'Cập nhật trạng thái thành công', order: updatedOrder });

@@ -36,7 +36,7 @@ const orderSchema = new mongoose.Schema({
     },
     checkedAt: {
         type: Date,
-        default: "" // Thời gian chuyển từ "Đang xử lý" sang "Đang giao hàng"
+        default: "" // Thời gian chuyển từ "Đang xử lý" sang "Đang gi
     },
     checkedBy: {
         type: String,
