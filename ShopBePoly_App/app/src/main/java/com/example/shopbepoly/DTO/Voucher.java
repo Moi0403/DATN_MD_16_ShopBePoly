@@ -1,12 +1,13 @@
 package com.example.shopbepoly.DTO;
 
+import com.google.gson.Gson;
 import java.util.Date;
 
 public class Voucher {
     private String _id;
     private String code;
     private String description;
-    private String discountType; // "percentage" or "fixed"
+    private String discountType; // "percent" or "fixed"
     private double discountValue;
     private double minOrderValue;
     private int usageLimit;
@@ -152,5 +153,15 @@ public class Voucher {
 
     public int getRemainingUsage() {
         return Math.max(0, usageLimit - usedCount);
+    }
+
+    // Convert to JSON string
+    public String toJson() {
+        return new Gson().toJson(this);
+    }
+
+    // Create from JSON string
+    public static Voucher fromJson(String json) {
+        return new Gson().fromJson(json, Voucher.class);
     }
 }

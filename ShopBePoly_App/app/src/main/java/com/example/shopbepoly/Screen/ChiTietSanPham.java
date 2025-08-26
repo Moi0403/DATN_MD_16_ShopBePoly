@@ -5,7 +5,13 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.os.Bundle;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.TextUtils;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.StrikethroughSpan;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -26,8 +32,10 @@ import com.example.shopbepoly.Adapter.CartAdapter;
 import com.example.shopbepoly.Adapter.ImageSliderAdapter;
 import com.example.shopbepoly.DTO.Cart;
 import com.example.shopbepoly.DTO.Favorite;
+import com.example.shopbepoly.DTO.ListReview;
 import com.example.shopbepoly.DTO.Product;
 import com.example.shopbepoly.DTO.Variation;
+import com.example.shopbepoly.DanhSachDanhGia;
 import com.example.shopbepoly.R;
 import com.example.shopbepoly.ThanhToan;
 import com.example.shopbepoly.fragment.FavoriteFragment;
@@ -47,8 +55,8 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class ChiTietSanPham extends AppCompatActivity {
-    private ImageView btnBack, btnFavorite, btnDecrease, btnIncrease, imgProduct, btnCart;
-    private TextView tvQuantity, tvProductName, tvPrice, tvDescription, tvKho,tvCateProductName;
+    private ImageView btnBack, btnFavorite, btnDecrease, btnIncrease, imgProduct, btnCart, star1, star2, star3, star4, star5;
+    private TextView tvQuantity, tvProductName, tvPrice, tvDescription, tvKho, tvCateProductName, tvSalePrice, tvOriginalPrice, tvDiscount;
     private AppCompatButton btnAddToCart;
     private TextView size36, size37, size38, size39, size40, size41, size42, size43, size44, size45;
     private int quantity = 1;
@@ -83,12 +91,10 @@ public class ChiTietSanPham extends AppCompatActivity {
             updateFavoriteButton();
         }
 
-        // ⚠️ Sửa tại đây
         imageSliderAdapter = new ImageSliderAdapter(this, new ArrayList<>());
         viewPagerProductImages.setAdapter(imageSliderAdapter);
 
-        showDefaultProductImages(); // ← Gọi sau khi adapter đã được gán
-
+        showDefaultProductImages();
         showAvailableColors();
         showAvailableSizes();
         viewPagerProductImages.setOrientation(ViewPager2.ORIENTATION_HORIZONTAL);
@@ -96,61 +102,12 @@ public class ChiTietSanPham extends AppCompatActivity {
         updateUI();
         updateStockDisplay();
 
-
         btnCart.setOnClickListener(view -> {
             SharedPreferences sharedPreferences = getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
             String userId = sharedPreferences.getString("userId", null);
 
-            if (selectedSize == null || selectedSize.trim().isEmpty()) {
-                Toast.makeText(this, "Vui lòng chọn trước khi thêm vào giỏ hàng", Toast.LENGTH_SHORT).show();
-            } else {
-                Variation selectedVariation = null;
-                for (Variation v : product.getVariations()) {
-                    if (v.getSize() == Integer.parseInt(selectedSize)) {
-                        if (selectedColorCode.isEmpty() ||
-                                (v.getColor() != null && selectedColorCode.equalsIgnoreCase(v.getColor().getCode()))) {
-                            selectedVariation = v;
-                            break;
-                        }
-                    }
-                }
-
-                Cart cart = new Cart();
-                cart.setIdUser(userId);
-                cart.setIdProduct(product);
-                cart.setQuantity(quantity);
-                cart.setPrice(product.getPrice());
-                cart.setTotal(product.getPrice() * quantity);
-                cart.setSize(Integer.parseInt(selectedSize));
-                cart.setStatus(0);
-
-                if (selectedVariation.getColor() != null) {
-                    cart.setColor(selectedVariation.getColor().getName()); // tên màu
-                }
-
-                String image = selectedVariation.getImage();
-                if (image != null && !image.trim().isEmpty()) {
-                    cart.setImg_cart(ApiClient.IMAGE_URL + image.trim());
-                } else if (product.getAvt_imgproduct() != null) {
-                    cart.setImg_cart(ApiClient.IMAGE_URL + product.getAvt_imgproduct());
-                }
-
-                Add_Cart(cart);
-            }
-        });
-
-        btn_AddToPay.setOnClickListener(view1 -> {
-            SharedPreferences sharedPreferences = getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
-            String userId = sharedPreferences.getString("userId", null);
-
-            if (selectedColorCode == null || selectedColorCode.isEmpty()) {
-                Toast.makeText(this, "Vui lòng chọn màu trước khi mua hàng", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            if (selectedSize == null || selectedSize.trim().isEmpty()) {
-                Toast.makeText(this, "Vui lòng chọn size trước khi mua hàng", Toast.LENGTH_SHORT).show();
-                return;
+            if (!validateSelectionForCart()) {
+                return; // Validation failed, don't proceed
             }
 
             Variation selectedVariation = null;
@@ -162,11 +119,6 @@ public class ChiTietSanPham extends AppCompatActivity {
                         break;
                     }
                 }
-            }
-
-            if (selectedVariation == null) {
-                Toast.makeText(this, "Không tìm thấy biến thể phù hợp", Toast.LENGTH_SHORT).show();
-                return;
             }
 
             Cart cart = new Cart();
@@ -189,14 +141,13 @@ public class ChiTietSanPham extends AppCompatActivity {
                 cart.setImg_cart(ApiClient.IMAGE_URL + product.getAvt_imgproduct());
             }
 
-            // Gửi cart dưới dạng list để tương thích với ThanhToan nhận list
-            List<Cart> selectedItems = new ArrayList<>();
-            selectedItems.add(cart);
+            Add_Cart(cart);
+        });
 
-            String jsonCart = new Gson().toJson(selectedItems);
-            Intent intent = new Intent(ChiTietSanPham.this, ThanhToan.class);
-            intent.putExtra("cart_list", jsonCart);
-            startActivity(intent);
+        btn_AddToPay.setOnClickListener(view1 -> {
+            if (validateProductSelection()) {
+                navigateToPayment();
+            }
         });
     }
 
@@ -209,6 +160,7 @@ public class ChiTietSanPham extends AppCompatActivity {
         tvProductName = findViewById(R.id.tvProductName);
         tvCateProductName = findViewById(R.id.tvCateProductName);
         tvPrice = findViewById(R.id.tvPrice);
+        tvDiscount = findViewById(R.id.tvDiscount);
         tvKho = findViewById(R.id.tvKho);
         tvDescription = findViewById(R.id.tvDescription);
         btnAddToCart = findViewById(R.id.btnAddToCart);
@@ -225,7 +177,25 @@ public class ChiTietSanPham extends AppCompatActivity {
         size43 = findViewById(R.id.size43);
         size44 = findViewById(R.id.size44);
         size45 = findViewById(R.id.size45);
+
+        star1 = findViewById(R.id.star1_);
+        star2 = findViewById(R.id.star2_);
+        star3 = findViewById(R.id.star3_);
+        star4 = findViewById(R.id.star4_);
+        star5 = findViewById(R.id.star5_);
+
+        star1.setOnClickListener(starClick);
+        star2.setOnClickListener(starClick);
+        star3.setOnClickListener(starClick);
+        star4.setOnClickListener(starClick);
+        star5.setOnClickListener(starClick);
     }
+
+    View.OnClickListener starClick = view -> {
+        Intent intent = new Intent(ChiTietSanPham.this, DanhSachDanhGia.class);
+        intent.putExtra("productId", product.get_id());
+        startActivity(intent);
+    };
 
     private void setupClickListeners() {
         btnBack.setOnClickListener(v -> finish());
@@ -282,16 +252,39 @@ public class ChiTietSanPham extends AppCompatActivity {
             }
         });
 
+        // IMPROVED: btnDecrease với validation mới
         btnDecrease.setOnClickListener(v -> {
             if (quantity > 1) {
                 quantity--;
                 updateQuantity();
+            } else {
+                Toast.makeText(this, "Số lượng tối thiểu là 1", Toast.LENGTH_SHORT).show();
             }
         });
 
+        // IMPROVED: btnIncrease với validation đầy đủ
         btnIncrease.setOnClickListener(v -> {
-            quantity++;
-            updateQuantity();
+            // Kiểm tra xem đã chọn màu và size chưa
+            if (!isColorAndSizeSelected()) {
+                showSelectionRequiredMessage();
+                return;
+            }
+
+            int maxStock = getMaxAvailableStock();
+
+            if (quantity < maxStock) {
+                quantity++;
+                updateQuantity();
+            } else {
+                // Show toast message when trying to exceed stock
+                String message = "Không thể thêm quá " + maxStock + " sản phẩm";
+                if (!selectedColorCode.isEmpty() && selectedSize != null) {
+                    message += " (Màu " + selectedColorName + ", Size " + selectedSize + ")";
+                } else if (!selectedColorCode.isEmpty()) {
+                    message += " (Màu " + selectedColorName + ")";
+                }
+                Toast.makeText(ChiTietSanPham.this, message, Toast.LENGTH_SHORT).show();
+            }
         });
 
         btnAddToCart.setOnClickListener(v -> {
@@ -312,11 +305,287 @@ public class ChiTietSanPham extends AppCompatActivity {
         size45.setOnClickListener(v -> selectSize("45", size45));
     }
 
-    // CẬP NHẬT PHƯƠNG THỨC updateStockDisplay() MỚI
+    // NEW METHOD: Kiểm tra xem đã chọn màu và size chưa
+    private boolean isColorAndSizeSelected() {
+        return !selectedColorCode.isEmpty() && selectedSize != null && !selectedSize.isEmpty();
+    }
+
+    // NEW METHOD: Hiển thị thông báo yêu cầu chọn màu và size
+    private void showSelectionRequiredMessage() {
+        if (selectedColorCode.isEmpty() && (selectedSize == null || selectedSize.isEmpty())) {
+            Toast.makeText(this, "Vui lòng chọn màu và size trước khi thay đổi số lượng", Toast.LENGTH_LONG).show();
+        } else if (selectedColorCode.isEmpty()) {
+            Toast.makeText(this, "Vui lòng chọn màu trước khi thay đổi số lượng", Toast.LENGTH_SHORT).show();
+        } else if (selectedSize == null || selectedSize.isEmpty()) {
+            Toast.makeText(this, "Vui lòng chọn size trước khi thay đổi số lượng", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    // NEW METHOD: Validation riêng cho việc thêm vào giỏ hàng
+    private boolean validateSelectionForCart() {
+        if (selectedSize == null || selectedSize.trim().isEmpty()) {
+            Toast.makeText(this, "Vui lòng chọn size trước khi thêm vào giỏ hàng", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        if (selectedColorCode.isEmpty()) {
+            Toast.makeText(this, "Vui lòng chọn màu trước khi thêm vào giỏ hàng", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        if (quantity <= 0) {
+            Toast.makeText(this, "Số lượng không hợp lệ", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+
+        int maxStock = getMaxAvailableStock();
+        if (quantity > maxStock) {
+            Toast.makeText(this, "Số lượng vượt quá kho có sẵn (" + maxStock + ")", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+
+        return true;
+    }
+
+    // EXISTING METHOD: Get maximum available stock based on current selection
+    private int getMaxAvailableStock() {
+        if (product == null || product.getVariations() == null) {
+            return 1; // Default minimum
+        }
+
+        int maxStock = 0;
+
+        // Case 1: Both color and size are selected - get specific variation stock
+        if (!selectedColorCode.isEmpty() && selectedSize != null) {
+            for (Variation variation : product.getVariations()) {
+                if (variation.getSize() == Integer.parseInt(selectedSize) &&
+                        variation.getColor() != null &&
+                        selectedColorCode.equalsIgnoreCase(variation.getColor().getCode())) {
+                    maxStock = variation.getStock();
+                    break;
+                }
+            }
+        }
+        // Case 2: Only color is selected - get total stock for that color
+        else if (!selectedColorCode.isEmpty()) {
+            for (Variation variation : product.getVariations()) {
+                if (variation.getColor() != null &&
+                        selectedColorCode.equalsIgnoreCase(variation.getColor().getCode())) {
+                    maxStock += variation.getStock();
+                }
+            }
+        }
+        // Case 3: No selection - get total stock of all variations
+        else {
+            for (Variation variation : product.getVariations()) {
+                maxStock += variation.getStock();
+            }
+        }
+
+        return Math.max(maxStock, 1); // Ensure minimum of 1
+    }
+
+    // EXISTING METHOD: Validate and adjust quantity when selection changes
+    private void validateAndAdjustQuantity() {
+        int maxStock = getMaxAvailableStock();
+        if (quantity > maxStock) {
+            quantity = Math.max(maxStock, 1);
+            updateQuantity();
+            Toast.makeText(this, "Số lượng đã được điều chỉnh theo kho có sẵn", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    // EXISTING METHOD: PHƯƠNG THỨC CHỌN MÀU ĐƯỢC CẢI THIỆN
+    private void showAvailableColors() {
+        if (product == null || product.getVariations() == null) return;
+
+        layoutColorContainer.removeAllViews();
+
+        Map<String, String> colorMap = new LinkedHashMap<>();
+        for (Variation variation : product.getVariations()) {
+            if (variation.getColor() != null) {
+                String code = variation.getColor().getCode();
+                String name = variation.getColor().getName();
+                if (!colorMap.containsKey(code)) {
+                    colorMap.put(code, name);
+                }
+            }
+        }
+
+        for (Map.Entry<String, String> entry : colorMap.entrySet()) {
+            String code = entry.getKey();
+            String name = entry.getValue();
+
+            // Container chính cho mỗi màu
+            LinearLayout itemLayout = new LinearLayout(this);
+            itemLayout.setOrientation(LinearLayout.VERTICAL);
+            itemLayout.setGravity(Gravity.CENTER);
+            itemLayout.setPadding(16, 8, 16, 8);
+
+            // Container cho color circle với shadow effect
+            FrameLayout colorContainer = new FrameLayout(this);
+            int containerSize = getResources().getDimensionPixelSize(R.dimen.color_circle_size) + 20;
+            LinearLayout.LayoutParams containerParams = new LinearLayout.LayoutParams(containerSize, containerSize);
+            containerParams.setMargins(8, 8, 8, 4);
+            colorContainer.setLayoutParams(containerParams);
+
+            // Shadow view (tạo hiệu ứng đổ bóng)
+            View shadowView = new View(this);
+            FrameLayout.LayoutParams shadowParams = new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT
+            );
+            shadowParams.setMargins(2, 2, 0, 0);
+            shadowView.setLayoutParams(shadowParams);
+            shadowView.setBackgroundResource(R.drawable.color_circle_background);
+            shadowView.setAlpha(0.3f);
+            shadowView.setBackgroundTintList(ColorStateList.valueOf(Color.GRAY));
+
+            // Main color circle
+            View colorCircle = new View(this);
+            int circleSize = getResources().getDimensionPixelSize(R.dimen.color_circle_size);
+            FrameLayout.LayoutParams circleParams = new FrameLayout.LayoutParams(circleSize, circleSize);
+            circleParams.gravity = Gravity.CENTER;
+            colorCircle.setLayoutParams(circleParams);
+            colorCircle.setBackgroundResource(R.drawable.color_circle_background);
+            colorCircle.setTag(code);
+
+            // Set màu cho circle với border màu trắng
+            try {
+                int color = Color.parseColor(code);
+                // Tạo gradient drawable với border trắng
+                android.graphics.drawable.GradientDrawable drawable = new android.graphics.drawable.GradientDrawable();
+                drawable.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+                drawable.setColor(color);
+                drawable.setStroke(3, Color.WHITE); // Border trắng 3px
+                colorCircle.setBackground(drawable);
+            } catch (IllegalArgumentException e) {
+                colorCircle.setBackgroundTintList(ColorStateList.valueOf(Color.GRAY));
+            }
+
+            // Checkmark icon (ẩn ban đầu)
+            ImageView checkMark = new ImageView(this);
+            FrameLayout.LayoutParams checkParams = new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT
+            );
+            checkParams.gravity = Gravity.CENTER;
+            checkMark.setLayoutParams(checkParams);
+            checkMark.setImageResource(R.drawable.ic_check_white);
+            checkMark.setVisibility(View.GONE);
+            checkMark.setTag("checkmark_" + code);
+
+            // Text tên màu với styling
+            TextView tvName = new TextView(this);
+            tvName.setText(name);
+            tvName.setTextSize(12);
+            tvName.setTextColor(Color.BLACK);
+            tvName.setGravity(Gravity.CENTER);
+            tvName.setTypeface(null, android.graphics.Typeface.NORMAL);
+            tvName.setPadding(4, 4, 4, 4);
+
+            // Sự kiện click cho color circle
+            colorCircle.setOnClickListener(v -> {
+                String clickedCode = (String) v.getTag();
+                handleColorSelection(clickedCode, name);
+            });
+
+            // Assemble views
+            colorContainer.addView(shadowView);
+            colorContainer.addView(colorCircle);
+            colorContainer.addView(checkMark);
+
+            itemLayout.addView(colorContainer);
+            itemLayout.addView(tvName);
+            layoutColorContainer.addView(itemLayout);
+        }
+    }
+
+    // EXISTING METHOD: Phương thức xử lý chọn màu được cải thiện
+    private void handleColorSelection(String clickedCode, String colorName) {
+        if (clickedCode.equals(selectedColorCode)) {
+            // Bỏ chọn màu hiện tại
+            selectedColorCode = "";
+            selectedColorName = "";
+            selectedSize = null;
+            quantity = 1; // Reset quantity về 1 khi bỏ chọn màu
+            highlightSelectedColor("");
+            showDefaultProductImages();
+            resetSizeSelections();
+        } else {
+            // Chọn màu mới
+            selectedColorCode = clickedCode;
+            selectedColorName = colorName;
+            selectedSize = null;
+            quantity = 1; // Reset quantity về 1 khi chọn màu mới
+            highlightSelectedColor(clickedCode);
+            updateImageByColor(clickedCode);
+            resetSizeSelections();
+        }
+
+        showAvailableSizes();
+        updateStockDisplay();
+        updateQuantity(); // Update quantity display
+        validateAndAdjustQuantity();
+    }
+
+    // EXISTING METHOD: Phương thức highlight được cải thiện
+    private void highlightSelectedColor(String selectedCode) {
+        for (int i = 0; i < layoutColorContainer.getChildCount(); i++) {
+            LinearLayout itemLayout = (LinearLayout) layoutColorContainer.getChildAt(i);
+            if (itemLayout.getChildCount() >= 2) {
+                FrameLayout colorContainer = (FrameLayout) itemLayout.getChildAt(0);
+                TextView nameText = (TextView) itemLayout.getChildAt(1);
+
+                View colorCircle = colorContainer.getChildAt(1); // Main color circle
+                ImageView checkMark = (ImageView) colorContainer.getChildAt(2);
+                String tagCode = (String) colorCircle.getTag();
+
+                if (selectedCode != null && selectedCode.equals(tagCode)) {
+                    // Highlight selected color
+                    try {
+                        int color = Color.parseColor(tagCode);
+                        android.graphics.drawable.GradientDrawable selectedDrawable = new android.graphics.drawable.GradientDrawable();
+                        selectedDrawable.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+                        selectedDrawable.setColor(color);
+                        selectedDrawable.setStroke(5, Color.parseColor("#FF4444")); // Red border for selection
+                        colorCircle.setBackground(selectedDrawable);
+
+                        // Show checkmark
+                        checkMark.setVisibility(View.VISIBLE);
+
+                        // Bold text
+                        nameText.setTypeface(null, android.graphics.Typeface.BOLD);
+                        nameText.setTextColor(Color.parseColor("#FF4444"));
+                    } catch (IllegalArgumentException e) {
+                        colorCircle.setBackgroundTintList(ColorStateList.valueOf(Color.GRAY));
+                    }
+                } else {
+                    // Reset to unselected state
+                    try {
+                        int color = Color.parseColor(tagCode);
+                        android.graphics.drawable.GradientDrawable normalDrawable = new android.graphics.drawable.GradientDrawable();
+                        normalDrawable.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+                        normalDrawable.setColor(color);
+                        normalDrawable.setStroke(3, Color.WHITE); // White border
+                        colorCircle.setBackground(normalDrawable);
+
+                        // Hide checkmark
+                        checkMark.setVisibility(View.GONE);
+
+                        // Normal text
+                        nameText.setTypeface(null, android.graphics.Typeface.NORMAL);
+                        nameText.setTextColor(Color.BLACK);
+                    } catch (IllegalArgumentException e) {
+                        colorCircle.setBackgroundTintList(ColorStateList.valueOf(Color.GRAY));
+                    }
+                }
+            }
+        }
+    }
+
+    // EXISTING METHOD: CẬP NHẬT PHƯƠNG THỨC updateStockDisplay()
     private void updateStockDisplay() {
         if (product == null || product.getVariations() == null) return;
 
-        // Trường hợp 1: Chưa chọn màu - hiển thị tổng tất cả kho
         if (selectedColorCode.isEmpty()) {
             int totalStock = 0;
             for (Variation variation : product.getVariations()) {
@@ -326,7 +595,6 @@ public class ChiTietSanPham extends AppCompatActivity {
             return;
         }
 
-        // Trường hợp 2: Đã chọn màu nhưng chưa chọn size - hiển thị tổng kho của màu đó
         if (selectedSize == null || selectedSize.isEmpty()) {
             int colorStock = 0;
             for (Variation variation : product.getVariations()) {
@@ -338,7 +606,6 @@ public class ChiTietSanPham extends AppCompatActivity {
             return;
         }
 
-        // Trường hợp 3: Đã chọn cả màu và size - hiển thị kho của variation cụ thể
         for (Variation variation : product.getVariations()) {
             if (variation.getSize() == Integer.parseInt(selectedSize) &&
                     variation.getColor() != null &&
@@ -348,10 +615,10 @@ public class ChiTietSanPham extends AppCompatActivity {
             }
         }
 
-        // Trường hợp không tìm thấy variation phù hợp
         tvKho.setText("Kho: 0 (Hết hàng)");
     }
 
+    // EXISTING METHOD: Validation for product selection
     private boolean validateProductSelection() {
         if (product == null) {
             Toast.makeText(this, "Không có thông tin sản phẩm", Toast.LENGTH_SHORT).show();
@@ -369,6 +636,14 @@ public class ChiTietSanPham extends AppCompatActivity {
             Toast.makeText(this, "Số lượng không hợp lệ", Toast.LENGTH_SHORT).show();
             return false;
         }
+
+        // Check if quantity exceeds available stock
+        int maxStock = getMaxAvailableStock();
+        if (quantity > maxStock) {
+            Toast.makeText(this, "Số lượng vượt quá kho có sẵn (" + maxStock + ")", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+
         return true;
     }
 
@@ -386,12 +661,13 @@ public class ChiTietSanPham extends AppCompatActivity {
             @Override
             public void onResponse(Call<Product> call, Response<Product> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    product = response.body(); // Cập nhật lại thông tin mới nhất
+                    product = response.body();
                     updateUI();
                     showAvailableColors();
                     showAvailableSizes();
                     updateStockDisplay();
-                    showDefaultProductImages(); // Gọi lại ảnh mặc định
+                    showDefaultProductImages();
+                    validateAndAdjustQuantity();
                 } else {
                     Log.e("FetchProduct", "Không lấy được sản phẩm");
                 }
@@ -406,19 +682,51 @@ public class ChiTietSanPham extends AppCompatActivity {
 
     private void navigateToPayment() {
         try {
-            Intent intent = new Intent(this, ThanhToan.class);
-            Gson gson = new Gson();
-            intent.putExtra("product", gson.toJson(product));
-            intent.putExtra("quantity", quantity);
-            intent.putExtra("color", selectedColorName); //update color
-            intent.putExtra("size", selectedSize);
+            SharedPreferences sharedPreferences = getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
+            String userId = sharedPreferences.getString("userId", null);
 
-            //update image
-            if (imageSliderAdapter != null && imageSliderAdapter.getImageList() != null && !imageSliderAdapter.getImageList().isEmpty()){
-                String selectedImage = imageSliderAdapter.getImageList().get(0);
-                intent.putExtra("selectedImage", selectedImage);
+            Variation selectedVariation = null;
+            for (Variation v : product.getVariations()) {
+                if (v.getSize() == Integer.parseInt(selectedSize)) {
+                    if (selectedColorCode.isEmpty() ||
+                            (v.getColor() != null && selectedColorCode.equalsIgnoreCase(v.getColor().getCode()))) {
+                        selectedVariation = v;
+                        break;
+                    }
+                }
             }
-            logPaymentData();
+
+            if (selectedVariation == null) {
+                Toast.makeText(this, "Không tìm thấy biến thể phù hợp", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            Cart cart = new Cart();
+            cart.setIdUser(userId);
+            cart.setIdProduct(product);
+            cart.setQuantity(quantity);
+            cart.setPrice(product.getPrice());
+            cart.setTotal(product.getPrice() * quantity);
+            cart.setSize(Integer.parseInt(selectedSize));
+            cart.setStatus(0);
+
+            if (selectedVariation.getColor() != null) {
+                cart.setColor(selectedVariation.getColor().getName());
+            }
+
+            String image = selectedVariation.getImage();
+            if (image != null && !image.trim().isEmpty()) {
+                cart.setImg_cart(ApiClient.IMAGE_URL + image.trim());
+            } else if (product.getAvt_imgproduct() != null) {
+                cart.setImg_cart(ApiClient.IMAGE_URL + product.getAvt_imgproduct());
+            }
+
+            List<Cart> selectedItems = new ArrayList<>();
+            selectedItems.add(cart);
+
+            String jsonCart = new Gson().toJson(selectedItems);
+            Intent intent = new Intent(ChiTietSanPham.this, ThanhToan.class);
+            intent.putExtra("cart_list", jsonCart);
             startActivity(intent);
         } catch (Exception e) {
             Log.e("ChiTietSanPham", "Lỗi chuyển sang thanh toán", e);
@@ -437,19 +745,13 @@ public class ChiTietSanPham extends AppCompatActivity {
         Log.d("ChiTietSanPham", "==================");
     }
 
-    // CẬP NHẬT PHƯƠNG THỨC selectSize() MỚI
     private void selectSize(String size, TextView sizeView) {
         selectedSize = size;
-
-        // Reset all size selections
         resetSizeSelections();
-
-        // Set selected size
         sizeView.setBackgroundResource(R.drawable.size_selector_selected);
         sizeView.setTextColor(getResources().getColor(android.R.color.white));
-
-        // Cập nhật hiển thị kho sau khi chọn size
         updateStockDisplay();
+        validateAndAdjustQuantity();
     }
 
     private void resetSizeSelections() {
@@ -494,7 +796,6 @@ public class ChiTietSanPham extends AppCompatActivity {
     private void showAvailableSizes() {
         if (product == null || product.getVariations() == null) return;
 
-        // Ẩn trước
         size36.setVisibility(View.GONE);
         size37.setVisibility(View.GONE);
         size38.setVisibility(View.GONE);
@@ -506,7 +807,7 @@ public class ChiTietSanPham extends AppCompatActivity {
         size44.setVisibility(View.GONE);
         size45.setVisibility(View.GONE);
 
-        resetSizeSelections(); // reset border + màu
+        resetSizeSelections();
 
         for (Variation variation : product.getVariations()) {
             int size = variation.getSize();
@@ -514,7 +815,6 @@ public class ChiTietSanPham extends AppCompatActivity {
             String colorCode = variation.getColor() != null ? variation.getColor().getCode() : "";
 
             if (stock > 0) {
-                // Nếu chưa chọn màu, hoặc màu trùng với selectedColorCode
                 if (selectedColorCode.isEmpty() || colorCode.equals(selectedColorCode)) {
                     switch (size) {
                         case 36: size36.setVisibility(View.VISIBLE); break;
@@ -540,8 +840,45 @@ public class ChiTietSanPham extends AppCompatActivity {
         if (product != null) {
             tvProductName.setText(product.getNameproduct());
             tvDescription.setText(product.getDescription());
-            tvCateProductName.setText("("+ product.getCategoryName()+")");
-            tvPrice.setText(String.format("%,d đ", product.getPrice()));
+            tvCateProductName.setText("(" + product.getCategoryName() + ")");
+
+            int originalPrice = product.getPrice();
+            int price_sale = product.getPrice_sale();
+            int discount = product.getSale();
+
+            if (discount > 0) {
+                SpannableString originalPriceStr = new SpannableString(product.getFormattedPrice());
+                originalPriceStr.setSpan(new StrikethroughSpan(), 0, originalPriceStr.length(), 0);
+                originalPriceStr.setSpan(
+                        new ForegroundColorSpan(getResources().getColor(android.R.color.darker_gray)),
+                        0,
+                        originalPriceStr.length(),
+                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                );
+
+                SpannableString finalPriceStr = new SpannableString(String.format("%,d đ", price_sale));
+                finalPriceStr.setSpan(
+                        new ForegroundColorSpan(getResources().getColor(R.color.heart_color)),
+                        0,
+                        finalPriceStr.length(),
+                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                );
+
+                tvPrice.setText(TextUtils.concat(originalPriceStr, "  ", finalPriceStr));
+                tvDiscount.setVisibility(View.VISIBLE);
+                tvDiscount.setText(discount + "%");
+
+            } else {
+                SpannableString redPrice = new SpannableString(product.getFormattedPrice());
+                redPrice.setSpan(
+                        new ForegroundColorSpan(getResources().getColor(R.color.heart_color)),
+                        0,
+                        redPrice.length(),
+                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                );
+                tvPrice.setText(redPrice);
+                tvDiscount.setVisibility(View.GONE);
+            }
         }
     }
 
@@ -567,214 +904,6 @@ public class ChiTietSanPham extends AppCompatActivity {
         });
     }
 
-    // CẬP NHẬT PHƯƠNG THỨC showAvailableColors() MỚI
-    private void showAvailableColors() {
-        if (product == null || product.getVariations() == null) return;
-
-        layoutColorContainer.removeAllViews(); // Clear trước
-
-        Map<String, String> colorMap = new LinkedHashMap<>();
-        for (Variation variation : product.getVariations()) {
-            if (variation.getColor() != null) {
-                String code = variation.getColor().getCode();
-                String name = variation.getColor().getName();
-                if (!colorMap.containsKey(code)) {
-                    colorMap.put(code, name);
-                }
-            }
-        }
-
-        for (Map.Entry<String, String> entry : colorMap.entrySet()) {
-            String code = entry.getKey();
-            String name = entry.getValue();
-
-            // Tạo container cho mỗi màu
-            LinearLayout itemLayout = new LinearLayout(this);
-            itemLayout.setOrientation(LinearLayout.VERTICAL);
-            itemLayout.setGravity(Gravity.CENTER);
-            itemLayout.setPadding(20, 16, 20, 16); // Tăng padding để dễ chạm
-
-            // Tạo container cho vòng tròn màu với viền
-            FrameLayout colorContainer = new FrameLayout(this);
-            int containerSize = getResources().getDimensionPixelSize(R.dimen.color_container_size); // 60dp
-            LinearLayout.LayoutParams containerParams = new LinearLayout.LayoutParams(containerSize, containerSize);
-            containerParams.setMargins(8, 8, 8, 8);
-            colorContainer.setLayoutParams(containerParams);
-
-            // Tạo viền ngoài (border)
-            View borderView = new View(this);
-            FrameLayout.LayoutParams borderParams = new FrameLayout.LayoutParams(
-                    FrameLayout.LayoutParams.MATCH_PARENT,
-                    FrameLayout.LayoutParams.MATCH_PARENT
-            );
-            borderView.setLayoutParams(borderParams);
-            borderView.setBackgroundResource(R.drawable.color_border_unselected);
-            borderView.setTag("border_" + code);
-
-            // Tạo vòng tròn màu bên trong
-            View colorCircle = new View(this);
-            int circleSize = getResources().getDimensionPixelSize(R.dimen.color_circle_inner_size); // 48dp
-            FrameLayout.LayoutParams circleParams = new FrameLayout.LayoutParams(circleSize, circleSize);
-            circleParams.gravity = Gravity.CENTER;
-            colorCircle.setLayoutParams(circleParams);
-            colorCircle.setBackgroundResource(R.drawable.color_circle_inner);
-
-            // Set màu cho vòng tròn
-            try {
-                int color = Color.parseColor(code);
-                colorCircle.setBackgroundTintList(ColorStateList.valueOf(color));
-            } catch (IllegalArgumentException e) {
-                // Nếu không parse được màu, dùng màu mặc định
-                colorCircle.setBackgroundTintList(ColorStateList.valueOf(Color.GRAY));
-                Log.w("ColorParsing", "Cannot parse color: " + code);
-            }
-
-            colorCircle.setTag(code);
-
-            // Thêm shadow cho vòng tròn màu
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
-                colorCircle.setElevation(4f);
-            }
-
-            // Tạo text tên màu
-            TextView tvName = new TextView(this);
-            tvName.setText(name);
-            tvName.setTextSize(12);
-            tvName.setTextColor(getResources().getColor(R.color.color_name_text));
-            tvName.setGravity(Gravity.CENTER);
-            tvName.setTypeface(null, android.graphics.Typeface.NORMAL);
-            LinearLayout.LayoutParams textParams = new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-            );
-            textParams.setMargins(0, 8, 0, 0);
-            tvName.setLayoutParams(textParams);
-
-            // Thêm hiệu ứng ripple cho Android 5.0+
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
-                colorContainer.setForeground(getDrawable(R.drawable.ripple_effect));
-            }
-
-            // Sự kiện click cho container
-            colorContainer.setOnClickListener(v -> {
-                String clickedCode = (String) colorCircle.getTag();
-                handleColorSelection(clickedCode, name);
-            });
-
-            // Thêm các view vào container
-            colorContainer.addView(borderView);
-            colorContainer.addView(colorCircle);
-
-            itemLayout.addView(colorContainer);
-            itemLayout.addView(tvName);
-            layoutColorContainer.addView(itemLayout);
-        }
-
-        // Highlight màu đã chọn nếu có
-        if (!selectedColorCode.isEmpty()) {
-            highlightSelectedColor(selectedColorCode);
-        }
-    }
-
-    // Cải thiện phương thức highlightSelectedColor()
-    private void highlightSelectedColor(String selectedCode) {
-        for (int i = 0; i < layoutColorContainer.getChildCount(); i++) {
-            View itemLayout = layoutColorContainer.getChildAt(i);
-            if (itemLayout instanceof LinearLayout) {
-                LinearLayout layout = (LinearLayout) itemLayout;
-                FrameLayout colorContainer = (FrameLayout) layout.getChildAt(0);
-
-                // Tìm borderView và colorCircle
-                View borderView = null;
-                View colorCircle = null;
-                TextView nameText = null;
-
-                for (int j = 0; j < colorContainer.getChildCount(); j++) {
-                    View child = colorContainer.getChildAt(j);
-                    String tag = (String) child.getTag();
-                    if (tag != null && tag.startsWith("border_")) {
-                        borderView = child;
-                    } else if (tag != null && !tag.startsWith("border_")) {
-                        colorCircle = child;
-                    }
-                }
-
-                // Tìm nameText
-                if (layout.getChildCount() > 1) {
-                    View secondChild = layout.getChildAt(1);
-                    if (secondChild instanceof TextView) {
-                        nameText = (TextView) secondChild;
-                    }
-                }
-
-                if (colorCircle != null) {
-                    String tagCode = (String) colorCircle.getTag();
-
-                    if (selectedCode != null && selectedCode.equals(tagCode)) {
-                        // Màu được chọn - highlight
-                        if (borderView != null) {
-                            borderView.setBackgroundResource(R.drawable.color_border_selected);
-                        }
-                        if (nameText != null) {
-                            nameText.setTextColor(getResources().getColor(R.color.color_name_selected));
-                            nameText.setTypeface(null, android.graphics.Typeface.BOLD);
-                        }
-
-                        // Thêm hiệu ứng scale nhẹ
-                        colorContainer.animate()
-                                .scaleX(1.1f)
-                                .scaleY(1.1f)
-                                .setDuration(200)
-                                .start();
-
-                    } else {
-                        // Màu không được chọn - bỏ highlight
-                        if (borderView != null) {
-                            borderView.setBackgroundResource(R.drawable.color_border_unselected);
-                        }
-                        if (nameText != null) {
-                            nameText.setTextColor(getResources().getColor(R.color.color_name_text));
-                            nameText.setTypeface(null, android.graphics.Typeface.NORMAL);
-                        }
-
-                        // Reset scale
-                        colorContainer.animate()
-                                .scaleX(1.0f)
-                                .scaleY(1.0f)
-                                .setDuration(200)
-                                .start();
-                    }
-                }
-            }
-        }
-    }
-
-    // Phương thức xử lý chọn màu
-    private void handleColorSelection(String clickedCode, String colorName) {
-        if (clickedCode.equals(selectedColorCode)) {
-            // Bỏ chọn màu - reset về trạng thái ban đầu
-            selectedColorCode = "";
-            selectedColorName = "";
-            selectedSize = null; // Reset size khi bỏ chọn màu
-            highlightSelectedColor("");
-            showDefaultProductImages();
-            resetSizeSelections();
-            Toast.makeText(this, "Đã bỏ chọn màu", Toast.LENGTH_SHORT).show();
-        } else {
-            // Chọn màu mới
-            selectedColorCode = clickedCode;
-            selectedColorName = colorName;
-            selectedSize = null; // Reset size khi chọn màu mới
-            highlightSelectedColor(clickedCode);
-            updateImageByColor(clickedCode);
-            resetSizeSelections(); // Reset size selection UI
-            Toast.makeText(this, "Đã chọn màu: " + colorName, Toast.LENGTH_SHORT).show();
-        }
-
-        // Cập nhật size và kho sau khi thay đổi màu
-        showAvailableSizes();
-        updateStockDisplay(); // Quan trọng: cập nhật hiển thị kho
-    }
     private void updateImageByColor(String code) {
         if (product == null || product.getVariations() == null) return;
 
@@ -785,7 +914,6 @@ public class ChiTietSanPham extends AppCompatActivity {
             if (v.getColor() != null && code.equalsIgnoreCase(v.getColor().getCode())) {
                 Log.d("ImageSlider", "→ matched color: " + code);
 
-                // Lọc ảnh chính nếu khác ảnh đại diện
                 if (v.getImage() != null && !v.getImage().trim().isEmpty()) {
                     String fullUrl = ApiClient.IMAGE_URL + v.getImage().trim();
                     if (!fullUrl.equals(avtImageUrl)) {
@@ -793,7 +921,6 @@ public class ChiTietSanPham extends AppCompatActivity {
                     }
                 }
 
-                // Lọc danh sách ảnh nếu khác avt
                 if (v.getList_imgproduct() != null && !v.getList_imgproduct().isEmpty()) {
                     for (String img : v.getList_imgproduct()) {
                         if (img != null && !img.trim().isEmpty()) {
@@ -813,14 +940,14 @@ public class ChiTietSanPham extends AppCompatActivity {
 
             if (uniqueImages.size() == 1) {
                 String onlyImage = uniqueImages.iterator().next();
-                uniqueImages.add(onlyImage);  // nhân đôi ảnh nếu chỉ có 1
+                uniqueImages.add(onlyImage);
             }
 
             finalImages = new ArrayList<>(uniqueImages);
         } else {
             Log.d("ImageSlider", "⚠️ Không có ảnh riêng theo màu — giữ ảnh mặc định");
             Toast.makeText(this, "Không có ảnh riêng cho màu này", Toast.LENGTH_SHORT).show();
-            return; // Không cập nhật adapter nếu không có ảnh riêng
+            return;
         }
 
         imageSliderAdapter = new ImageSliderAdapter(this, finalImages);
@@ -831,17 +958,15 @@ public class ChiTietSanPham extends AppCompatActivity {
     private void showDefaultProductImages() {
         Set<String> imageSet = new LinkedHashSet<>();
 
-        // Thêm ảnh đại diện trước
         if (product.getAvt_imgproduct() != null && !product.getAvt_imgproduct().trim().isEmpty()) {
             imageSet.add(ApiClient.IMAGE_URL + product.getAvt_imgproduct().trim());
         }
 
-        // Sau đó thêm các ảnh giới thiệu (khác avt)
         if (product.getList_imgproduct() != null) {
             for (String img : product.getList_imgproduct()) {
                 if (img != null && !img.trim().isEmpty()) {
                     String fullUrl = ApiClient.IMAGE_URL + img.trim();
-                    imageSet.add(fullUrl); // Set sẽ không thêm lại nếu trùng avt
+                    imageSet.add(fullUrl);
                 }
             }
         }
@@ -850,8 +975,14 @@ public class ChiTietSanPham extends AppCompatActivity {
 
         if (!finalImages.isEmpty()) {
             Log.d("ImageSlider", "Hiển thị ảnh mặc định (avt lên đầu): " + finalImages.size());
-            imageSliderAdapter.updateImages(finalImages); // chỉ update
+            imageSliderAdapter.updateImages(finalImages);
             viewPagerProductImages.setCurrentItem(0, false);
         }
+    }
+
+    private void resetSizeSelection() {
+        selectedSize = null;
+        resetSizeSelections();
+        updateStockDisplay();
     }
 }

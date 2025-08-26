@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cardVoucher"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="3dp"
+    android:background="@android:color/white">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp">
+
+        <!-- Voucher Icon -->
+        <LinearLayout
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:background="@drawable/bg_voucher_icon"
+            android:gravity="center"
+            android:layout_gravity="center_vertical">
+
+            <ImageView
+                android:id="@+id/ivVoucherIcon"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:src="@drawable/ic_voucher_ticket"
+                />
+
+        </LinearLayout>
+
+        <!-- Voucher Info -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="12dp">
+
+            <!-- Voucher Code -->
+            <TextView
+                android:id="@+id/tvVoucherCode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="SUMMER20"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="@color/orange"
+                android:background="@drawable/bg_voucher_code"
+                android:padding="4dp" />
+
+            <!-- Voucher Title -->
+            <TextView
+                android:id="@+id/tvVoucherTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Giảm 20%"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#333333"
+                android:layout_marginTop="4dp" />
+
+            <!-- Voucher Description -->
+            <TextView
+                android:id="@+id/tvVoucherDescription"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Đơn tối thiểu 200,000₫"
+                android:textSize="12sp"
+                android:textColor="#666666"
+                android:layout_marginTop="2dp" />
+
+            <!-- Expiry Date -->
+            <TextView
+                android:id="@+id/tvExpiryDate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Hết hạn: 31/12/2024"
+                android:textSize="11sp"
+                android:textColor="#999999"
+                android:layout_marginTop="4dp" />
+
+            <!-- Usage Count -->
+            <TextView
+                android:id="@+id/tvUsageCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Còn lại: 8/10"
+                android:textSize="11sp"
+                android:textColor="#666666"
+                android:layout_marginTop="2dp" />
+
+            <!-- Status -->
+            <TextView
+                android:id="@+id/tvStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="✓ Có thể sử dụng"
+                android:textSize="12sp"
+                android:textColor="@color/star_gold"
+                android:textStyle="bold"
+                android:layout_marginTop="4dp" />
+
+        </LinearLayout>
+
+        <!-- Use Button -->
+        <Button
+            android:id="@+id/btnUseVoucher"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:text="Dùng ngay"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/white"
+            app:background="@drawable/bg_button_rounded"
+            android:backgroundTint="@color/orange"
+            android:minWidth="80dp"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="8dp" />
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>

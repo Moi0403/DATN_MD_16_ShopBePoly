@@ -24,7 +24,7 @@ public class DonMua extends AppCompatActivity {
     private TabLayout tabLayout;
     private ViewPager2 viewPager;
     private DonMuaPagerAdapter pagerAdapter;
-    private ImageButton btn_back;
+    private ImageView btn_back;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

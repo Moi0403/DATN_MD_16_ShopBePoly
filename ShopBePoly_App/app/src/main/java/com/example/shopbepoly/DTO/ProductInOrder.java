@@ -12,6 +12,8 @@ public class ProductInOrder implements Serializable {
     private String color;
     private String size;
     private int price;
+    @SerializedName("final_price")
+    private int finalPrice;
     private String img;
 
     public ProductInOrder() {
@@ -64,6 +66,14 @@ public class ProductInOrder implements Serializable {
 
     public void setPrice(int price) {
         this.price = price;
+    }
+
+    public int getFinalPrice() {
+        return finalPrice;
+    }
+
+    public void setFinalPrice(int finalPrice) {
+        this.finalPrice = finalPrice;
     }
 
     public String getImg() {

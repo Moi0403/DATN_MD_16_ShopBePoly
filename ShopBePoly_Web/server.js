@@ -38,6 +38,29 @@ const Banner = require('./Database/bannerModel');
 const reviewModel = require("./Database/reviewModel");
 const voucherModel = require('./Database/voucherModel');
 
+const DEFAULT_AVATAR = "https://default-avatar.png";
+const DELIVERED_STATUSES = ["delivered", "completed", "received", "Đã giao", "Đã giao hàng"];
+
+const formatReview = (r) => ({
+  _id: r._id,
+  rating: r.rating,
+  comment: r.comment,
+  images: Array.isArray(r.images) ? r.images : [],
+  createdAt: r.createdAt,
+  user: {
+    _id: r.userId ? r.userId._id : undefined,
+    name: r.userId?.name || "Người dùng",
+    avt_user: r.userId?.avt_user || DEFAULT_AVATAR,
+  },
+  product: r.productId
+    ? {
+        _id: r.productId._id,
+        name: r.productId.nameproduct,
+        avt_img: r.productId.avt_imgproduct,
+      }
+    : null,
+});
+
 
 const uri = COMOMJS.uri;
 
@@ -641,16 +664,23 @@ router.post('/register', async (req, res) => {
     phone_number = Number(phone_number);
 
     try {
-        const existingUser = await userModel.findOne({ username });
-        if (existingUser) {
+        // Kiểm tra username trùng
+        const existingUserByUsername = await userModel.findOne({ username });
+        if (existingUserByUsername) {
             return res.status(400).json({ message: 'Tên người dùng đã tồn tại' });
+        }
+
+        // Kiểm tra email trùng
+        const existingUserByEmail = await userModel.findOne({ email: email.trim().toLowerCase() });
+        if (existingUserByEmail) {
+            return res.status(400).json({ message: 'Email đã được sử dụng' });
         }
 
         const newUser = await userModel.create({
             username,
             password,
             name,
-            email,
+            email: email.trim().toLowerCase(),
             phone_number,
             birthday: birthday || null,
             gender: gender || '',
@@ -705,17 +735,20 @@ router.post('/login', async (req, res) => {
 });
 
 router.post('/logout', async (req, res) => {
-    const { userId } = req.body;
-    try {
-        const user = await userModel.findById(userId);
-        if (!user) return res.status(404).json({ message: 'Người dùng không tồn tại' });
-        user.isOnline = false;
-        await user.save();
-        res.json({ message: 'Đăng xuất thành công' });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Lỗi server khi đăng xuất' });
+  const { userId } = req.body;
+  try {
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Người dùng không tồn tại' });
     }
+
+    user.isOnline = false;
+    await user.save();
+
+    return res.json({ success: true, message: 'Đăng xuất thành công' });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Lỗi server khi logout' });
+  }
 });
 
 router.get('/users_online', async (req, res) => {
@@ -1127,106 +1160,68 @@ router.get('/order/:orderId', async (req, res) => {
 router.get('/search_order', async (req, res) => {
     try {
         const { code } = req.query;
-        
+
         if (!code) {
             return res.status(400).json({ error: 'Code parameter is required' });
         }
 
-        console.log('Searching for order with code:', code);
-        console.log('Is valid ObjectId:', mongoose.Types.ObjectId.isValid(code));
+        console.log('Searching orders with keyword:', code);
 
         let orders = [];
 
-        // Kiểm tra xem code có phải là ObjectId hợp lệ không
+        // Nếu nhập đúng ObjectId => tìm trực tiếp theo _id
         if (mongoose.Types.ObjectId.isValid(code)) {
-            console.log('Searching by ObjectId...');
-            // Tìm đơn hàng theo ObjectId chính xác
             const order = await orderModel.findById(code)
                 .populate('id_user', 'name phone_number')
                 .populate({
                     path: 'products.id_product',
                     select: 'nameproduct avt_imgproduct variations id_category',
-                    populate: {
-                        path: 'id_category',
-                        select: 'title'
-                    }
+                    populate: { path: 'id_category', select: 'title' }
                 });
 
-            console.log('Order found by ID:', order ? 'YES' : 'NO');
             if (order) {
                 orders = [order];
             }
-        } else {
-            console.log('Searching by partial ID, text fields, or product names...');
-            // Tìm kiếm theo một phần của ID, các trường khác, hoặc tên sản phẩm
-            orders = await orderModel.aggregate([
-                {
-                    $lookup: {
-                        from: 'users',
-                        localField: 'id_user',
-                        foreignField: '_id',
-                        as: 'user'
-                    }
-                },
-                {
-                    $lookup: {
-                        from: 'products',
-                        localField: 'products.id_product',
-                        foreignField: '_id',
-                        as: 'productDetails'
-                    }
-                },
-                {
-                    $lookup: {
-                        from: 'categories',
-                        localField: 'productDetails.id_category',
-                        foreignField: '_id',
-                        as: 'categoryDetails'
-                    }
-                },
-                {
-                    $match: {
-                        $or: [
-                            { $expr: { $regexMatch: { input: { $toString: "$_id" }, regex: code, options: "i" } } },
-                            { status: { $regex: code, $options: 'i' } },
-                            { address: { $regex: code, $options: 'i' } },
-                            { pay: { $regex: code, $options: 'i' } },
-                            { total: { $regex: code, $options: 'i' } },
-                            { 'productDetails.nameproduct': { $regex: code, $options: 'i' } }
-                        ]
-                    }
-                },
-                {
-                    $limit: 10
-                }
-            ]);
+        }
 
-            // Chuyển đổi kết quả aggregation về format tương tự như populate
-            orders = orders.map(order => {
-                const user = order.user[0] || {};
-                const products = order.products.map(product => {
-                    const productDetail = order.productDetails.find(p => p._id.toString() === product.id_product.toString()) || {};
-                    const category = order.categoryDetails.find(c => c._id.toString() === productDetail.id_category?.toString()) || {};
-                    
-                    return {
-                        ...product,
-                        id_product: {
-                            ...productDetail,
-                            id_category: category
-                        }
-                    };
+        // Nếu chưa tìm thấy => tìm bằng idOrder, tên sản phẩm, status, address...
+        if (orders.length === 0) {
+            orders = await orderModel.find({
+                $or: [
+                    { idOrder: { $regex: code, $options: 'i' } },   // tìm theo mã đơn hàng
+                    { status: { $regex: code, $options: 'i' } },
+                    { address: { $regex: code, $options: 'i' } },
+                    { pay: { $regex: code, $options: 'i' } },
+                    { total: { $regex: code, $options: 'i' } },
+                ]
+            })
+                .populate('id_user', 'name phone_number')
+                .populate({
+                    path: 'products.id_product',
+                    select: 'nameproduct avt_imgproduct variations id_category',
+                    populate: { path: 'id_category', select: 'title' }
                 });
 
-                return {
-                    ...order,
-                    id_user: user,
-                    products: products
-                };
-            });
+            // Sau khi populate products, lọc tiếp theo tên sản phẩm
+            if (orders.length > 0) {
+                orders = orders.filter(order =>
+                    order.products.some(p =>
+                        p.id_product &&
+                        p.id_product.nameproduct &&
+                        p.id_product.nameproduct.toLowerCase().includes(code.toLowerCase())
+                    ) ||
+                    order.idOrder?.toLowerCase().includes(code.toLowerCase()) ||
+                    order.status?.toLowerCase().includes(code.toLowerCase()) ||
+                    order.address?.toLowerCase().includes(code.toLowerCase()) ||
+                    order.pay?.toLowerCase().includes(code.toLowerCase()) ||
+                    order.total?.toString().includes(code)
+                );
+            }
         }
 
         console.log('Total orders found:', orders.length);
         res.json(orders);
+
     } catch (error) {
         console.error('Search orders error:', error);
         res.status(500).json({ error: 'Internal server error' });
@@ -1812,37 +1807,92 @@ router.get('/favorites/:userId', async (req, res) => {
 
 
 router.post('/send-verification-code', async (req, res) => {
-    const { email } = req.body;
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-
     try {
-        await VerifyCode.create({ email: email.trim().toLowerCase(), code });
+        let { email } = req.body;
+        if (!email) {
+            return res.status(400).json({ message: 'Email là bắt buộc' });
+        }
+
+        email = email.trim().toLowerCase();
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+        await VerifyCode.deleteMany({ email });
+
+        await VerifyCode.create({ email, code });
+
         await sendEmail(email, 'Mã xác nhận', `Mã xác nhận của bạn là: ${code}`);
-        return res.sendStatus(200);
+
+        return res.status(200).json({ message: 'Mã xác nhận đã được gửi' });
     } catch (err) {
         console.error('Lỗi gửi mã xác minh:', err);
         return res.status(500).json({ message: 'Lỗi máy chủ' });
     }
 });
 
+// Xác minh mã
 router.post('/verify-code', async (req, res) => {
-    const { email, code } = req.body;
-
     try {
-        const record = await VerifyCode.findOne({
-            email: email.trim().toLowerCase(),
-            code: code.trim()
-        });
+        let { email, code } = req.body;
+
+        if (!email || !code) {
+            return res.status(400).json({ message: 'Email và mã xác nhận là bắt buộc' });
+        }
+
+        email = email.trim().toLowerCase();
+        code = code.trim();
+
+        const record = await VerifyCode.findOne({ email, code });
 
         if (!record) {
-            return res.status(400).json({ message: 'Không tìm thấy mã xác minh' });
+            return res.status(400).json({ message: 'Mã xác nhận không hợp lệ hoặc đã hết hạn' });
         }
 
         await VerifyCode.deleteOne({ _id: record._id });
+
         return res.status(200).json({ message: 'Xác minh thành công' });
     } catch (err) {
         console.error('Lỗi xác minh mã:', err);
         return res.status(500).json({ message: 'Lỗi máy chủ' });
+    }
+});
+
+//Check trùng email
+router.post('/check-email', async (req, res) => {
+    try {
+        let { email } = req.body;
+        if (!email) {
+            return res.status(400).json({ message: 'Email là bắt buộc' });
+        }
+
+        email = email.trim().toLowerCase();
+        const existingUser = await userModel.findOne({ email });
+
+        if (existingUser) {
+            return res.status(400).json({ message: 'Email đã được sử dụng' });
+        } else {
+            return res.status(200).json({ message: 'Email có thể sử dụng' });
+        }
+    } catch (err) {
+        console.error('Lỗi kiểm tra email:', err);
+        return res.status(500).json({ message: 'Lỗi server' });
+    }
+});
+
+//check trùng tên đăng nhập
+router.post('/check-username', async (req, res) => {
+    try {
+        const { username } = req.body;
+        if (!username) return res.status(400).json({ message: 'Thiếu username' });
+
+        const existingUser = await userModel.findOne({ username });
+        if (existingUser) {
+            return res.status(400).json({ message: 'Username đã tồn tại' });
+        } else {
+            return res.status(200).json({ message: 'Username có thể sử dụng' });
+        }
+    } catch (err) {
+        console.error('Lỗi kiểm tra username:', err);
+        return res.status(500).json({ message: 'Lỗi server' });
     }
 });
 
@@ -2192,7 +2242,6 @@ router.post("/add_review", async (req, res) => {
     if (!userId || !productId || !orderId || !rating || !comment) {
       return res.status(400).json({ message: "Thiếu dữ liệu bắt buộc" });
     }
-
     if (rating < 1 || rating > 5) {
       return res.status(400).json({ message: "Số sao không hợp lệ (1-5)" });
     }
@@ -2201,44 +2250,30 @@ router.post("/add_review", async (req, res) => {
       userId = new mongoose.Types.ObjectId(userId);
       productId = new mongoose.Types.ObjectId(productId);
       orderId = new mongoose.Types.ObjectId(orderId);
-    } catch (e) {
+    } catch {
       return res.status(400).json({ message: "ID không hợp lệ" });
     }
 
-    console.log("[AddReview Input]", {
-      userId,
-      productId,
-      orderId,
-      rating,
-      comment,
-      images,
-    });
-
+    // Kiểm tra đơn hàng hợp lệ
     const order = await orderModel.findOne({
       _id: orderId,
       id_user: userId,
       "products.id_product": productId,
-      status: { $in: ["Đã giao", "delivered"] },
+      status: { $in: DELIVERED_STATUSES },
     });
-
     if (!order) {
-      return res.status(400).json({
-        message: "Bạn chưa mua sản phẩm này hoặc đơn hàng chưa hoàn tất",
-      });
+      return res
+        .status(400)
+        .json({ message: "Bạn chưa mua sản phẩm này hoặc đơn hàng chưa hoàn tất" });
     }
 
-    const existedReview = await reviewModel.findOne({
-      userId,
-      productId,
-      orderId,
-    });
-
+    // Kiểm tra đã đánh giá chưa
+    const existedReview = await reviewModel.findOne({ userId, productId, orderId });
     if (existedReview) {
-      return res.status(400).json({
-        message: "Bạn đã đánh giá sản phẩm này rồi",
-      });
+      return res.status(400).json({ message: "Bạn đã đánh giá sản phẩm này rồi" });
     }
 
+    // Tạo review mới
     const newReview = new reviewModel({
       userId,
       productId,
@@ -2246,24 +2281,19 @@ router.post("/add_review", async (req, res) => {
       rating,
       comment,
       images: Array.isArray(images) ? images : [],
-      createdAt: new Date(),
     });
-
     await newReview.save();
 
-    res.status(200).json({
+    // Populate user để trả về đầy đủ name + avatar cho Android
+    const populated = await newReview.populate("userId", "name avt_user");
+
+    return res.status(200).json({
       message: "Đánh giá thành công",
-      review: newReview,
+      review: formatReview(populated),
     });
-
-    console.log("[AddReview Success]", newReview);
-
   } catch (error) {
-    console.error("Add review error:", error);
-    res.status(500).json({
-      message: "Lỗi server",
-      error: error.message,
-    });
+    console.error("[AddReview Error]", error);
+    return res.status(500).json({ message: "Lỗi server", error: error.message });
   }
 });
 
@@ -2286,7 +2316,7 @@ router.post("/order_reviews/:orderId", async (req, res) => {
     const results = [];
 
     for (const r of reviews) {
-      const { userId, productId, rating, comment, images } = r;
+      const { userId, productId, rating, comment, images } = r || {};
 
       if (!userId || !productId || !rating || !comment) {
         results.push({ productId, success: false, message: "Thiếu dữ liệu bắt buộc" });
@@ -2306,29 +2336,34 @@ router.post("/order_reviews/:orderId", async (req, res) => {
         continue;
       }
 
+      // Check order hợp lệ
       const order = await orderModel.findOne({
         _id: orderObjId,
         id_user: userObjId,
         "products.id_product": productObjId,
-        status: { $in: ["Đã giao", "delivered"] },
+        status: { $in: DELIVERED_STATUSES },
       });
-
       if (!order) {
-        results.push({ productId, success: false, message: "Sản phẩm chưa mua hoặc đơn hàng chưa hoàn tất" });
+        results.push({
+          productId,
+          success: false,
+          message: "Sản phẩm chưa mua hoặc đơn hàng chưa hoàn tất",
+        });
         continue;
       }
 
+      // Check đã review chưa
       const existedReview = await reviewModel.findOne({
         userId: userObjId,
         productId: productObjId,
         orderId: orderObjId,
       });
-
       if (existedReview) {
         results.push({ productId, success: false, message: "Sản phẩm đã được đánh giá" });
         continue;
       }
 
+      // Save review
       const newReview = new reviewModel({
         userId: userObjId,
         productId: productObjId,
@@ -2336,21 +2371,23 @@ router.post("/order_reviews/:orderId", async (req, res) => {
         rating,
         comment,
         images: Array.isArray(images) ? images : [],
-        createdAt: new Date(),
       });
-
       await newReview.save();
-      results.push({ productId, success: true, message: "Đánh giá thành công" });
+
+      const populated = await newReview.populate("userId", "name avt_user");
+
+      results.push({
+        productId,
+        success: true,
+        message: "Đánh giá thành công",
+        review: formatReview(populated),
+      });
     }
 
-    res.status(200).json({
-      message: "Hoàn tất gửi đánh giá",
-      results,
-    });
-
+    return res.status(200).json({ message: "Hoàn tất gửi đánh giá", results });
   } catch (error) {
     console.error("[OrderReviews Error]", error);
-    res.status(500).json({ message: "Lỗi server", error: error.message });
+    return res.status(500).json({ message: "Lỗi server", error: error.message });
   }
 });
 
@@ -2358,28 +2395,22 @@ router.get("/reviews/:productId", async (req, res) => {
   try {
     const { productId } = req.params;
 
+    let productObjId;
+    try {
+      productObjId = new mongoose.Types.ObjectId(productId);
+    } catch {
+      return res.status(400).json({ message: "Product ID không hợp lệ" });
+    }
+
     const reviews = await reviewModel
-      .find({ productId: new mongoose.Types.ObjectId(productId) })
+      .find({ productId: productObjId })
       .populate("userId", "name avt_user")
       .sort({ createdAt: -1 });
 
-    const formatted = reviews.map(r => ({
-      _id: r._id,
-      rating: r.rating,
-      comment: r.comment,
-      images: r.images || [],
-      createdAt: r.createdAt,
-      user: {
-        _id: r.userId?._id,
-        name: r.userId?.name,
-        avt_user: r.userId?.avt_user
-      }
-    }));
-
-    res.status(200).json(formatted);
+    return res.status(200).json(reviews.map(formatReview));
   } catch (err) {
     console.error("[GetReviewsByProduct Error]", err);
-    res.status(500).json({ message: "Lỗi khi lấy đánh giá", error: err.message });
+    return res.status(500).json({ message: "Lỗi khi lấy đánh giá", error: err.message });
   }
 });
 
@@ -2387,86 +2418,72 @@ router.get("/reviews/order/:orderId", async (req, res) => {
   try {
     const { orderId } = req.params;
 
+    let orderObjId;
+    try {
+      orderObjId = new mongoose.Types.ObjectId(orderId);
+    } catch {
+      return res.status(400).json({ message: "Order ID không hợp lệ" });
+    }
+
     const order = await orderModel
-      .findById(orderId)
-      .populate({
-        path: "products.id_product",
-        select: "nameproduct avt_imgproduct",
-      });
+      .findById(orderObjId)
+      .populate("products.id_product", "nameproduct avt_imgproduct");
 
     if (!order) {
       return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
     }
 
     const productIds = order.products
-      .map(p => p.id_product?._id)
+      .map((p) => p?.id_product?._id)
       .filter(Boolean);
 
     const reviews = await reviewModel
-      .find({ productId: { $in: productIds }, orderId })
+      .find({ productId: { $in: productIds }, orderId: orderObjId })
       .populate("userId", "name avt_user")
       .populate("productId", "nameproduct avt_imgproduct")
       .sort({ createdAt: -1 });
 
-    const formatted = reviews.map(r => ({
-      _id: r._id,
-      rating: r.rating,
-      comment: r.comment,
-      images: r.images || [],
-      createdAt: r.createdAt,
-      user: {
-        _id: r.userId?._id,
-        name: r.userId?.name,
-        avt_user: r.userId?.avt_user
-      },
-      product: r.productId
-        ? {
-            _id: r.productId._id,
-            name: r.productId.nameproduct,
-            avt_img: r.productId.avt_imgproduct
-          }
-        : null
-    }));
-
-    res.status(200).json(formatted);
+    return res.status(200).json(reviews.map(formatReview));
   } catch (err) {
     console.error("[GetReviewsByOrder Error]", err);
-    res.status(500).json({ message: "Lỗi khi lấy đánh giá", error: err.message });
+    return res.status(500).json({ message: "Lỗi khi lấy đánh giá", error: err.message });
   }
 });
 
 router.put("/update_review/:id", async (req, res) => {
-    try {
-        const reviewId = req.params.id;
-        const { rating, comment, images } = req.body;
+  try {
+    const { id: reviewId } = req.params;
+    const { rating, comment, images } = req.body;
 
-        if (!rating && !comment && !images) {
-            return res.status(400).json({ message: "Không có dữ liệu để cập nhật" });
-        }
-
-        const updatedReview = await Review.findByIdAndUpdate(
-            reviewId,
-            {
-                ...(rating !== undefined && { rating }),
-                ...(comment !== undefined && { comment }),
-                ...(images !== undefined && { images })
-            },
-            { new: true }
-        );
-
-        if (!updatedReview) {
-            return res.status(404).json({ message: "Không tìm thấy review" });
-        }
-
-        res.json({
-            message: "Cập nhật đánh giá thành công",
-            review: updatedReview
-        });
-
-    } catch (error) {
-        console.error("[UpdateReview Error]", error);
-        res.status(500).json({ message: "Lỗi server khi cập nhật đánh giá" });
+    if (rating === undefined && comment === undefined && images === undefined) {
+      return res.status(400).json({ message: "Không có dữ liệu để cập nhật" });
     }
+
+    const updated = await reviewModel
+      .findByIdAndUpdate(
+        reviewId,
+        {
+          ...(rating !== undefined && { rating }),
+          ...(comment !== undefined && { comment }),
+          ...(images !== undefined && { images }),
+        },
+        { new: true }
+      )
+      .populate("userId", "name avt_user")
+      .populate("productId", "nameproduct avt_imgproduct");
+
+    if (!updated) {
+      return res.status(404).json({ message: "Không tìm thấy review" });
+    }
+
+    return res.status(200).json({
+      message: "Cập nhật đánh giá thành công",
+      review: formatReview(updated),
+    });
+  } catch (error) {
+    console.error("[UpdateReview Error]", error);
+    return res.status(500).json({ message: "Lỗi server khi cập nhật đánh giá" });
+  }
 });
 
 router.get("/reviews", async (req, res) => {
@@ -2477,30 +2494,10 @@ router.get("/reviews", async (req, res) => {
       .populate("productId", "nameproduct avt_imgproduct")
       .sort({ createdAt: -1 });
 
-    const formatted = reviews.map(r => ({
-      _id: r._id,
-      rating: r.rating,
-      comment: r.comment,
-      images: r.images || [],
-      createdAt: r.createdAt,
-      user: {
-        _id: r.userId?._id,
-        name: r.userId?.name,
-        avt_user: r.userId?.avt_user
-      },
-      product: r.productId
-        ? {
-            _id: r.productId._id,
-            name: r.productId.nameproduct,
-            avt_img: r.productId.avt_imgproduct
-          }
-        : null
-    }));
-
-    res.status(200).json(formatted);
+    return res.status(200).json(reviews.map(formatReview));
   } catch (err) {
     console.error("[GetAllReviews Error]", err);
-    res.status(500).json({ message: "Lỗi khi lấy đánh giá", error: err.message });
+    return res.status(500).json({ message: "Lỗi khi lấy đánh giá", error: err.message });
   }
 });
 
@@ -3258,6 +3255,281 @@ router.get('/user_vouchers/:userId', async (req, res) => {
     } catch (error) {
         console.error("Lỗi khi lấy voucher của user:", error);
         res.status(500).json({ message: "Lỗi server", error });
+    }
+});
+
+router.get('/voucher/code/:code', async (req, res) => {
+    try {
+        const voucherCode = req.params.code.toUpperCase();
+        
+        const voucher = await voucherModel.findOne({ 
+            code: voucherCode,
+            isActive: true
+        });
+        
+        if (!voucher) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "Mã voucher không tồn tại hoặc đã bị vô hiệu hóa" 
+            });
+        }
+        
+        // Check if voucher is expired
+        const now = new Date();
+        if (now < voucher.startDate) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Mã voucher chưa có hiệu lực" 
+            });
+        }
+        
+        if (now > voucher.endDate) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Mã voucher đã hết hạn" 
+            });
+        }
+        
+        // Check usage limit
+        if (voucher.usedCount >= voucher.usageLimit) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Mã voucher đã hết lượt sử dụng" 
+            });
+        }
+        
+        res.status(200).json({
+            success: true,
+            voucher: voucher
+        });
+        
+    } catch (error) {
+        console.error("Lỗi khi tìm voucher theo mã:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Lỗi server", 
+            error 
+        });
+    }
+});
+
+// Validate and calculate discount for voucher
+router.post('/voucher/validate', async (req, res) => {
+    try {
+        const { voucherCode, orderTotal, userId } = req.body;
+        
+        if (!voucherCode || orderTotal === undefined) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Thiếu thông tin voucher hoặc tổng đơn hàng" 
+            });
+        }
+
+        const voucher = await voucherModel.findOne({ 
+            code: voucherCode.toUpperCase(),
+            isActive: true
+        });
+
+        if (!voucher) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "Mã voucher không tồn tại hoặc đã bị vô hiệu hóa" 
+            });
+        }
+
+        // Validate voucher conditions
+        const now = new Date();
+        
+        if (now < voucher.startDate) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Mã voucher chưa có hiệu lực" 
+            });
+        }
+        
+        if (now > voucher.endDate) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Mã voucher đã hết hạn" 
+            });
+        }
+
+        if (voucher.usedCount >= voucher.usageLimit) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Mã voucher đã hết lượt sử dụng" 
+            });
+        }
+
+        // Check minimum order value
+        if (orderTotal < voucher.minOrderValue) {
+            return res.status(400).json({ 
+                success: false, 
+                message: `Đơn hàng tối thiểu ${voucher.minOrderValue.toLocaleString('vi-VN')}₫ để sử dụng mã này` 
+            });
+        }
+
+        // Calculate discount
+        let discountAmount = 0;
+        if (voucher.discountType === 'percent' || voucher.discountType === 'percentage') {
+            discountAmount = orderTotal * (voucher.discountValue / 100);
+            // Apply maximum discount if specified
+            if (voucher.maxDiscountAmount && discountAmount > voucher.maxDiscountAmount) {
+                discountAmount = voucher.maxDiscountAmount;
+            }
+        } else {
+            discountAmount = voucher.discountValue;
+        }
+
+        // Ensure discount doesn't exceed order total
+        if (discountAmount > orderTotal) {
+            discountAmount = orderTotal;
+        }
+
+        const finalTotal = Math.max(0, orderTotal - discountAmount);
+
+        res.status(200).json({
+            success: true,
+            message: "Mã voucher hợp lệ",
+            voucher: voucher,
+            discountAmount: discountAmount,
+            finalTotal: finalTotal,
+            savings: discountAmount
+        });
+
+    } catch (error) {
+        console.error("Lỗi khi validate voucher:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Lỗi server", 
+            error 
+        });
+    }
+});
+
+// Mark voucher as used (when order is completed)
+router.post('/voucher/use', async (req, res) => {
+    try {
+        const { voucherId, orderId, userId } = req.body;
+        
+        if (!voucherId) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Thiếu thông tin voucher" 
+            });
+        }
+
+        const voucher = await voucherModel.findById(voucherId);
+        if (!voucher) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "Voucher không tồn tại" 
+            });
+        }
+
+        // Check if voucher can still be used
+        if (voucher.usedCount >= voucher.usageLimit) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Voucher đã hết lượt sử dụng" 
+            });
+        }
+
+        // Increment used count
+        const updatedVoucher = await voucherModel.findByIdAndUpdate(
+            voucherId,
+            { 
+                $inc: { usedCount: 1 }, 
+                updatedAt: new Date() 
+            },
+            { new: true }
+        );
+
+        // Optional: Create voucher usage history
+        // const voucherUsage = new VoucherUsageModel({
+        //     voucherId: voucherId,
+        //     userId: userId,
+        //     orderId: orderId,
+        //     usedAt: new Date()
+        // });
+        // await voucherUsage.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Voucher đã được sử dụng",
+            voucher: updatedVoucher
+        });
+
+    } catch (error) {
+        console.error("Lỗi khi sử dụng voucher:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Lỗi server", 
+            error 
+        });
+    }
+});
+
+// Get available vouchers for user (considering saved vouchers)
+router.get('/vouchers/available/:userId', async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        const { orderTotal } = req.query;
+        
+        // Get all active, non-expired vouchers
+        const vouchers = await voucherModel.find({ 
+            isActive: true,
+            startDate: { $lte: new Date() },
+            endDate: { $gte: new Date() },
+            $expr: { $lt: ['$usedCount', '$usageLimit'] }
+        }).sort({ createdAt: -1 });
+        
+        // Filter vouchers based on order total if provided
+        let availableVouchers = vouchers;
+        if (orderTotal) {
+            availableVouchers = vouchers.filter(voucher => 
+                parseFloat(orderTotal) >= voucher.minOrderValue
+            );
+        }
+        
+        // Add calculated discount for each voucher
+        const vouchersWithDiscount = availableVouchers.map(voucher => {
+            let discountAmount = 0;
+            if (orderTotal) {
+                if (voucher.discountType === 'percent' || voucher.discountType === 'percentage') {
+                    discountAmount = parseFloat(orderTotal) * (voucher.discountValue / 100);
+                    if (voucher.maxDiscountAmount && discountAmount > voucher.maxDiscountAmount) {
+                        discountAmount = voucher.maxDiscountAmount;
+                    }
+                } else {
+                    discountAmount = voucher.discountValue;
+                }
+                
+                if (discountAmount > parseFloat(orderTotal)) {
+                    discountAmount = parseFloat(orderTotal);
+                }
+            }
+            
+            return {
+                ...voucher.toObject(),
+                calculatedDiscount: discountAmount,
+                canUse: orderTotal ? parseFloat(orderTotal) >= voucher.minOrderValue : true
+            };
+        });
+        
+        res.status(200).json({
+            success: true,
+            vouchers: vouchersWithDiscount,
+            total: vouchersWithDiscount.length
+        });
+        
+    } catch (error) {
+        console.error("Lỗi khi lấy voucher khả dụng:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Lỗi server", 
+            error 
+        });
     }
 });
 

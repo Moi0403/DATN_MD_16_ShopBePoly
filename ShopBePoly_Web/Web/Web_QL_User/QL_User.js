@@ -72,10 +72,6 @@ const hienThiUser = async () => {
             tdTDN.style.textAlign = 'center';
             tdTDN.style.alignContent = 'center';
 
-            const tdMK = document.createElement('td');
-            tdMK.textContent = item.password;
-            tdMK.style.textAlign = 'center';
-            tdMK.style.alignContent = 'center';
 
             const tdPL = document.createElement('td');
             if (item.role === 2) {
@@ -124,7 +120,6 @@ const hienThiUser = async () => {
             tr.appendChild(tdSDT);
             tr.appendChild(tdEmail);
             tr.appendChild(tdTDN);
-            tr.appendChild(tdMK);
             tr.appendChild(tdPL);
             tr.appendChild(tdXL);
             tr.setAttribute('data-role', item.role);

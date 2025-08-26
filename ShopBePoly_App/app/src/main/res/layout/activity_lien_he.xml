@@ -5,133 +5,142 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:layout_margin="20dp"
     android:orientation="vertical"
     tools:context=".LienHe">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="48dp"
+        android:layout_height="56dp"
+        android:background="@drawable/header_home"
         android:gravity="center_vertical"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:padding="16dp">
 
         <ImageButton
             android:id="@+id/btnBack"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Back"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
             android:padding="4dp"
-            android:src="@drawable/ic_back" />
+            android:src="@drawable/ic_back"  />
 
         <TextView
-            android:id="@+id/txtTitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="40dp"
             android:layout_weight="1"
-            android:gravity="center_horizontal"
+            android:gravity="center"
             android:text="Liên hệ"
-            android:textSize="20sp"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
             android:textStyle="bold" />
 
-        <View
-            android:layout_width="24dp"
-            android:layout_height="24dp" />
     </LinearLayout>
 
-    <ScrollView
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:overScrollMode="ifContentScrolls">
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="20dp">
 
-        <LinearLayout
+        <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingTop="12dp"
-            android:paddingBottom="12dp">
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:overScrollMode="ifContentScrolls">
 
-            <TextView
-                android:id="@+id/tvTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                android:drawablePadding="6dp"
-                android:fontFamily="sans-serif"
-                android:text="📞  LIÊN HỆ SHOPPEPOLY"
-                android:textColor="#D70018"
-                android:textSize="20sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tvIntro"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:lineSpacingExtra="2dp"
-                android:text="Chúng tôi luôn sẵn sàng hỗ trợ bạn mọi lúc, mọi nơi. Nếu bạn có bất kỳ thắc mắc, góp ý hoặc khiếu nại nào, vui lòng liên hệ với ShoppePoly qua các kênh sau:"
-                android:textColor="#000000"
-                android:textSize="14sp"
-                android:textStyle="bold" />
+                android:orientation="vertical"
+                android:paddingTop="12dp"
+                android:paddingBottom="12dp">
 
-            <!-- List items -->
-            <TextView
-                android:id="@+id/tvEmailSupport"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:lineSpacingExtra="2dp"
-                android:text="📧  Email hỗ trợ khách hàng\nHỗ trợ mua hàng: support@shopbepoly.com\nChính sách và bảo mật: privacy@shopbepoly.com\nHợp tác và phát triển: partner@shopbepoly.vn"
-                android:textColor="#000000"
-                android:textSize="13sp"
-                android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/tvTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:drawablePadding="6dp"
+                    android:fontFamily="sans-serif"
+                    android:text="📞  LIÊN HỆ SHOPPEPOLY"
+                    android:textColor="#D70018"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/tvHotline"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:lineSpacingExtra="2dp"
-                android:text="☎️ Hotline\n Tổng đài: 1900 1234 (7:30 – 22:00, kể cả T7, CN)"
-                android:textColor="#000000"
-                android:textSize="13sp"
-                android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/tvIntro"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:lineSpacingExtra="2dp"
+                    android:text="Chúng tôi luôn sẵn sàng hỗ trợ bạn mọi lúc, mọi nơi. Nếu bạn có bất kỳ thắc mắc, góp ý hoặc khiếu nại nào, vui lòng liên hệ với ShoppePoly qua các kênh sau:"
+                    android:textColor="#000000"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/tvSocial"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:lineSpacingExtra="2dp"
-                android:text="💬 Mạng xã hội\nFacebook: fb.com/shopbepoly\nInstagram: @shopbepoly\nTikTok: @shopbepoly.official"
-                android:textColor="#000000"
-                android:textSize="13sp"
-                android:textStyle="bold" />
+                <!-- List items -->
+                <TextView
+                    android:id="@+id/tvEmailSupport"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:lineSpacingExtra="2dp"
+                    android:text="📧  Email hỗ trợ khách hàng\nHỗ trợ mua hàng: support@shopbepoly.com\nChính sách và bảo mật: privacy@shopbepoly.com\nHợp tác và phát triển: partner@shopbepoly.vn"
+                    android:textColor="#000000"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/tvApp"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:lineSpacingExtra="2dp"
-                android:text="🛍️ Ứng dụng di động\nTải ứng dụng ShoppePoly ngay để nhận nhiều ưu đãi và hỗ trợ nhanh chóng:\niOS: App Store - ShoppePoly\nAndroid: Google Play - ShoppePoly"
-                android:textColor="#000000"
-                android:textSize="13sp"
-                android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/tvHotline"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:lineSpacingExtra="2dp"
+                    android:text="☎️ Hotline\n Tổng đài: 1900 1234 (7:30 – 22:00, kể cả T7, CN)"
+                    android:textColor="#000000"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
 
-        </LinearLayout>
-    </ScrollView>
-    <ImageButton
-        android:id="@+id/btnMessage"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
-        android:layout_gravity="bottom|end"
-        android:layout_margin="10dp"
-        android:src="@drawable/ic_messages"
-        android:contentDescription="Nhắn tin"
-        android:padding="4dp"
-        android:scaleType="centerInside" />
+                <TextView
+                    android:id="@+id/tvSocial"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:lineSpacingExtra="2dp"
+                    android:text="💬 Mạng xã hội\nFacebook: fb.com/shopbepoly\nInstagram: @shopbepoly\nTikTok: @shopbepoly.official"
+                    android:textColor="#000000"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvApp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:lineSpacingExtra="2dp"
+                    android:text="🛍️ Ứng dụng di động\nTải ứng dụng ShoppePoly ngay để nhận nhiều ưu đãi và hỗ trợ nhanh chóng:\niOS: App Store - ShoppePoly\nAndroid: Google Play - ShoppePoly"
+                    android:textColor="#000000"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+        </ScrollView>
+        <ImageButton
+            android:id="@+id/btnMessage"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="10dp"
+            android:src="@drawable/ic_messages"
+            android:contentDescription="Nhắn tin"
+            android:padding="4dp"
+            android:scaleType="centerInside" />
+
+    </LinearLayout>
+
+
 
 
 </LinearLayout>

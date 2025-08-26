@@ -14,7 +14,7 @@ body {
     
     box-sizing: border-box;
     padding: 20px;
-    width: 90%; /* Đảm bảo container không quá rộng */
+    width: 80%; /* Đảm bảo container không quá rộng */
     max-width: 1200px; /* Giới hạn chiều rộng tối đa */
     margin: 0 auto; /* Căn giữa theo chiều ngang */
 } 

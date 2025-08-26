@@ -5,6 +5,11 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.TextUtils;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.StrikethroughSpan;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -51,6 +56,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
         this.list_cart = list;
         this.frag_total = fragment;
     }
+
     @NonNull
     @Override
     public CartViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -63,13 +69,16 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
     public void onBindViewHolder(@NonNull CartViewHolder holder, @SuppressLint("RecyclerView") int position) {
         Cart cart = list_cart.get(position);
         Product product = cart.getIdProduct();
+
         Log.d("CartAdapter", "=== DEBUG BIND VIEW HOLDER ===");
         Log.d("CartAdapter", "Position: " + position);
         Log.d("CartAdapter", "Product Name: " + (product != null ? product.getNameproduct() : "NULL"));
         Log.d("CartAdapter", "cart.getImg_cart(): " + cart.getImg_cart());
         Log.d("CartAdapter", "Is img_cart null/empty: " + (cart.getImg_cart() == null || cart.getImg_cart().isEmpty()));
         Log.d("CartAdapter", "================================");
+
         if (cart != null && cart.getIdProduct() != null) {
+            // Handle image loading
             String imageUrl = cart.getImg_cart();
             if (imageUrl != null && !imageUrl.trim().isEmpty()) {
                 Log.d("CartAdapter", "Loading image: " + imageUrl);
@@ -80,7 +89,6 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
                         .into(holder.imvAVT);
             } else {
                 Log.w("CartAdapter", "Image URL is null/empty, using fallback");
-                // Fallback sang ảnh chính nếu img_cart rỗng
                 String fallbackImg = product.getAvt_imgproduct();
                 if (fallbackImg != null && !fallbackImg.trim().isEmpty()) {
                     Glide.with(context)
@@ -89,40 +97,40 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
                             .error(R.drawable.ic_launcher_foreground)
                             .into(holder.imvAVT);
                 } else {
-                    // Set placeholder nếu không có ảnh nào
                     holder.imvAVT.setImageResource(R.drawable.ic_launcher_background);
                 }
             }
+
             holder.tvName.setText(product.getNameproduct() != null ? product.getNameproduct() : "N/A");
-            holder.tvPrice.setText(String.format("Giá: " + "%,d đ", cart.getTotal()));
-            holder.tvMau.setText("Màu: "+cart.getColor());
-            holder.tvSize.setText("Size: "+cart.getSize());
+
+            // Improved price display with sale/original price formatting
+            updatePriceDisplay(holder.tvPrice, product, cart.getQuantity());
+
+            holder.tvMau.setText("Màu: " + cart.getColor());
+            holder.tvSize.setText("Size: " + cart.getSize());
             holder.tvQuantity.setText(cart.getQuantity() > 0 ? String.valueOf(cart.getQuantity()) : "1");
         } else {
             Log.e("CartAdapter", "Cart hoặc Product null ở vị trí " + position);
         }
+
+        // Increase quantity button
         holder.imv_tang.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 int currentQty = cart.getQuantity();
-                int stockQty = 9999; // Mặc định nếu không tìm thấy variation
-
-                // Tìm variation tương ứng với size + color để lấy tồn kho
-                for (Variation v : product.getVariations()) {
-                    if (v.getSize() == cart.getSize()) {
-                        if (cart.getColor() == null || v.getColor() == null || cart.getColor().equalsIgnoreCase(v.getColor().getName())) {
-                            stockQty = v.getStock();
-                            break;
-                        }
-                    }
-                }
+                int stockQty = getStockForCartItem(cart, product);
 
                 if (currentQty < stockQty) {
                     cart.setQuantity(currentQty + 1);
-                    int price = product.getPrice();
-                    cart.setTotal(price * cart.getQuantity());
-                    holder.tvPrice.setText(String.format("Giá: %,d đ", cart.getTotal()));
+
+                    int priceToUse = (product.getPrice_sale() > 0 && product.getPrice_sale() < product.getPrice())
+                            ? product.getPrice_sale()
+                            : product.getPrice();
+
+                    cart.setTotal(priceToUse * cart.getQuantity());
+                    updatePriceDisplay(holder.tvPrice, product, cart.getQuantity());
                     holder.tvQuantity.setText(String.valueOf(cart.getQuantity()));
+
                     update_quantity(cart);
                     updateTotalPrice();
                 } else {
@@ -131,23 +139,29 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
             }
         });
 
-
+        // Decrease quantity button
         holder.imv_giam.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 int slgHT = cart.getQuantity();
-                if (slgHT > 1){
+                if (slgHT > 1) {
                     cart.setQuantity(slgHT - 1);
-                    int gia = product.getPrice();
-                    cart.setTotal(gia * cart.getQuantity());
-                    holder.tvPrice.setText(String.format("Giá: " + "%,d đ", cart.getTotal()));
-                    holder.tvQuantity.setText(cart.getQuantity()+"");
+
+                    int priceToUse = (product.getPrice_sale() > 0 && product.getPrice_sale() < product.getPrice())
+                            ? product.getPrice_sale()
+                            : product.getPrice();
+
+                    cart.setTotal(priceToUse * cart.getQuantity());
+                    updatePriceDisplay(holder.tvPrice, product, cart.getQuantity());
+                    holder.tvQuantity.setText(String.valueOf(cart.getQuantity()));
+
                     update_quantity(cart);
                     updateTotalPrice();
                 }
             }
         });
 
+        // Delete button
         holder.imv_xoa.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -170,32 +184,107 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
             }
         });
 
+        // Product image click - navigate to detail
         holder.imvAVT.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent(context, ChiTietSanPham.class);
-                intent.putExtra("product",product);
+                intent.putExtra("product", product);
                 context.startActivity(intent);
             }
         });
 
+        // Color/Size edit click - open bottom sheet
         holder.item_mausize.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 CartBottomSheetDialog dialog = new CartBottomSheetDialog(
                         context,
                         product,
-                        frag_total,  // Truyền thẳng fragment implement listener
+                        frag_total,
                         cart.get_id()
                 );
 
                 dialog.show(((AppCompatActivity) context).getSupportFragmentManager(), "CartBottomSheetDialog");
             }
         });
+    }
 
+    /**
+     * Update price display with sale/original price formatting similar to CartBottomSheetDialog
+     */
+    private void updatePriceDisplay(TextView tvPrice, Product product, int quantity) {
+        int originalPrice = product.getPrice();
+        int salePrice = product.getPrice_sale();
+        int discount = product.getSale();
 
+        if (discount > 0 && salePrice > 0 && salePrice < originalPrice) {
+            int totalOriginal = originalPrice * quantity;
+            int totalSale = salePrice * quantity;
 
+            // Create sale price string with red color (display first)
+            SpannableString finalPriceStr = new SpannableString(String.format("%,d đ", totalSale));
+            finalPriceStr.setSpan(
+                    new ForegroundColorSpan(context.getResources().getColor(R.color.heart_color)),
+                    0,
+                    finalPriceStr.length(),
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+            );
 
+            // Create original price string with strikethrough and smaller size (display after)
+            SpannableString originalPriceStr = new SpannableString(String.format("%,d đ", totalOriginal));
+            originalPriceStr.setSpan(new StrikethroughSpan(), 0, originalPriceStr.length(), 0);
+            originalPriceStr.setSpan(
+                    new ForegroundColorSpan(context.getResources().getColor(android.R.color.darker_gray)),
+                    0,
+                    originalPriceStr.length(),
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+            );
+            originalPriceStr.setSpan(
+                    new android.text.style.RelativeSizeSpan(0.8f), // 80% smaller size
+                    0,
+                    originalPriceStr.length(),
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+            );
+
+            // Combine both strings: sale price first, original price after
+            tvPrice.setText(TextUtils.concat(finalPriceStr, "  ", originalPriceStr));
+        } else {
+            // No discount - show original price only in red
+            int total = originalPrice * quantity;
+            SpannableString redPrice = new SpannableString(String.format("%,d đ", total));
+            redPrice.setSpan(
+                    new ForegroundColorSpan(context.getResources().getColor(R.color.heart_color)),
+                    0,
+                    redPrice.length(),
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+            );
+            tvPrice.setText(redPrice);
+        }
+    }
+
+    /**
+     * Get stock quantity for specific cart item based on color and size
+     */
+    private int getStockForCartItem(Cart cart, Product product) {
+        if (product == null || product.getVariations() == null) {
+            return 9999; // Default fallback
+        }
+
+        for (Variation v : product.getVariations()) {
+            if (v.getSize() == cart.getSize()) {
+                // Check if color matches (handle null colors)
+                if (cart.getColor() == null || v.getColor() == null) {
+                    if (cart.getColor() == null && v.getColor() == null) {
+                        return v.getStock();
+                    }
+                } else if (cart.getColor().equalsIgnoreCase(v.getColor().getName())) {
+                    return v.getStock();
+                }
+            }
+        }
+
+        return 9999; // Default if no matching variation found
     }
 
     @Override
@@ -208,6 +297,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
         CheckBox cbk_add;
         TextView tvName, tvPrice, tvSize, tvQuantity, tvMau;
         LinearLayout item_mausize;
+
         public CartViewHolder(@NonNull View itemView) {
             super(itemView);
             imvAVT = itemView.findViewById(R.id.image_product);
@@ -223,6 +313,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
             item_mausize = itemView.findViewById(R.id.item_mausize);
         }
     }
+
     private void update_quantity(Cart cart){
         ApiService apiService = ApiClient.getApiService();
         Call<Cart> call = apiService.upCart(cart.get_id(), cart);
@@ -239,7 +330,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
 
             @Override
             public void onFailure(Call<Cart> call, Throwable t) {
-
+                // Handle failure silently or log
             }
         });
     }
@@ -248,6 +339,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
         Cart cart = list_cart.get(position);
         SharedPreferences sharedPreferences = context.getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
         String userId = sharedPreferences.getString("userId", null);
+
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         builder.setIcon(R.drawable.thongbao);
         builder.setTitle("Thông báo");
@@ -266,7 +358,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
                         notifyItemRangeChanged(position, list_cart.size());
                         updateTotalPrice();
                         if (frag_total != null) {
-                            frag_total.LoadCart(userId); // <== cần hàm này
+                            frag_total.LoadCart(userId);
                         }
                         frag_total.checkbox_select_all.setChecked(false);
                     } else {
@@ -284,6 +376,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
         builder.setNegativeButton("Hủy", null);
         builder.show();
     }
+
     public void deleteSelectedCarts() {
         List<String> idsToDelete = new ArrayList<>();
         for (Cart cart : list_cart) {
@@ -322,24 +415,33 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
         });
     }
 
+    /**
+     * Update total price with improved calculation using sale prices
+     */
     public void updateTotalPrice() {
         int total = 0;
         for (Cart item : list_cart) {
             if (item.getStatus() == 1) {
-                total += item.getTotal();
+                Product product = item.getIdProduct();
+                int priceToUse = (product.getPrice_sale() > 0 && product.getPrice_sale() < product.getPrice())
+                        ? product.getPrice_sale()
+                        : product.getPrice();
+                total += priceToUse * item.getQuantity();
             }
         }
-        frag_total.tvTotal.setText(String.format("Thành tiền: " + "%,d đ",total));
+        frag_total.tvTotal.setText(String.format("Thành tiền: %,d đ", total));
     }
+
     public void selectAll(boolean isChecked) {
         for (Cart cart : list_cart) {
             cart.setStatus(isChecked ? 1 : 0);
-            cart.setChecked(isChecked); // ĐỒNG BỘ trạng thái checked
+            cart.setChecked(isChecked);
         }
         notifyDataSetChanged();
         updateAllQuantities();
         updateTotalPrice();
     }
+
     private void updateAllQuantities() {
         for (Cart cart : list_cart) {
             update_quantity(cart);
@@ -355,6 +457,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
         }
         return selected;
     }
+
     public void addCartOnServer(Cart cart) {
         ApiService apiService = ApiClient.getApiService();
         Call<Cart> call = apiService.addCart(cart);
@@ -394,5 +497,4 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
             }
         });
     }
-
 }
