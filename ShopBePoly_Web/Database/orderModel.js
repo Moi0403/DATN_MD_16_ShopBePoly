@@ -36,9 +36,19 @@ const orderSchema = new mongoose.Schema({
     },
     checkedAt: {
         type: Date,
+        default: ""
     },
     checkedBy: {
         type: String,
+        default: ""
+    },
+    delicercheckedAt: {
+        type: Date,
+        default: ""
+    },
+    delicercheckedBy: {
+        type: String,
+        default: ""
     }
     
 }, { timestamps: true });

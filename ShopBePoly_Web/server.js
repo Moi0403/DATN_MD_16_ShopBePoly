@@ -1327,7 +1327,7 @@ router.put('/cancel_order/:id', async (req, res) => {
 router.put('/updateOrderStatus/:orderId', async (req, res) => {
     try {
         const orderId = req.params.orderId;
-        const { status, cancelReason, checkedBy } = req.body;
+        const { status, cancelReason, checkedBy, delicercheckedAt, delicercheckedBy } = req.body;
 
         if (!status) {
             return res.status(400).json({ message: 'Trạng thái không được để trống' });
@@ -1340,16 +1340,16 @@ router.put('/updateOrderStatus/:orderId', async (req, res) => {
             return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
         }
 
-        // Logic validation mới
+        // Logic validation mới với trường riêng biệt
         if (status === 'Đang giao hàng') {
             // Cho phép chuyển từ "Đang xử lý" sang "Đang giao hàng" (nhân viên xác nhận đơn)
             if (order.status === 'Đang xử lý') {
                 // Đây là lần đầu nhân viên xác nhận đơn
             } 
-            // Cho phép cập nhật "Đang giao hàng" khi checkedBy = "delivery_confirmed" 
-            // (nhân viên xác nhận đã giao thành công)
-            else if (order.status === 'Đang giao hàng' && checkedBy === 'delivery_confirmed') {
-                // Đây là nhân viên xác nhận đã giao hàng thành công
+            // Cho phép cập nhật "Đang giao hàng" khi có delicercheckedBy 
+            // (nhân viên giao hàng xác nhận đã giao thành công)
+            else if (order.status === 'Đang giao hàng' && delicercheckedBy) {
+                // Đây là nhân viên giao hàng xác nhận đã giao hàng thành công
             } 
             else {
                 return res.status(400).json({ message: 'Không thể cập nhật trạng thái này' });
@@ -1362,11 +1362,34 @@ router.put('/updateOrderStatus/:orderId', async (req, res) => {
             updateData.cancelReason = cancelReason;
         }
 
-        // Quan trọng: Cập nhật checkedBy và checkedAt
+        // Cập nhật checkedBy và checkedAt cho nhân viên xác nhận đơn
         if (checkedBy) {
             updateData.checkedBy = checkedBy;
             updateData.checkedAt = new Date();
-            console.log('Cập nhật checkedAt và checkedBy cho đơn hàng:', orderId, 'bởi:', checkedBy);
+            
+            // Log thông tin nhân viên từ checkedBy
+            let staffName = 'Unknown';
+            if (checkedBy.startsWith('staff_confirmed:')) {
+                staffName = checkedBy.replace('staff_confirmed:', '');
+                console.log('Nhân viên xác nhận đơn:', staffName, 'cho đơn hàng:', orderId);
+            }
+            
+            console.log('Cập nhật checkedAt và checkedBy cho đơn hàng:', orderId, 'bởi nhân viên:', staffName);
+        }
+
+        // Cập nhật delicercheckedBy và delicercheckedAt cho nhân viên giao hàng
+        if (delicercheckedBy) {
+            updateData.delicercheckedBy = delicercheckedBy;
+            updateData.delicercheckedAt = new Date();
+            
+            // Log thông tin nhân viên giao hàng
+            let deliveryStaffName = 'Unknown';
+            if (delicercheckedBy.startsWith('delivery_confirmed:')) {
+                deliveryStaffName = delicercheckedBy.replace('delivery_confirmed:', '');
+                console.log('Nhân viên giao hàng xác nhận:', deliveryStaffName, 'cho đơn hàng:', orderId);
+            }
+            
+            console.log('Cập nhật delicercheckedAt và delicercheckedBy cho đơn hàng:', orderId, 'bởi nhân viên giao hàng:', deliveryStaffName);
         }
 
         const updatedOrder = await orderModel.findByIdAndUpdate(
@@ -1399,7 +1422,28 @@ router.put('/updateOrderStatus/:orderId', async (req, res) => {
             await newNotification.save();
         }
         
-        return res.status(200).json({ message: 'Cập nhật trạng thái thành công', order: updatedOrder });
+        // Chuẩn bị thông tin staff để trả về
+        let staffInfo = null;
+        if (checkedBy) {
+            staffInfo = {
+                action: 'Xác nhận đơn',
+                staffName: checkedBy.includes(':') ? checkedBy.split(':')[1] : 'Unknown',
+                type: 'order_confirmation'
+            };
+        }
+        if (delicercheckedBy) {
+            staffInfo = {
+                action: 'Xác nhận giao hàng',
+                staffName: delicercheckedBy.includes(':') ? delicercheckedBy.split(':')[1] : 'Unknown',
+                type: 'delivery_confirmation'
+            };
+        }
+        
+        return res.status(200).json({ 
+            message: 'Cập nhật trạng thái thành công', 
+            order: updatedOrder,
+            staffInfo: staffInfo
+        });
     } catch (error) {
         console.error('Lỗi khi cập nhật trạng thái:', error);
         return res.status(500).json({ message: 'Lỗi máy chủ nội bộ', error: error.message });
