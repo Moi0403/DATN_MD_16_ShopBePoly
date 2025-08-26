@@ -1184,15 +1184,11 @@ router.get('/search_order', async (req, res) => {
             }
         }
 
-        // Nếu chưa tìm thấy => tìm bằng idOrder, tên sản phẩm, status, address...
+        // Nếu chưa tìm thấy => tìm bằng idOrder hoặc nameproduct
         if (orders.length === 0) {
             orders = await orderModel.find({
                 $or: [
-                    { idOrder: { $regex: code, $options: 'i' } },   // tìm theo mã đơn hàng
-                    { status: { $regex: code, $options: 'i' } },
-                    { address: { $regex: code, $options: 'i' } },
-                    { pay: { $regex: code, $options: 'i' } },
-                    { total: { $regex: code, $options: 'i' } },
+                    { id_order: { $regex: code, $options: 'i' } },   // tìm theo mã đơn hàng
                 ]
             })
                 .populate('id_user', 'name phone_number')
@@ -1202,19 +1198,14 @@ router.get('/search_order', async (req, res) => {
                     populate: { path: 'id_category', select: 'title' }
                 });
 
-            // Sau khi populate products, lọc tiếp theo tên sản phẩm
+            // Lọc theo tên sản phẩm (nameproduct)
             if (orders.length > 0) {
+                const keyword = code.toLowerCase();
                 orders = orders.filter(order =>
+                    order.id_order?.toLowerCase().includes(keyword) ||
                     order.products.some(p =>
-                        p.id_product &&
-                        p.id_product.nameproduct &&
-                        p.id_product.nameproduct.toLowerCase().includes(code.toLowerCase())
-                    ) ||
-                    order.idOrder?.toLowerCase().includes(code.toLowerCase()) ||
-                    order.status?.toLowerCase().includes(code.toLowerCase()) ||
-                    order.address?.toLowerCase().includes(code.toLowerCase()) ||
-                    order.pay?.toLowerCase().includes(code.toLowerCase()) ||
-                    order.total?.toString().includes(code)
+                        p.id_product?.nameproduct?.toLowerCase().includes(keyword)
+                    )
                 );
             }
         }
@@ -1336,29 +1327,41 @@ router.put('/cancel_order/:id', async (req, res) => {
 router.put('/updateOrderStatus/:orderId', async (req, res) => {
     try {
         const orderId = req.params.orderId;
-        const { status, cancelReason, checkedAt, deliveryConfirmedBy } = req.body;
+        const { status, cancelReason, checkedBy } = req.body; // Chỉ lấy các trường cần thiết
 
         if (!status) {
             return res.status(400).json({ message: 'Trạng thái không được để trống' });
         }
 
+        const order = await orderModel.findById(orderId);
+        if (!order) {
+            return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+        }
+
+        // Kiểm tra điều kiện chỉ cho phép chuyển từ "Đang xử lý" sang "Đang giao hàng"
+        if (order.status !== 'Đang xử lý' && status === 'Đang giao hàng') {
+            return res.status(400).json({ message: 'Chỉ có thể xác nhận khi trạng thái là Đang xử lý' });
+        }
+
         const updateData = { status };
-        
+
+        // Cập nhật lý do hủy nếu có
         if (cancelReason) {
             updateData.cancelReason = cancelReason;
         }
 
-        // Xác nhận đơn hàng (chuyển từ "Đang xử lý" → "Đang giao hàng")
-        if (checkedAt) {
-            updateData.checkedAt = new Date(checkedAt);
-            console.log('Setting checkedAt for order:', orderId, 'at time:', checkedAt);
+        // Cập nhật checkedBy và checkedAt khi có
+        if (checkedBy) {
+            updateData.checkedBy = checkedBy;
+            updateData.checkedAt = new Date(); // Tự động gán thời gian kiểm tra
+            console.log('Setting checkedAt and checkedBy for order:', orderId, 'by:', checkedBy);
         }
 
-        // Xác nhận giao hàng (staff đã giao hàng thành công)
-        if (deliveryConfirmedBy) {
-            updateData.deliveryConfirmedBy = deliveryConfirmedBy;
-            updateData.deliveryConfirmedAt = new Date(); // Cũng set time để backup
-            console.log('Setting deliveryConfirmedBy for order:', orderId, 'by:', deliveryConfirmedBy);
+        // Tự động gán deliveryConfirmedAt và deliveryConfirmedBy khi chuyển sang "Đang giao hàng"
+        if (status === 'Đang giao hàng') {
+            updateData.deliveryConfirmedAt = new Date(); // Thời gian xác nhận giao hàng
+            updateData.deliveryConfirmedBy = checkedBy ? checkedBy.split(' - ')[0] : 'Unknown Staff'; // Lấy tên từ checkedBy
+            console.log('Auto-setting deliveryConfirmedAt and deliveryConfirmedBy for order:', orderId, 'by:', updateData.deliveryConfirmedBy);
         }
 
         const updatedOrder = await orderModel.findByIdAndUpdate(
@@ -1372,7 +1375,7 @@ router.put('/updateOrderStatus/:orderId', async (req, res) => {
         }
 
         // Populate dữ liệu liên quan
-        const order = await orderModel.findById(orderId)
+        const populatedOrder = await orderModel.findById(orderId)
             .populate('id_user')
             .populate('products.id_product');
 
@@ -1380,14 +1383,14 @@ router.put('/updateOrderStatus/:orderId', async (req, res) => {
         if (status === 'Đã giao' || status === 'delivered' || status === 'Đã giao hàng') {
             console.log('Creating delivery success notification for order:', orderId);
             const newNotification = new notificationModel({
-                userId: order.id_user._id,
+                userId: populatedOrder.id_user._id,
                 title: 'Giao hàng thành công',
-                content: `Đơn hàng <font color='#2196F3'>${order.id_order}</font> của bạn đã được giao thành công. Cảm ơn bạn đã mua sắm tại ShopBePoly!`,
+                content: `Đơn hàng <font color='#2196F3'>${populatedOrder.id_order}</font> của bạn đã được giao thành công. Cảm ơn bạn đã mua sắm tại ShopBePoly!`,
                 type: 'delivery',
                 isRead: false,
                 createdAt: new Date(),
-                orderId: order._id,
-                products: order.products.map(item => ({
+                orderId: populatedOrder._id,
+                products: populatedOrder.products.map(item => ({
                     id_product: item.id_product?._id,
                     productName: item.id_product?.nameproduct || '',
                     img: item.id_product?.avt_imgproduct || ''
@@ -1399,7 +1402,7 @@ router.put('/updateOrderStatus/:orderId', async (req, res) => {
 
         return res.status(200).json({ message: 'Cập nhật trạng thái thành công', order: updatedOrder });
     } catch (error) {
-        console.error(error);
+        console.error('Lỗi khi cập nhật trạng thái:', error);
         return res.status(500).json({ message: 'Lỗi máy chủ nội bộ', error: error.message });
     }
 });
@@ -2905,59 +2908,6 @@ router.get('/orders/delivering', async (req, res) => {
     }
 });
 
-router.put('/updateOrderStatus/:orderId', async (req, res) => {
-    try {
-        const orderId = req.params.orderId;
-        const { status, cancelReason } = req.body;
-
-        if (!status) {
-            return res.status(400).json({ message: 'Trạng thái không được để trống' });
-        }
-
-        const updateData = { status };
-        if (cancelReason) {
-            updateData.cancelReason = cancelReason;
-        }
-
-        await orderModel.findByIdAndUpdate(
-            orderId,
-            updateData,
-            { new: true, runValidators: true }
-        );
-
-        const order = await orderModel.findById(orderId)
-            .populate('id_user')
-            .populate('products.id_product');
-
-        if (!order) {
-            return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
-        }
-
-        if (status === 'Đã giao' || status === 'delivered' || status === 'Đã giao hàng') {
-            const newNotification = new notificationModel({
-                userId: order.id_user._id,
-                title: 'Giao hàng thành công',
-                content: `Đơn hàng <font color='#2196F3'>${order.id_order}</font> của bạn đã được giao thành công. Cảm ơn bạn đã mua sắm tại ShopBePoly!`,
-                type: 'delivery',
-                isRead: false,
-                createdAt: new Date(),
-                orderId: order._id,
-                products: order.products.map(item => ({
-                    id_product: item.id_product?._id,
-                    productName: item.id_product?.nameproduct || '',
-                    img: item.id_product?.avt_imgproduct || ''
-                }))
-            });
-
-            await newNotification.save();
-        }
-
-        return res.status(200).json({ message: 'Cập nhật trạng thái thành công', order });
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({ message: 'Lỗi máy chủ nội bộ', error: error.message });
-    }
-});
 
 //new
 router.get('/vouchers', async (req, res) => {

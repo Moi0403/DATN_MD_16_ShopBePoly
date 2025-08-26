@@ -36,21 +36,13 @@ const orderSchema = new mongoose.Schema({
     },
     checkedAt: {
         type: Date,
-        default: "" // Thời gian chuyển từ "Đang xử lý" sang "Đang gi
     },
     checkedBy: {
         type: String,
-        default: ""
     },
-    // ✅ THÊM TRƯỜNG MỚI
-    deliveryConfirmedAt: {
-        type: Date,
-        default: "" // Thời gian staff xác nhận đã giao hàng thành công
-    },
-    deliveryConfirmedBy: {
-        type: String,
-        default: "" // ID của staff xác nhận giao hàng
-    }
+    deliveryConfirmedAt: { type: Date, default: null }, // Thêm trường thời gian xác nhận giao hàng
+    deliveryConfirmedBy: { type: String, default: "" }
+    
 }, { timestamps: true });
 
 const orderModel = mongoose.model('order', orderSchema);

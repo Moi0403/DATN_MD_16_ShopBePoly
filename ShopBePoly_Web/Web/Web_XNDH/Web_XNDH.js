@@ -129,15 +129,20 @@ async function confirmOrder(orderId) {
       return;
     }
 
+    // Lấy và phân tích dữ liệu người dùng từ localStorage
     const storedData = localStorage.getItem('userData');
-    userData = storedData ? JSON.parse(storedData) : {};
+    const userData = storedData ? JSON.parse(storedData) : {};
     const roleText = userData.role === 1 ? "Nhân viên" : "";
+    const currentTime = new Date();
+
+    // Gửi yêu cầu cập nhật trạng thái
     const response = await fetch(`http://${config.host}:${config.port}/api/updateOrderStatus/${orderId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         status: "Đang giao hàng",
-        checkedBy: `${userData.name} - ${roleText}`
+        checkedBy: `${userData.name} - ${roleText}`, // Fallback nếu name không tồn tại
+        checkedAt: currentTime,
       })
     });
 
@@ -145,7 +150,7 @@ async function confirmOrder(orderId) {
 
     if (response.ok) {
       alert(result.message);
-      hienthiOrder(); // reload danh sách
+      hienthiOrder(); // Reload danh sách
     } else {
       alert('Lỗi: ' + result.message);
     }
