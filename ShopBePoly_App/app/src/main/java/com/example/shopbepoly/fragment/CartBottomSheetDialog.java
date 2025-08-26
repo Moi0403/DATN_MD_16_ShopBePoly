@@ -91,6 +91,7 @@ public class CartBottomSheetDialog extends BottomSheetDialogFragment {
         TextView tvGia = view.findViewById(R.id.tv_gia_cart);
         TextView tvKho = view.findViewById(R.id.tv_kho_cart);
         TextView tvTen = view.findViewById(R.id.tv_ten_cart);
+        TextView tvProductDiscount = view.findViewById(R.id.tvProductDiscount2);
         TextView tv_cate_product = view.findViewById(R.id.tv_cate_cart);
         ImageView btnDecrease = view.findViewById(R.id.btn_giamSL);
         ImageView btnIncrease = view.findViewById(R.id.btn_tangSL);
@@ -100,7 +101,32 @@ public class CartBottomSheetDialog extends BottomSheetDialogFragment {
         int originalPrice = product.getPrice();
         int salePrice = product.getPrice_sale();
         int discount = product.getSale();
+        int price_sale = product.getPrice_sale();
 
+        if (discount > 0) {
+            SpannableString originalPriceStr = new SpannableString(product.getFormattedPrice());
+            originalPriceStr.setSpan(new StrikethroughSpan(), 0, originalPriceStr.length(), 0);
+            originalPriceStr.setSpan(
+                    new ForegroundColorSpan(context.getResources().getColor(android.R.color.darker_gray)),
+                    0,
+                    originalPriceStr.length(),
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+            );
+
+            SpannableString finalPriceStr = new SpannableString(String.format("%,d đ", price_sale));
+            finalPriceStr.setSpan(
+                    new ForegroundColorSpan(context.getResources().getColor(R.color.heart_color)),
+                    0,
+                    finalPriceStr.length(),
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+            );
+
+//            holder.tvProductPrice.setText(TextUtils.concat(originalPriceStr, "  ", finalPriceStr));
+            tvProductDiscount.setVisibility(View.VISIBLE);
+            tvProductDiscount.setText(product.getSale() + "%");
+        } else {
+//            holder.tvProductPrice.setText(product.getFormattedPrice());
+        }
         // Display price with proper formatting
         updatePriceDisplay(tvGia, quantity);
 

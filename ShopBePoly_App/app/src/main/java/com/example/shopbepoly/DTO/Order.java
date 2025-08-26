@@ -24,6 +24,8 @@ public class Order implements Serializable {
     private String pay;
     private String checkedAt;
     private String checkedBy;
+    private String delicercheckedAt; // Trường mới cho thời gian xác nhận giao hàng
+    private String delicercheckedBy;
 
     public Order() {
     }
@@ -139,5 +141,21 @@ public class Order implements Serializable {
 
     public void setCheckedBy(String checkedBy) {
         this.checkedBy = checkedBy;
+    }
+
+    public String getDelicercheckedAt() {
+        return delicercheckedAt;
+    }
+
+    public void setDelicercheckedAt(String delicercheckedAt) {
+        this.delicercheckedAt = delicercheckedAt;
+    }
+
+    public String getDelicercheckedBy() {
+        return delicercheckedBy;
+    }
+
+    public void setDelicercheckedBy(String delicercheckedBy) {
+        this.delicercheckedBy = delicercheckedBy;
     }
 }

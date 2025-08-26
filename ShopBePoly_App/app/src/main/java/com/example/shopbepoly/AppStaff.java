@@ -97,31 +97,43 @@ public class AppStaff extends AppCompatActivity {
                         deliveringOrders.clear();
 
                         if (deliveringResponse.getOrders() != null) {
-                            // Lọc chỉ những đơn hàng chưa được xác nhận giao hoàn toàn
+                            // ✅ LOGIC LỌC MỚI: Chỉ hiển thị đơn hàng chưa được xác nhận giao hàng
                             for (Order order : deliveringResponse.getOrders()) {
-                                // Chỉ hiện đơn hàng chưa được xác nhận giao hàng
-                                if (!"delivery_confirmed".equals(order.getCheckedBy())) {
+                                String delicercheckedBy = order.getDelicercheckedBy();
+
+                                // Chỉ thêm vào danh sách nếu chưa có delicercheckedBy hoặc không bắt đầu với "delivery_confirmed:"
+                                if (delicercheckedBy == null ||
+                                        delicercheckedBy.isEmpty() ||
+                                        !delicercheckedBy.startsWith("delivery_confirmed:")) {
+
                                     deliveringOrders.add(order);
+                                    Log.d("STAFF_FILTER", "Added order: " + order.get_id() +
+                                            ", delicercheckedBy: " + delicercheckedBy);
+                                } else {
+                                    Log.d("STAFF_FILTER", "Filtered out order: " + order.get_id() +
+                                            ", already delivery confirmed by: " + delicercheckedBy);
                                 }
                             }
                         }
 
-                        Log.d("STAFF_DEBUG", "Số đơn hàng đang giao: " + deliveringResponse.getCount());
-                        Log.d("STAFF_DEBUG", "Danh sách đơn hàng: " + deliveringOrders.size());
+                        Log.d("STAFF_DEBUG", "Số đơn hàng từ API: " + deliveringResponse.getCount());
+                        Log.d("STAFF_DEBUG", "Số đơn hàng sau lọc: " + deliveringOrders.size());
                         Log.d("STAFF_DEBUG", "Old size: " + oldSize + ", New size: " + deliveringOrders.size());
 
                         // ✅ FORCE REFRESH ADAPTER
                         if (orderAdapter != null) {
                             orderAdapter.setData(new ArrayList<>(deliveringOrders)); // ✅ TẠO COPY MỚI
-                            Log.d("AppStaff", "Updated adapter with new data, current list size: " + deliveringOrders.size());
+                            Log.d("AppStaff", "Updated adapter with filtered data, current list size: " + deliveringOrders.size());
 
-                            // ✅ DEBUG: In ra thông tin từng đơn hàng
+                            // ✅ DEBUG: In ra thông tin từng đơn hàng sau lọc
                             for (int i = 0; i < deliveringOrders.size(); i++) {
                                 Order order = deliveringOrders.get(i);
-                                Log.d("AppStaff", "Order " + i + ": ID=" + order.get_id() +
+                                Log.d("AppStaff", "Filtered Order " + i + ": ID=" + order.get_id() +
                                         ", Status=" + order.getStatus() +
                                         ", CheckedAt=" + order.getCheckedAt() +
-                                        ", CheckedBy=" + order.getCheckedBy()); // ✅ CHỈ CÓN CheckedBy
+                                        ", CheckedBy=" + order.getCheckedBy() +
+                                        ", DelicercheckedAt=" + order.getDelicercheckedAt() +
+                                        ", DelicercheckedBy=" + order.getDelicercheckedBy());
                             }
                         }
 
@@ -131,13 +143,13 @@ public class AppStaff extends AppCompatActivity {
                         // Only show Toast for initial load, not for refresh operations
                         if (!swipeRefreshLayout.isRefreshing()) {
                             if (deliveringOrders.isEmpty()) {
-                                Toast.makeText(AppStaff.this, "Không có đơn hàng nào đang giao", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(AppStaff.this, "Không có đơn hàng nào cần xử lý", Toast.LENGTH_SHORT).show();
                             } else {
-                                Toast.makeText(AppStaff.this, "Đã tải " + deliveringOrders.size() + " đơn hàng đang giao", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(AppStaff.this, "Đã tải " + deliveringOrders.size() + " đơn hàng cần xử lý", Toast.LENGTH_SHORT).show();
                             }
                         } else {
                             // ✅ THÔNG BÁO KHI REFRESH
-                            Log.d("AppStaff", "Refresh completed - loaded " + deliveringOrders.size() + " orders");
+                            Log.d("AppStaff", "Refresh completed - loaded " + deliveringOrders.size() + " orders after filtering");
                         }
                     } else {
                         Log.e("STAFF_DEBUG", "API trả về success = false: " + deliveringResponse.getError());
@@ -179,10 +191,21 @@ public class AppStaff extends AppCompatActivity {
         if (show) {
             recyclerOrders.setVisibility(View.GONE);
             tvEmpty.setVisibility(View.VISIBLE);
-            tvEmpty.setText("Không có đơn hàng nào đang giao");
+            tvEmpty.setText("Không có đơn hàng nào cần xử lý");
         } else {
             recyclerOrders.setVisibility(View.VISIBLE);
             tvEmpty.setVisibility(View.GONE);
+        }
+    }
+
+    private void updateHeaderWithOrderCount(int count) {
+        TextView headerTitle = findViewById(R.id.tvHeaderTitle);
+        if (headerTitle != null) {
+            if (count > 0) {
+                headerTitle.setText("Quản lý đơn hàng (" + count + " đơn cần xử lý)");
+            } else {
+                headerTitle.setText("Quản lý đơn hàng");
+            }
         }
     }
 
@@ -213,14 +236,4 @@ public class AppStaff extends AppCompatActivity {
         }
     }
 
-    private void updateHeaderWithOrderCount(int count) {
-        TextView headerTitle = findViewById(R.id.tvHeaderTitle);
-        if (headerTitle != null) {
-            if (count > 0) {
-                headerTitle.setText("Quản lý đơn hàng (" + count + " đơn đang giao)");
-            } else {
-                headerTitle.setText("Quản lý đơn hàng");
-            }
-        }
-    }
 }

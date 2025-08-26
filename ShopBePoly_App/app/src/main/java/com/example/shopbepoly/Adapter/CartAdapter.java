@@ -70,6 +70,33 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
         Cart cart = list_cart.get(position);
         Product product = cart.getIdProduct();
 
+        int price_sale = product.getPrice_sale();
+        int discount = product.getSale(); // % giảm giá
+
+        if (discount > 0) {
+            SpannableString originalPriceStr = new SpannableString(product.getFormattedPrice());
+            originalPriceStr.setSpan(new StrikethroughSpan(), 0, originalPriceStr.length(), 0);
+            originalPriceStr.setSpan(
+                    new ForegroundColorSpan(context.getResources().getColor(android.R.color.darker_gray)),
+                    0,
+                    originalPriceStr.length(),
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+            );
+
+            SpannableString finalPriceStr = new SpannableString(String.format("%,d đ", price_sale));
+            finalPriceStr.setSpan(
+                    new ForegroundColorSpan(context.getResources().getColor(R.color.heart_color)),
+                    0,
+                    finalPriceStr.length(),
+                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+            );
+
+//            holder.tvProductPrice.setText(TextUtils.concat(originalPriceStr, "  ", finalPriceStr));
+            holder.tvProductDiscount.setVisibility(View.VISIBLE);
+            holder.tvProductDiscount.setText(product.getSale() + "%");
+        } else {
+//            holder.tvProductPrice.setText(product.getFormattedPrice());
+        }
         Log.d("CartAdapter", "=== DEBUG BIND VIEW HOLDER ===");
         Log.d("CartAdapter", "Position: " + position);
         Log.d("CartAdapter", "Product Name: " + (product != null ? product.getNameproduct() : "NULL"));
@@ -295,7 +322,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
     public static class CartViewHolder extends RecyclerView.ViewHolder{
         ImageView imvAVT, imv_giam, imv_tang, imv_xoa;
         CheckBox cbk_add;
-        TextView tvName, tvPrice, tvSize, tvQuantity, tvMau;
+        TextView tvName, tvPrice, tvSize, tvQuantity, tvMau,tvProductDiscount;
         LinearLayout item_mausize;
 
         public CartViewHolder(@NonNull View itemView) {
@@ -311,6 +338,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
             tvQuantity = itemView.findViewById(R.id.text_quantity);
             tvMau = itemView.findViewById(R.id.tv_mau);
             item_mausize = itemView.findViewById(R.id.item_mausize);
+            tvProductDiscount = itemView.findViewById(R.id.tvProductDiscount);
         }
     }
 

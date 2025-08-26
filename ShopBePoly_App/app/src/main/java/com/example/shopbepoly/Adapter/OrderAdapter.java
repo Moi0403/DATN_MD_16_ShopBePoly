@@ -118,15 +118,24 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
         holder.tvSoLuongSP.setText("Tổng số lượng sản phẩm: " + order.getQuantity_order());
         holder.tvTT.setText("Trạng thái: " + order.getStatus());
 
+        // Hiển thị thời gian mua
         if (isStaff) {
             holder.tvngayMua.setText("Thời gian mua: " + formatDateForStaff(order.getDate()));
-            if (!order.getStatus().equals("Đang xử lý")) {
-                holder.tvTimeUp.setText("Xác nhận: " + formatDateForStaff(order.getCheckedAt()));
-            }
         } else {
             holder.tvngayMua.setText("Thời gian mua: " + formatDateForUser(order.getDate()));
-            if (!order.getStatus().equals("Đang xử lý")) {
-                holder.tvTimeUp.setText("Xác nhận: " + formatDateForUser(order.getCheckedAt()));
+        }
+
+        // Hiển thị thời gian xác nhận - CHỈ KHI KHÔNG PHẢI TRẠNG THÁI "ĐANG XỬ LÝ"
+        if (order.getStatus().equals("Đang xử lý")) {
+            // Ẩn thời gian xác nhận khi đang chờ xác nhận
+            holder.tvTimeUp.setVisibility(View.GONE);
+        } else {
+            // Hiển thị thời gian xác nhận cho các trạng thái khác
+            holder.tvTimeUp.setVisibility(View.VISIBLE);
+            if (isStaff) {
+                holder.tvTimeUp.setText(formatDateForStaff(order.getCheckedAt()));
+            } else {
+                holder.tvTimeUp.setText(formatDateForUser(order.getCheckedAt()));
             }
         }
 
@@ -232,24 +241,25 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
         // Nút Mua lại
         holder.btnMuaLai.setOnClickListener(v -> showReorderDialog(order));
     }
-
+    private String getStaffNameFromPreferences() {
+        try {
+            SharedPreferences sharedPreferences = context.getSharedPreferences(LOGIN_PREFS, Context.MODE_PRIVATE);
+            return sharedPreferences.getString("name", null); // Lấy tên nhân viên đã đăng nhập
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting staff name from preferences", e);
+            return null;
+        }
+    }
     // Logic hiển thị nút được đơn giản hóa
     private void updateButtonVisibility(OrderViewHolder holder, Order order) {
         String status = order.getStatus().toLowerCase();
-        boolean hasCheckedAt = order.getCheckedAt() != null && !order.getCheckedAt().trim().isEmpty();
-        String checkedBy = order.getCheckedBy(); // Thêm dòng này để kiểm tra checkedBy
+        String checkedBy = order.getCheckedBy();
+        String delicercheckedBy = order.getDelicercheckedBy();
 
         // Ẩn tất cả các nút trước
         holder.btnHuy.setVisibility(View.GONE);
         holder.btnNhan.setVisibility(View.GONE);
         holder.btnMuaLai.setVisibility(View.GONE);
-
-        Log.d("OrderAdapter", "=== BUTTON VISIBILITY DEBUG ===");
-        Log.d("OrderAdapter", "Order ID: " + order.get_id());
-        Log.d("OrderAdapter", "Status: " + status);
-        Log.d("OrderAdapter", "IsStaff: " + isStaff);
-        Log.d("OrderAdapter", "CheckedAt: " + order.getCheckedAt());
-        Log.d("OrderAdapter", "CheckedBy: " + checkedBy); // Thêm log để debug
 
         switch (status) {
             case "đang xử lý":
@@ -258,43 +268,39 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
                     holder.btnNhan.setVisibility(View.VISIBLE);
                     holder.btnNhan.setText("Xác nhận đơn");
                     holder.btnNhan.setEnabled(true);
-                    Log.d("OrderAdapter", "Staff - Đang xử lý: Hiển thị nút Hủy và Xác nhận đơn");
                 } else {
                     holder.btnHuy.setVisibility(View.VISIBLE);
-                    Log.d("OrderAdapter", "User - Đang xử lý: Hiển thị nút Hủy");
                 }
                 break;
 
             case "đang giao hàng":
                 if (isStaff) {
-                    // Kiểm tra checkedBy để hiển thị nút phù hợp cho staff
-                    if ("staff_confirmed".equals(checkedBy)) {
-                        // Nhân viên đã xác nhận đơn, hiện nút "Xác nhận giao hàng"
-                        holder.btnNhan.setVisibility(View.VISIBLE);
-                        holder.btnNhan.setText("Xác nhận giao hàng");
-                        holder.btnNhan.setEnabled(true);
-                        Log.d("OrderAdapter", "Staff - Đã xác nhận đơn: Hiển thị 'Xác nhận giao hàng'");
-                    } else if ("delivery_confirmed".equals(checkedBy)) {
-                        // Nhân viên đã xác nhận giao hàng, ẩn nút
-                        holder.btnNhan.setVisibility(View.GONE);
-                        Log.d("OrderAdapter", "Staff - Đã xác nhận giao hàng: Ẩn nút");
+                    // Kiểm tra xem nhân viên đã xác nhận đơn chưa
+                    if (checkedBy != null && checkedBy.startsWith("staff_confirmed:")) {
+                        // Kiểm tra xem nhân viên giao hàng đã xác nhận chưa
+                        if (delicercheckedBy != null && delicercheckedBy.startsWith("delivery_confirmed:")) {
+                            // Đã xác nhận giao hàng rồi, ẩn nút
+                            holder.btnNhan.setVisibility(View.GONE);
+                        } else {
+                            // Chưa xác nhận giao hàng, hiển thị nút
+                            holder.btnNhan.setVisibility(View.VISIBLE);
+                            holder.btnNhan.setText("Xác nhận giao hàng");
+                            holder.btnNhan.setEnabled(true);
+                        }
                     } else {
-                        // Trường hợp mặc định - hiện nút xác nhận giao hàng
+                        // Chưa xác nhận đơn, có thể hiển thị nút xác nhận giao hàng trực tiếp
                         holder.btnNhan.setVisibility(View.VISIBLE);
                         holder.btnNhan.setText("Xác nhận giao hàng");
                         holder.btnNhan.setEnabled(true);
-                        Log.d("OrderAdapter", "Staff - Mặc định: Hiển thị 'Xác nhận giao hàng'");
                     }
                 } else {
-                    // User chỉ hiển thị nút "Đã nhận hàng" KHI NHÂN VIÊN ĐÃ XÁC NHẬN GIAO HÀNG
-                    if ("delivery_confirmed".equals(checkedBy)) {
+                    // User chỉ hiển thị nút "Đã nhận hàng" khi nhân viên giao hàng đã xác nhận
+                    if (delicercheckedBy != null && delicercheckedBy.startsWith("delivery_confirmed:")) {
                         holder.btnNhan.setVisibility(View.VISIBLE);
                         holder.btnNhan.setText("Đã nhận hàng");
                         holder.btnNhan.setEnabled(true);
-                        Log.d("OrderAdapter", "User - Nhân viên đã xác nhận giao hàng: Hiển thị 'Đã nhận hàng'");
                     } else {
                         holder.btnNhan.setVisibility(View.GONE);
-                        Log.d("OrderAdapter", "User - Nhân viên chưa xác nhận giao hàng: Ẩn nút");
                     }
                 }
                 break;
@@ -302,17 +308,8 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
             case "đã hủy":
             case "đã giao hàng":
                 holder.btnMuaLai.setVisibility(View.VISIBLE);
-                Log.d("OrderAdapter", "Đã hủy/Đã giao hàng: Hiển thị nút Mua lại");
                 break;
         }
-
-        Log.d("OrderAdapter", "Final button states - Huy: " + (holder.btnHuy.getVisibility() == View.VISIBLE) +
-                ", Nhan: " + (holder.btnNhan.getVisibility() == View.VISIBLE) +
-                ", MuaLai: " + (holder.btnMuaLai.getVisibility() == View.VISIBLE));
-        if (holder.btnNhan.getVisibility() == View.VISIBLE) {
-            Log.d("OrderAdapter", "Nhan button text: " + holder.btnNhan.getText().toString());
-        }
-        Log.d("OrderAdapter", "===============================");
     }
 
     private void showCancelDialog(Order order, int position) {
@@ -350,6 +347,13 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
             AlertDialog.Builder builder = new AlertDialog.Builder(context);
             builder.setIcon(R.drawable.thongbao);
 
+            // Lấy tên nhân viên đã đăng nhập
+            String staffName = getStaffNameFromPreferences();
+            if (staffName == null || staffName.trim().isEmpty()) {
+                Toast.makeText(context, "Không thể xác định thông tin nhân viên", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
             // Nếu đang xử lý -> Xác nhận đơn
             if ("đang xử lý".equalsIgnoreCase(order.getStatus())) {
                 builder.setTitle("Xác nhận đơn hàng");
@@ -359,14 +363,12 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
                     orderUpdate.set_id(order.get_id());
                     orderUpdate.setStatus("Đang giao hàng");
                     orderUpdate.setCheckedAt(getCurrentTime());
-                    orderUpdate.setCheckedBy("staff_confirmed");
-
+                    orderUpdate.setCheckedBy("staff_confirmed:" + staffName); // Sử dụng checkedBy cho xác nhận đơn
                     updateOrder(orderUpdate);
                     Toast.makeText(context, "Đã xác nhận đơn hàng và chuyển sang trạng thái đang giao hàng", Toast.LENGTH_SHORT).show();
                 });
             }
             // Nếu đang giao hàng -> Xác nhận giao hàng
-            // Khi nhân viên bấm "Xác nhận giao hàng"
             else if ("đang giao hàng".equalsIgnoreCase(order.getStatus())) {
                 builder.setTitle("Xác nhận giao hàng");
                 builder.setMessage("Xác nhận đã giao hàng thành công cho khách hàng?");
@@ -374,17 +376,18 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
                     Order orderUpdate = new Order();
                     orderUpdate.set_id(order.get_id());
                     orderUpdate.setStatus("Đang giao hàng"); // Vẫn giữ trạng thái này
-                    orderUpdate.setCheckedAt(getCurrentTime()); // Cập nhật thời gian mới
-                    orderUpdate.setCheckedBy("delivery_confirmed"); // Đánh dấu đã xác nhận giao hàng
-
+                    orderUpdate.setDelicercheckedAt(getCurrentTime()); // Sử dụng delicercheckedAt
+                    orderUpdate.setDelicercheckedBy("delivery_confirmed:" + staffName); // Sử dụng delicercheckedBy
+                    Log.d("delivery_confirmed:" , staffName);
                     updateOrder(orderUpdate);
+                    Toast.makeText(context, "Đã xác nhận giao hàng thành công", Toast.LENGTH_SHORT).show();
                 });
             }
 
             builder.setNegativeButton("Hủy", null);
             builder.show();
         } else {
-            // User xác nhận nhận hàng
+            // User xác nhận nhận hàng (giữ nguyên code cũ)
             AlertDialog.Builder builder = new AlertDialog.Builder(context);
             builder.setIcon(R.drawable.thongbao);
             builder.setTitle("Thông báo");
