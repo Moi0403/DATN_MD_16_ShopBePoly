@@ -39,9 +39,7 @@ const orderSchema = new mongoose.Schema({
     },
     checkedBy: {
         type: String,
-    },
-    deliveryConfirmedAt: { type: Date, default: null }, // Thêm trường thời gian xác nhận giao hàng
-    deliveryConfirmedBy: { type: String, default: "" }
+    }
     
 }, { timestamps: true });
 
