@@ -131,7 +131,7 @@ async function confirmOrder(orderId) {
 
     const storedData = localStorage.getItem('userData');
     userData = storedData ? JSON.parse(storedData) : {};
-    const roleText = userData.role === 1 ? "Nhân viên" : "Người dùng";
+    const roleText = userData.role === 1 ? "Nhân viên" : "";
     const response = await fetch(`http://${config.host}:${config.port}/api/updateOrderStatus/${orderId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },

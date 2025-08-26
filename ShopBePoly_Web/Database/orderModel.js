@@ -36,7 +36,7 @@ const orderSchema = new mongoose.Schema({
     },
     checkedAt: {
         type: Date,
-        default: null // Thời gian chuyển từ "Đang xử lý" sang "Đang giao hàng"
+        default: "" // Thời gian chuyển từ "Đang xử lý" sang "Đang gi
     },
     checkedBy: {
         type: String,
@@ -45,7 +45,7 @@ const orderSchema = new mongoose.Schema({
     // ✅ THÊM TRƯỜNG MỚI
     deliveryConfirmedAt: {
         type: Date,
-        default: null // Thời gian staff xác nhận đã giao hàng thành công
+        default: "" // Thời gian staff xác nhận đã giao hàng thành công
     },
     deliveryConfirmedBy: {
         type: String,
