@@ -97,8 +97,13 @@ public class AppStaff extends AppCompatActivity {
                         deliveringOrders.clear();
 
                         if (deliveringResponse.getOrders() != null) {
-                            deliveringOrders.addAll(deliveringResponse.getOrders());
-                            Log.d("AppStaff", "Added " + deliveringResponse.getOrders().size() + " orders to list");
+                            // Lọc chỉ những đơn hàng chưa được xác nhận giao hoàn toàn
+                            for (Order order : deliveringResponse.getOrders()) {
+                                // Chỉ hiện đơn hàng chưa được xác nhận giao hàng
+                                if (!"delivery_confirmed".equals(order.getCheckedBy())) {
+                                    deliveringOrders.add(order);
+                                }
+                            }
                         }
 
                         Log.d("STAFF_DEBUG", "Số đơn hàng đang giao: " + deliveringResponse.getCount());
@@ -116,7 +121,7 @@ public class AppStaff extends AppCompatActivity {
                                 Log.d("AppStaff", "Order " + i + ": ID=" + order.get_id() +
                                         ", Status=" + order.getStatus() +
                                         ", CheckedAt=" + order.getCheckedAt() +
-                                        ", DeliveryConfirmedBy=" + order.getDeliveryConfirmedBy());
+                                        ", CheckedBy=" + order.getCheckedBy()); // ✅ CHỈ CÓN CheckedBy
                             }
                         }
 

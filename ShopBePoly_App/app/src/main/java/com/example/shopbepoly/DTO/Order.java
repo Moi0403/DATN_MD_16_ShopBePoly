@@ -13,10 +13,6 @@ public class Order implements Serializable {
     private User id_user;
     @SerializedName("products")
     private List<ProductInOrder> products;
-    @SerializedName("deliveryConfirmedBy")
-    private String deliveryConfirmedBy;
-    @SerializedName("deliveryConfirmedAt") // ✅ THÊM TRƯỜNG NÀY (backup)
-    private String deliveryConfirmedAt;
 
     private int quantity_order;
     private String date;
@@ -27,6 +23,7 @@ public class Order implements Serializable {
     private String address;
     private String pay;
     private String checkedAt;
+    private String checkedBy;
 
     public Order() {
     }
@@ -136,20 +133,11 @@ public class Order implements Serializable {
         this.checkedAt = checkedAt;
     }
 
-    public String getDeliveryConfirmedBy() {
-        return deliveryConfirmedBy;
+    public String getCheckedBy() {
+        return checkedBy;
     }
 
-    public void setDeliveryConfirmedBy(String deliveryConfirmedBy) {
-        this.deliveryConfirmedBy = deliveryConfirmedBy;
-    }
-
-    // ✅ GETTER/SETTER CHO deliveryConfirmedAt (backup field)
-    public String getDeliveryConfirmedAt() {
-        return deliveryConfirmedAt;
-    }
-
-    public void setDeliveryConfirmedAt(String deliveryConfirmedAt) {
-        this.deliveryConfirmedAt = deliveryConfirmedAt;
+    public void setCheckedBy(String checkedBy) {
+        this.checkedBy = checkedBy;
     }
 }

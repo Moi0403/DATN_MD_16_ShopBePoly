@@ -32,10 +32,6 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.work.Data;
-import androidx.work.ExistingWorkPolicy;
-import androidx.work.OneTimeWorkRequest;
-import androidx.work.WorkManager;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -44,7 +40,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.TimeUnit;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -60,17 +55,16 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
     private List<Order> ordList;
     private String userId;
     private Runnable onOrderCancelled;
-    private boolean isStaff; // Thêm tham số để phân biệt staff và user
+    private boolean isStaff;
 
     public OrderAdapter(Context context, List<Order> list, Runnable onOrderCancelled) {
         this.context = context;
         this.ordList = list;
         this.onOrderCancelled = onOrderCancelled;
         this.userId = getUserIdFromPreferences();
-        this.isStaff = false; // Mặc định là user
+        this.isStaff = false;
     }
 
-    // Constructor mới cho staff
     public OrderAdapter(Context context, List<Order> list, Runnable onOrderCancelled, boolean isStaff) {
         this.context = context;
         this.ordList = list;
@@ -123,6 +117,7 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
         holder.tvthanhTien.setText(String.format("Thành tiền: %,d đ", amountToDisplay));
         holder.tvSoLuongSP.setText("Tổng số lượng sản phẩm: " + order.getQuantity_order());
         holder.tvTT.setText("Trạng thái: " + order.getStatus());
+
         if (isStaff) {
             holder.tvngayMua.setText("Thời gian mua: " + formatDateForStaff(order.getDate()));
             if (!order.getStatus().equals("Đang xử lý")) {
@@ -175,7 +170,6 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
                 holder.tvCustomerPhone.setVisibility(View.VISIBLE);
                 holder.btnCopyPhone.setVisibility(View.VISIBLE);
 
-                // Xử lý sự kiện sao chép số điện thoại
                 holder.btnCopyPhone.setOnClickListener(v -> copyToClipboard(phoneNumber, "Số điện thoại"));
             } else {
                 holder.tvCustomerPhone.setVisibility(View.GONE);
@@ -189,7 +183,6 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
                 holder.tvCustomerAddress.setVisibility(View.VISIBLE);
                 holder.btnCopyAddress.setVisibility(View.VISIBLE);
 
-                // Xử lý sự kiện sao chép địa chỉ
                 holder.btnCopyAddress.setOnClickListener(v -> copyToClipboard(address, "Địa chỉ"));
             } else {
                 holder.tvCustomerAddress.setVisibility(View.GONE);
@@ -233,16 +226,18 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
         // Nút Hủy đơn hàng
         holder.btnHuy.setOnClickListener(v -> showCancelDialog(order, position));
 
-        // Nút Nhận hàng
+        // Nút Nhận hàng/Xác nhận
         holder.btnNhan.setOnClickListener(v -> showReceiveDialog(order));
 
         // Nút Mua lại
         holder.btnMuaLai.setOnClickListener(v -> showReorderDialog(order));
     }
 
-    // ✅ PHƯƠNG THỨC CỐT LÕI - SỬA LOGIC HIỂN THỊ NÚT
+    // Logic hiển thị nút được đơn giản hóa
     private void updateButtonVisibility(OrderViewHolder holder, Order order) {
         String status = order.getStatus().toLowerCase();
+        boolean hasCheckedAt = order.getCheckedAt() != null && !order.getCheckedAt().trim().isEmpty();
+        String checkedBy = order.getCheckedBy(); // Thêm dòng này để kiểm tra checkedBy
 
         // Ẩn tất cả các nút trước
         holder.btnHuy.setVisibility(View.GONE);
@@ -254,8 +249,7 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
         Log.d("OrderAdapter", "Status: " + status);
         Log.d("OrderAdapter", "IsStaff: " + isStaff);
         Log.d("OrderAdapter", "CheckedAt: " + order.getCheckedAt());
-        Log.d("OrderAdapter", "DeliveryConfirmedBy: " + order.getDeliveryConfirmedBy());
-        Log.d("OrderAdapter", "DeliveryConfirmedAt: " + order.getDeliveryConfirmedAt());
+        Log.d("OrderAdapter", "CheckedBy: " + checkedBy); // Thêm log để debug
 
         switch (status) {
             case "đang xử lý":
@@ -272,42 +266,35 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
                 break;
 
             case "đang giao hàng":
-                boolean hasCheckedAt = order.getCheckedAt() != null && !order.getCheckedAt().trim().isEmpty();
-                boolean hasDeliveryConfirmed = (order.getDeliveryConfirmedBy() != null && !order.getDeliveryConfirmedBy().trim().isEmpty()) ||
-                        (order.getDeliveryConfirmedAt() != null && !order.getDeliveryConfirmedAt().trim().isEmpty());
-
                 if (isStaff) {
-                    // Nếu chưa có checkedAt, hiển thị nút "Xác nhận đơn"
-                    if (!hasCheckedAt) {
-                        holder.btnNhan.setVisibility(View.VISIBLE);
-                        holder.btnNhan.setText("Xác nhận đơn");
-                        holder.btnNhan.setEnabled(true);
-                        Log.d("OrderAdapter", "Staff - Chưa checkedAt: Hiển thị 'Xác nhận đơn'");
-                    }
-                    // Nếu đã xác nhận đơn nhưng chưa xác nhận giao hàng
-                    else if (!hasDeliveryConfirmed) {
+                    // Kiểm tra checkedBy để hiển thị nút phù hợp cho staff
+                    if ("staff_confirmed".equals(checkedBy)) {
+                        // Nhân viên đã xác nhận đơn, hiện nút "Xác nhận giao hàng"
                         holder.btnNhan.setVisibility(View.VISIBLE);
                         holder.btnNhan.setText("Xác nhận giao hàng");
                         holder.btnNhan.setEnabled(true);
-                        Log.d("OrderAdapter", "Staff - Chưa deliveryConfirmed: Hiển thị 'Xác nhận giao hàng'");
-                    }
-                    // Nếu đã xác nhận giao hàng rồi thì ẩn nút
-                    else {
+                        Log.d("OrderAdapter", "Staff - Đã xác nhận đơn: Hiển thị 'Xác nhận giao hàng'");
+                    } else if ("delivery_confirmed".equals(checkedBy)) {
+                        // Nhân viên đã xác nhận giao hàng, ẩn nút
                         holder.btnNhan.setVisibility(View.GONE);
                         Log.d("OrderAdapter", "Staff - Đã xác nhận giao hàng: Ẩn nút");
+                    } else {
+                        // Trường hợp mặc định - hiện nút xác nhận giao hàng
+                        holder.btnNhan.setVisibility(View.VISIBLE);
+                        holder.btnNhan.setText("Xác nhận giao hàng");
+                        holder.btnNhan.setEnabled(true);
+                        Log.d("OrderAdapter", "Staff - Mặc định: Hiển thị 'Xác nhận giao hàng'");
                     }
                 } else {
-                    // User: CHỈ hiển thị nút "Đã nhận hàng" KHI:
-                    // 1. Staff đã xác nhận đơn (checkedAt != null)
-                    // 2. Staff đã xác nhận giao hàng (deliveryConfirmedBy != null)
-                    if (hasCheckedAt && hasDeliveryConfirmed) {
+                    // User chỉ hiển thị nút "Đã nhận hàng" KHI NHÂN VIÊN ĐÃ XÁC NHẬN GIAO HÀNG
+                    if ("delivery_confirmed".equals(checkedBy)) {
                         holder.btnNhan.setVisibility(View.VISIBLE);
                         holder.btnNhan.setText("Đã nhận hàng");
                         holder.btnNhan.setEnabled(true);
-                        Log.d("OrderAdapter", "User - Cả 2 điều kiện đều có: Hiển thị 'Đã nhận hàng'");
+                        Log.d("OrderAdapter", "User - Nhân viên đã xác nhận giao hàng: Hiển thị 'Đã nhận hàng'");
                     } else {
                         holder.btnNhan.setVisibility(View.GONE);
-                        Log.d("OrderAdapter", "User - Thiếu điều kiện: Ẩn nút (checkedAt=" + hasCheckedAt + ", deliveryConfirmed=" + hasDeliveryConfirmed + ")");
+                        Log.d("OrderAdapter", "User - Nhân viên chưa xác nhận giao hàng: Ẩn nút");
                     }
                 }
                 break;
@@ -357,45 +344,40 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
         builder.show();
     }
 
-    // ✅ PHƯƠNG THỨC CỐT LÕI - SỬA LOGIC XỬ LÝ NÚT NHẬN HÀNG
+    // Logic xử lý nút nhận hàng được đơn giản hóa
     private void showReceiveDialog(Order order) {
         if (isStaff) {
             AlertDialog.Builder builder = new AlertDialog.Builder(context);
             builder.setIcon(R.drawable.thongbao);
 
-            // Nếu đang xử lý hoặc chưa có checkedAt -> Xác nhận đơn
-            if ("đang xử lý".equalsIgnoreCase(order.getStatus()) ||
-                    order.getCheckedAt() == null || order.getCheckedAt().isEmpty()) {
-
+            // Nếu đang xử lý -> Xác nhận đơn
+            if ("đang xử lý".equalsIgnoreCase(order.getStatus())) {
                 builder.setTitle("Xác nhận đơn hàng");
                 builder.setMessage("Xác nhận đã bàn giao cho đơn vị vận chuyển?");
                 builder.setPositiveButton("Xác nhận", (dialog, which) -> {
                     Order orderUpdate = new Order();
                     orderUpdate.set_id(order.get_id());
                     orderUpdate.setStatus("Đang giao hàng");
-                    orderUpdate.setCheckedAt(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).format(new Date()));
+                    orderUpdate.setCheckedAt(getCurrentTime());
+                    orderUpdate.setCheckedBy("staff_confirmed");
 
                     updateOrder(orderUpdate);
                     Toast.makeText(context, "Đã xác nhận đơn hàng và chuyển sang trạng thái đang giao hàng", Toast.LENGTH_SHORT).show();
                 });
             }
-            // Nếu đã có checkedAt nhưng chưa có deliveryConfirmedBy -> Xác nhận giao hàng
-            else if ("đang giao hàng".equalsIgnoreCase(order.getStatus()) &&
-                    (order.getDeliveryConfirmedBy() == null || order.getDeliveryConfirmedBy().isEmpty())) {
-
+            // Nếu đang giao hàng -> Xác nhận giao hàng
+            // Khi nhân viên bấm "Xác nhận giao hàng"
+            else if ("đang giao hàng".equalsIgnoreCase(order.getStatus())) {
                 builder.setTitle("Xác nhận giao hàng");
                 builder.setMessage("Xác nhận đã giao hàng thành công cho khách hàng?");
                 builder.setPositiveButton("Xác nhận", (dialog, which) -> {
-                    String currentTime = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).format(new Date());
-
                     Order orderUpdate = new Order();
                     orderUpdate.set_id(order.get_id());
                     orderUpdate.setStatus("Đang giao hàng"); // Vẫn giữ trạng thái này
-                    orderUpdate.setDeliveryConfirmedBy("staff_confirmed"); // Đánh dấu staff đã xác nhận giao hàng
-                    orderUpdate.setDeliveryConfirmedAt(currentTime); // ✅ THÊM timestamp
+                    orderUpdate.setCheckedAt(getCurrentTime()); // Cập nhật thời gian mới
+                    orderUpdate.setCheckedBy("delivery_confirmed"); // Đánh dấu đã xác nhận giao hàng
 
                     updateOrder(orderUpdate);
-                    Toast.makeText(context, "Đã xác nhận giao hàng. Khách hàng giờ có thể xác nhận nhận hàng", Toast.LENGTH_SHORT).show();
                 });
             }
 
@@ -413,8 +395,6 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
                 orderUpdate.setStatus("Đã giao hàng");
                 updateOrder(orderUpdate);
 
-                orderUpdate.setCheckedAt(getCurrentUtcTime(order.getDate()));
-
                 Intent intent = new Intent(context, DanhGia.class);
                 intent.putExtra("orderId", order.get_id());
                 intent.putExtra("listProductInOrder", new ArrayList<>(order.getProducts()));
@@ -424,21 +404,11 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
             builder.show();
         }
     }
-    // ✅ Hàm trả về giờ hiện tại ở UTC (đúng chuẩn ISO)
-    private String getCurrentUtcTime(String isoDate) {
-        try {
-            SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
-//            inputFormat.setTimeZone(TimeZone.getTimeZone("UTC")); // parse đúng UTC
 
-            Date date = inputFormat.parse(isoDate);
-
-            SimpleDateFormat outputFormat = new SimpleDateFormat("dd/MM/yyyy - HH:mm", Locale.getDefault());
-            outputFormat.setTimeZone(TimeZone.getTimeZone("Asia/Ho_Chi_Minh")); // VN timezone
-            return outputFormat.format(date);
-        } catch (Exception e) {
-            Log.e(TAG, "Error formatting user date: " + isoDate, e);
-            return isoDate;
-        }
+    private String getCurrentTime() {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault());
+        sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+        return sdf.format(new Date());
     }
 
     private void showReorderDialog(Order order) {
@@ -535,7 +505,6 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
                 if (fail > 0) {
                     message += " (" + fail + " sản phẩm thất bại)";
                 }
-
             } else {
                 message = "Không thể thêm sản phẩm nào vào giỏ hàng";
             }
@@ -576,13 +545,6 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
             String imageUrl = getCorrectProductImage(productInOrder);
             cartItem.setImg_cart(imageUrl);
 
-            Log.d(TAG, "=== DEBUG CREATE CART ITEM ===");
-            Log.d(TAG, "ProductInOrder.img: " + productInOrder.getImg());
-            Log.d(TAG, "ProductInOrder.color: " + productInOrder.getColor());
-            Log.d(TAG, "Final imageUrl set to cart: " + imageUrl);
-            Log.d(TAG, "Cart.getImg_cart(): " + cartItem.getImg_cart());
-            Log.d(TAG, "===============================");
-
             return cartItem;
         } catch (Exception e) {
             Log.e(TAG, "Error creating cart item", e);
@@ -603,62 +565,36 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
             String selectedColorName = productInOrder.getColor();
             String selectedSize = productInOrder.getSize();
 
-            Log.d(TAG, "=== SEARCH FOR VARIANT IMAGE ===");
-            Log.d(TAG, "Selected Color: " + selectedColorName);
-            Log.d(TAG, "Selected Size: " + selectedSize);
-
-            // Mặc định sử dụng ảnh avatar của sản phẩm
             String selectedImageUrl = product.getAvt_imgproduct();
 
-            // Tìm variant phù hợp với màu và size đã mua
             if (product.getVariations() != null && !product.getVariations().isEmpty()) {
-                Log.d(TAG, "Checking " + product.getVariations().size() + " variations");
-
                 for (Variation variant : product.getVariations()) {
-                    Log.d(TAG, "Variant - Color: " + (variant.getColor() != null ? variant.getColor().getName() : "null") +
-                            ", Size: " + variant.getSize());
-
                     if (variant.getColor() != null &&
                             variant.getColor().getName().equals(selectedColorName) &&
                             String.valueOf(variant.getSize()).equals(selectedSize)) {
 
-                        Log.d(TAG, "✅ Found matching variant!");
-
-                        // Lấy ảnh đầu tiên từ variant
                         if (variant.getList_imgproduct() != null && !variant.getList_imgproduct().isEmpty()) {
                             selectedImageUrl = ApiClient.IMAGE_URL + variant.getList_imgproduct().get(0);
-                            Log.d(TAG, "✅ Using variant image: " + selectedImageUrl);
                             break;
-                        } else {
-                            Log.w(TAG, "⚠️ Variant found but no images available");
                         }
                     }
                 }
-            } else {
-                Log.w(TAG, "No variations available for product");
             }
 
             if (selectedImageUrl == null || selectedImageUrl.trim().isEmpty()) {
                 if (product.getAvt_imgproduct() != null && !product.getAvt_imgproduct().trim().isEmpty()) {
                     selectedImageUrl = ApiClient.IMAGE_URL + product.getAvt_imgproduct();
-                    Log.d(TAG, "⚠️ Fallback to product avatar: " + selectedImageUrl);
                 } else if (product.getList_imgproduct() != null && !product.getList_imgproduct().isEmpty()) {
                     selectedImageUrl = ApiClient.IMAGE_URL + product.getList_imgproduct().get(0);
-                    Log.d(TAG, "⚠️ Fallback to first product image: " + selectedImageUrl);
                 } else {
                     selectedImageUrl = "";
-                    Log.w(TAG, "❌ No images available for product");
                 }
             }
 
             imageUrl = selectedImageUrl;
 
-            Log.d(TAG, "Final selected image URL: " + imageUrl);
-            Log.d(TAG, "================================");
-
         } catch (Exception e) {
             Log.e(TAG, "Error getting correct product image", e);
-            // Fallback về ảnh sản phẩm gốc
             try {
                 Product product = productInOrder.getId_product();
                 if (product != null && product.getAvt_imgproduct() != null) {
@@ -672,16 +608,15 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
         return imageUrl;
     }
 
-// User: luôn convert UTC → VN
     private String formatDateForUser(String isoDate) {
         try {
             SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
-            inputFormat.setTimeZone(TimeZone.getTimeZone("UTC")); // parse đúng UTC
+            inputFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
 
             Date date = inputFormat.parse(isoDate);
 
             SimpleDateFormat outputFormat = new SimpleDateFormat("dd/MM/yyyy - HH:mm", Locale.getDefault());
-            outputFormat.setTimeZone(TimeZone.getTimeZone("Asia/Ho_Chi_Minh")); // VN timezone
+            outputFormat.setTimeZone(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
             return outputFormat.format(date);
         } catch (Exception e) {
             Log.e(TAG, "Error formatting user date: " + isoDate, e);
@@ -689,7 +624,6 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
         }
     }
 
-    // Staff: cũng convert UTC → VN (nếu muốn hiển thị đúng giờ thực tế tại VN)
     private String formatDateForStaff(String isoDate) {
         try {
             SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
@@ -698,29 +632,13 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
             Date date = inputFormat.parse(isoDate);
 
             SimpleDateFormat outputFormat = new SimpleDateFormat("dd/MM/yyyy - HH:mm", Locale.getDefault());
-            outputFormat.setTimeZone(TimeZone.getTimeZone("Asia/Ho_Chi_Minh")); // giữ đúng VN
+            outputFormat.setTimeZone(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
             return outputFormat.format(date);
         } catch (Exception e) {
             Log.e(TAG, "Error formatting staff date: " + isoDate, e);
             return isoDate;
         }
     }
-
-//    private String formatDateForXN(String isoDate) {
-//        try {
-//            SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
-//            inputFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-//
-//            Date date = inputFormat.parse(isoDate);
-//
-//            SimpleDateFormat outputFormat = new SimpleDateFormat("dd/MM/yyyy - HH:mm", Locale.getDefault());
-//            outputFormat.setTimeZone(TimeZone.getTimeZone("Asia/Ho_Chi_Minh")); // giữ đúng VN
-//            return outputFormat.format(date);
-//        } catch (Exception e) {
-//            Log.e(TAG, "Error formatting staff date: " + isoDate, e);
-//            return isoDate;
-//        }
-//    }
 
     private void updateOrder(Order order) {
         ApiService apiService = ApiClient.getApiService();
@@ -732,7 +650,6 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
                 if (response.isSuccessful()) {
                     Toast.makeText(context, "Cập nhật thành công", Toast.LENGTH_SHORT).show();
 
-                    // ✅ TĂNG DELAY VÀ FORCE REFRESH CHO TẤT CẢ CÁC TRƯỜNG HỢP
                     Log.d("OrderAdapter", "Update successful, scheduling refresh after delay...");
                     new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
                         if (onOrderCancelled != null) {
@@ -742,7 +659,7 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
                             Log.d("OrderAdapter", "Callback is null, using notifyDataSetChanged");
                             notifyDataSetChanged();
                         }
-                    }, 1000); // ✅ TĂNG DELAY LÊN 1 GIÂY
+                    }, 1000);
                 } else {
                     Toast.makeText(context, "Cập nhật thất bại: " + response.message(), Toast.LENGTH_SHORT).show();
                 }
@@ -756,6 +673,7 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
             }
         });
     }
+
     private void cancelOrder(Order order, int position) {
         ApiService apiService = ApiClient.getApiService();
         apiService.upStatus(order.get_id(), order).enqueue(new Callback<Order>() {
