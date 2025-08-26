@@ -46,6 +46,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const donhang = document.getElementById('donhang');
   const thongke = document.getElementById('thongke');
   const lienhe = document.getElementById('lienhe');
+  const khac = document.getElementById('khac');
+  const menudangxuat = document.getElementById('menu-dangxuat');
 
   const hideElement = (element) => {
       if (element) element.style.display = 'none';
@@ -67,6 +69,8 @@ document.addEventListener('DOMContentLoaded', () => {
     hideElement(donhang);
     hideElement(thongke);
     hideElement(lienhe);
+    hideElement(khac);
+    hideElement(menudangxuat);
 
   if (userData.role === 1){
       document.getElementById('menu-home').style.display = 'block';
@@ -83,11 +87,18 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('menu-dh').style.display = 'block';
       document.getElementById('lienhe').style.display = 'block';
       document.getElementById('menu-contact').style.display = 'block';
+      document.getElementById('khac').style.display = 'block';
+      document.getElementById('menu-dangxuat').style.display = 'block';
   } else if (userData.role === 2){
       document.getElementById('menu-home').style.display = 'block';
+      document.getElementById('quantri').style.display = 'block';
+      document.getElementById('menu-ql-tk').style.display = 'block';
+      document.getElementById('menu-voucher').style.display = 'block';
       document.getElementById('thongke').style.display = 'block';
       document.getElementById('menu-stats').style.display = 'block';
       document.getElementById('menu-top10').style.display = 'block';
+      document.getElementById('khac').style.display = 'block';
+      document.getElementById('menu-dangxuat').style.display = 'block';
   }
 
   // Xử lý trạng thái active cho link navigation
@@ -119,124 +130,29 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
 
- const avatar = document.getElementById('avt');
-    const userModal = document.getElementById('userModal');
-    const userModalDialog = userModal?.querySelector('.modal-dialog');
-
-    if (avatar && userModal) {
-        let userModalInstance = null;
-
-        avatar.addEventListener('click', () => {
-            // Tạo hoặc tái sử dụng instance modal
-            if (!userModalInstance || userModalInstance._isShown === false) {
-                userModalInstance = new bootstrap.Modal(userModal, { backdrop: false });
-            }
-            userModalInstance.show();
-
-            const avatarRect = avatar.getBoundingClientRect();
-            const sidebarRect = document.querySelector('.sidebar').getBoundingClientRect();
-
-            userModalDialog.style.position = 'absolute';
-            userModalDialog.style.top = `${avatarRect.top + window.scrollY}px`;
-            userModalDialog.style.left = `${sidebarRect.right + 10}px`;
-            userModalDialog.style.margin = '0';
-            userModalDialog.style.zIndex = '1050';
-        });
-
-        userModal.addEventListener('show.bs.modal', () => {
-            userModalDialog.style.display = 'block';
-            // Xóa backdrop nếu tồn tại
-            const backdrop = document.querySelector('.modal-backdrop');
-            if (backdrop) backdrop.remove();
-        });
-
-        userModal.addEventListener('hidden.bs.modal', () => {
-            userModalDialog.style.position = '';
-            userModalDialog.style.top = '';
-            userModalDialog.style.left = '';
-            userModalDialog.style.margin = '';
-            userModalDialog.style.zIndex = '';
-            // Đảm bảo không còn backdrop
-            const backdrop = document.querySelector('.modal-backdrop');
-            if (backdrop) backdrop.remove();
-        });
-    }
-
-    const changePasswordLink = userModal.querySelector('a[href="#"]:nth-child(2)');
-    const changePasswordModal = document.getElementById('changePasswordModal');
-    const changeModalDialog = changePasswordModal?.querySelector('.modal-dialog');
-
-    if (changePasswordLink && changePasswordModal) {
-        changePasswordLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            const modalInstance = new bootstrap.Modal(changePasswordModal, { backdrop: false });
-            modalInstance.show();
-
-            const avatarRect = avatar.getBoundingClientRect();
-            const sidebarRect = document.querySelector('.sidebar').getBoundingClientRect();
-
-            changeModalDialog.style.position = 'absolute';
-            changeModalDialog.style.top = `${avatarRect.top + window.scrollY}px`;
-            changeModalDialog.style.left = `${sidebarRect.right + 10}px`;
-            changeModalDialog.style.margin = '0';
-            changeModalDialog.style.zIndex = '1050';
-        });
-
-        changePasswordModal.addEventListener('show.bs.modal', () => {
-            changeModalDialog.style.display = 'block';
-            const backdrop = document.querySelector('.modal-backdrop');
-            if (backdrop) backdrop.remove();
-        });
-
-        changePasswordModal.addEventListener('hidden.bs.modal', () => {
-            changeModalDialog.style.position = '';
-            changeModalDialog.style.top = '';
-            changeModalDialog.style.left = '';
-            changeModalDialog.style.margin = '';
-            changeModalDialog.style.zIndex = '';
-            const backdrop = document.querySelector('.modal-backdrop');
-            if (backdrop) backdrop.remove();
-        });
-    }
-
-    const changePasswordForm = document.getElementById('changePasswordForm');
-    if (changePasswordForm) {
-        changePasswordForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const currentPassword = document.getElementById('currentPassword').value;
-            const newPassword = document.getElementById('newPassword').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-
-            if (newPassword !== confirmPassword) {
-                alert('Mật khẩu mới và xác nhận mật khẩu không khớp!');
-                return;
-            }
-
-            console.log('Đổi mật khẩu:', { currentPassword, newPassword });
-            alert('Đổi mật khẩu thành công! (Đây là mô phỏng)');
-            bootstrap.Modal.getInstance(changePasswordModal).hide();
-        });
-    }
-
   // Xử lý đăng xuất trong modal
-  const dangxuat = document.getElementById('dangxuat');
-  if (dangxuat) {
-    dangxuat.addEventListener('click', (e) => {
-      e.preventDefault();
-      DangXuat();
-    });
-  }
-});
-
-function DangXuat() {
-  const confirmLogout = confirm('Bạn có chắc chắn muốn đăng xuất không?');
-  if (confirmLogout) {
-    try {
-      localStorage.removeItem('userData');
-      localStorage.removeItem('userRole');
-      window.location.href = '../Web_DangNhap/Web_DangNhap.html';
-    } catch (e) {
-      console.error('Lỗi khi xóa dữ liệu localStorage:', e);
+  const dangxuat = document.getElementById('menu-dangxuat');
+if (dangxuat) {
+  dangxuat.addEventListener('click', (e) => {
+    e.preventDefault();
+    const confirmLogout = confirm('Bạn có chắc chắn muốn đăng xuất không?');
+    if (confirmLogout) {
+      try {
+        // Xóa dữ liệu đăng nhập
+        localStorage.removeItem('userData');
+        localStorage.removeItem('userRole');
+        
+        // Chuyển hướng đến trang đăng nhập
+        const redirectUrl = '../Web_DangNhap/Web_DangNhap.html';
+        window.location.href = redirectUrl;
+        
+        // Thông báo thành công (nếu cần, nhưng có thể không hiển thị do chuyển hướng ngay)
+        console.log('Đăng xuất thành công, chuyển hướng đến:', redirectUrl);
+      } catch (error) {
+        console.error('Lỗi khi xóa dữ liệu localStorage:', error);
+        alert('Đã xảy ra lỗi khi đăng xuất. Vui lòng thử lại.');
+      }
     }
-  }
+  });
 }
+});

@@ -1333,7 +1333,9 @@ router.put('/updateOrderStatus/:orderId', async (req, res) => {
             return res.status(400).json({ message: 'Trạng thái không được để trống' });
         }
 
-        const order = await orderModel.findById(orderId);
+        const order = await orderModel.findById(orderId)
+            .populate('id_user')
+            .populate('products.id_product');
         if (!order) {
             return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
         }
@@ -1372,8 +1374,30 @@ router.put('/updateOrderStatus/:orderId', async (req, res) => {
             updateData,
             { new: true, runValidators: true }
         );
+        if (!updatedOrder) {
+            return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+        }   
 
-        // ... phần code còn lại giữ nguyên
+        // Tạo thông báo khi đơn hàng được giao thành công
+        if (status === 'Đã giao' || status === 'delivered' || status === 'Đã giao hàng') {
+            console.log('Creating delivery success notification for order:', orderId);
+            const newNotification = new notificationModel({
+                userId: order.id_user._id,
+                title: 'Giao hàng thành công',
+                content: `Đơn hàng <font color='#2196F3'>${order.id_order}</font> của bạn đã được giao thành công. Cảm ơn bạn đã mua sắm tại ShopBePoly!`,
+                type: 'delivery',
+                isRead: false,
+                createdAt: new Date(),
+                orderId: order._id,
+                products: order.products.map(item => ({
+                    id_product: item.id_product?._id,
+                    productName: item.id_product?.nameproduct || '',
+                    img: item.id_product?.avt_imgproduct || ''
+                }))
+            });
+
+            await newNotification.save();
+        }
         
         return res.status(200).json({ message: 'Cập nhật trạng thái thành công', order: updatedOrder });
     } catch (error) {

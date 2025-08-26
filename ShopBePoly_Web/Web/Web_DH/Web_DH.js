@@ -1,5 +1,30 @@
 const c = window.config;
 
+const dangxuat = document.getElementById('menu-dangxuat');
+if (dangxuat) {
+  dangxuat.addEventListener('click', (e) => {
+    e.preventDefault();
+    const confirmLogout = confirm('Bạn có chắc chắn muốn đăng xuất không?');
+    if (confirmLogout) {
+      try {
+        // Xóa dữ liệu đăng nhập
+        localStorage.removeItem('userData');
+        localStorage.removeItem('userRole');
+        
+        // Chuyển hướng đến trang đăng nhập
+        const redirectUrl = '../Web_DangNhap/Web_DangNhap.html';
+        window.location.href = redirectUrl;
+        
+        // Thông báo thành công (nếu cần, nhưng có thể không hiển thị do chuyển hướng ngay)
+        console.log('Đăng xuất thành công, chuyển hướng đến:', redirectUrl);
+      } catch (error) {
+        console.error('Lỗi khi xóa dữ liệu localStorage:', error);
+        alert('Đã xảy ra lỗi khi đăng xuất. Vui lòng thử lại.');
+      }
+    }
+  });
+}
+
 const hienthiOrder = async () => {
   const tbody = document.querySelector('#tbody');
   tbody.innerHTML = '';

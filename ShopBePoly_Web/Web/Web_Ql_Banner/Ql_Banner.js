@@ -1,20 +1,7 @@
 const API_BASE = `http://${config.host}:${config.port}/api`;
 const UPLOADS_BASE = `http://${config.host}:${config.port}/uploads`;
 
-// Load Sidebar
-fetch('../Style_Sidebar/Sidebar.html')
-  .then(res => res.text())
-  .then(data => {
-    document.getElementById('sidebar-container').innerHTML = data;
-    const dangxuat = document.getElementById('dangxuat');
-    if (dangxuat) {
-      dangxuat.addEventListener('click', () => {
-        if (confirm('Bạn có chắc chắn muốn đăng xuất không?')) {
-          window.location.href = '../Web_DangNhap/Web_DangNhap.html';
-        }
-      });
-    }
-  });
+
 
 // Lấy và hiển thị danh sách banner
 async function fetchBanners() {
