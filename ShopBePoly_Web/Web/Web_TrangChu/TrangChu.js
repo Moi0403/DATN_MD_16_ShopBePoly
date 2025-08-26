@@ -348,6 +348,19 @@ function displayOrderDetail(order) {
         ? `<p class="text-danger"><strong>Lý do hủy:</strong> ${order.cancelReason || 'Không có lý do cụ thể'}</p>`
         : '';
 
+    // 👉 Thêm checkedAt + checkedBy
+    const checkedHtml = order.checkedAt || order.checkedBy ? `
+        <p><strong>Thời gian cập nhật:</strong> 
+            ${order.checkedAt 
+                ? new Date(order.checkedAt).toLocaleString('vi-VN', { 
+                    day: '2-digit', month: '2-digit', year: 'numeric', 
+                    hour: '2-digit', minute: '2-digit', second: '2-digit' 
+                  }) 
+                : '---'}
+        </p>
+        <p><strong>Người xác nhận:</strong> ${order.checkedBy || '---'}</p>
+    ` : '';
+
     modalBody.innerHTML = sanitizeHtml(`
         <div class="row">
             <div class="col-lg-6">
@@ -356,12 +369,17 @@ function displayOrderDetail(order) {
                 <p><strong>Người đặt:</strong> ${order.id_user?.name || '---'}</p>
                 <p><strong>SĐT:</strong> ${order.id_user?.phone_number || '---'}</p>
                 <p><strong>Địa chỉ:</strong> ${order.address || 'Không có'}</p>
-                <p><strong>Ngày đặt:</strong> ${order.date ? new Date(order.date).toLocaleDateString('vi-VN') : 'Không xác định'}</p>
-                <p><strong>Thời gian đặt:</strong> ${order.date ? new Date(order.date).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : 'Không xác định'}</p>
+                <p><strong>Ngày đặt:</strong> ${order.date 
+                    ? new Date(order.date).toLocaleDateString('vi-VN') 
+                    : 'Không xác định'}</p>
+                <p><strong>Thời gian đặt:</strong> ${order.date 
+                    ? new Date(order.date).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) 
+                    : 'Không xác định'}</p>
                 <p><strong>Thanh toán:</strong> ${order.pay || 'Không xác định'}</p>
                 <p><strong>Tổng tiền:</strong> ${Number(order.total || 0).toLocaleString('vi-VN')} ₫</p>
                 <p><strong>Trạng thái:</strong> ${order.status || 'Không xác định'}</p>
                 ${cancelReasonHtml}
+                ${checkedHtml}
             </div>
             <div class="col-lg-6">
                 <h5 class="font-weight-bold text-gray-800">Sản phẩm:</h5>
@@ -377,6 +395,7 @@ function displayOrderDetail(order) {
         fetchAndDisplayOrdersToday();
     });
 }
+
 
 async function fetchAndDisplayOrdersToday() {
     const modalBody = document.querySelector('#orderModal .modal-body');

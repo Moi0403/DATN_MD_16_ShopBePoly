@@ -271,12 +271,14 @@ async function showOrderDetails(orderId) {
         const res = await fetch(`${API_BASE}/list_order`);
         const data = await res.json();
         const order = data.find(o => o._id === orderId);
+
         if (!order) {
             showError("Không tìm thấy đơn hàng.");
             return;
         }
 
-        const { id_user, products, total, address, date, pay, status, cancelReason } = order;
+        const { id_user, products, total, address, date, pay, status, cancelReason, checkedAt, checkedBy } = order;
+
         const productHtml = Array.isArray(products) ? products.map(product => {
             const productData = product.id_product || {};
             const color = product.color || '';
@@ -313,10 +315,24 @@ async function showOrderDetails(orderId) {
             `;
         }).join('') : '<p class="text-gray-500">Không có sản phẩm</p>';
 
-        // Thêm phần "Lý do hủy" chỉ khi trạng thái là "Đã hủy"
+
         const cancelReasonHtml = status === 'Đã hủy' && cancelReason
             ? `<p><strong>Lý do hủy:</strong> ${cancelReason || 'Không có lý do cụ thể'}</p>`
             : '';
+
+
+        const checkedHtml = checkedAt || checkedBy ? `
+            <p><strong>Thời gian cập nhật:</strong> 
+        ${checkedAt
+                ? new Date(checkedAt).toLocaleString('vi-VN', {
+                    day: '2-digit', month: '2-digit', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit', second: '2-digit'
+                })
+                : '---'}
+            </p>
+            <p><strong>Người xác nhận:</strong> ${checkedBy || '---'}</p>
+        ` : '';
+
 
         const bodyHtml = `
             <p><strong>Mã đơn hàng:</strong> ${order.id_order || order._id}</p>
@@ -329,6 +345,7 @@ async function showOrderDetails(orderId) {
             <p><strong>Tổng tiền:</strong> ${Number(total || 0).toLocaleString('vi-VN')} ₫</p>
             <p><strong>Trạng thái:</strong> ${status || 'Không xác định'}</p>
             ${cancelReasonHtml}
+            ${checkedHtml}
             <hr class="my-4">
             <h6 class="font-bold text-gray-800">Sản phẩm:</h6>
             ${productHtml}
