@@ -21,6 +21,7 @@ const hienThiUser = async () => {
         tbody.innerHTML = '';
 
         data.forEach((item, index) => {
+            
             const tr = document.createElement('tr');
 
             const tdSTT = document.createElement('td');
@@ -74,10 +75,8 @@ const hienThiUser = async () => {
 
 
             const tdPL = document.createElement('td');
-            if (item.role === 2) {
-                tdPL.textContent = 'Admin';
-            } else if (item.role === 1) {
-                tdPL.textContent = 'Nhân viên';
+            if (item.role === 1) {
+               tdPL.textContent = 'Nhân viên';
             } else if (item.role === 0) {
                 tdPL.textContent = 'Người dùng';
             }

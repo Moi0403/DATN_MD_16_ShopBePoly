@@ -511,13 +511,16 @@ router.get('/search_product', async (req, res) => {
 // User routes...
 router.get('/list_user', async (req, res) => {
     try {
-        const users = await userModel.find().select('-password');
+        // Chỉ lấy user có role khác 3 (loại bỏ Admin)
+        const users = await userModel.find({ role: { $ne: 3 } }).select('-password');
         res.json(users);
     } catch (error) {
         console.error('Lỗi khi lấy danh sách user:', error);
         res.status(500).json({ error: 'Lỗi server' });
     }
 });
+
+
 
 router.post('/add_user', uploadAvatar.fields([{ name: 'avt_user', maxCount: 1 }]), async (req, res) => {
     try {
