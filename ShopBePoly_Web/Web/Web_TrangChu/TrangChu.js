@@ -9,8 +9,8 @@ let pendingOrdersData = [];
 let previousTodayStats = { totalOrders: 0, totalRevenue: 0 };
 let currentStagnantPage = 1;
 let totalStagnantPages = 1;
-let onlineUsersIntervalId = null; 
-let userModalInstance = null; 
+let onlineUsersIntervalId = null;
+let userModalInstance = null;
 
 function setTextIfExists(id, text) {
     const elem = document.getElementById(id);
@@ -158,8 +158,13 @@ async function fetchAndDisplayOnlineUsers() {
 
 async function fetchTodayStatistics() {
     try {
+        console.log('Fetching today statistics...');
         const data = await fetchWithRetry(`${API_BASE}/statistics-today`);
-        if (previousTodayStats.totalOrders === data.totalOrders && previousTodayStats.totalRevenue === data.totalRevenue) return;
+        console.log('Today statistics response:', data);
+        if (previousTodayStats.totalOrders === data.totalOrders && previousTodayStats.totalRevenue === data.totalRevenue) {
+            console.log('No changes in today statistics, skipping DOM update');
+            return;
+        }
         previousTodayStats = { totalOrders: data.totalOrders, totalRevenue: data.totalRevenue };
 
         setTextIfExists('todayOrdersCount', data.totalOrders ?? 0);
@@ -169,7 +174,7 @@ async function fetchTodayStatistics() {
         setTextIfExists('todayOrdersCount', 'Error');
         setTextIfExists('todayRevenue', 'Error');
         Toastify({
-            text: "Lỗi tải thống kê hôm nay!",
+            text: "Lỗi tải thống kê hôm nay: " + (error.message || 'Unknown error'),
             duration: 3000,
             gravity: "top",
             position: "right",
@@ -178,58 +183,81 @@ async function fetchTodayStatistics() {
     }
 }
 
+// file dashboard.js
 async function fetchLowStockProducts() {
     const tableBody = document.getElementById('lowStockTable');
-    if (!tableBody) return;
+    if (!tableBody) {
+        console.error('lowStockTable element not found');
+        return;
+    }
 
-    tableBody.innerHTML = '<tr><td colspan="8" class="text-center"><div class="spinner-border text-primary" role="status"></div></td></tr>';
+    tableBody.innerHTML = `
+        <tr>
+            <td colspan="8" class="text-center">
+                <div class="spinner-border text-primary" role="status"></div>
+            </td>
+        </tr>`;
 
     try {
-        const threshold = localStorage.getItem('lowStockThreshold') || 20;
-        const data = await fetchWithRetry(`${API_BASE}/products/low-stock?threshold=${threshold}`);
+        const threshold = Number(localStorage.getItem('lowStockThreshold')) || 20;
+        const response = await fetchWithRetry(`${API_BASE}/products/low-stock?threshold=${threshold}`);
+        const data = response.data || [];
 
-        if (JSON.stringify(data.data) === JSON.stringify(previousLowStockData)) return;
-        previousLowStockData = data.data;
-
-        tableBody.innerHTML = '';
-        if (!data.data?.length) {
-            tableBody.innerHTML = '<tr><td colspan="8" class="text-center">Không có sản phẩm gần hết hàng</td></tr>';
+        if (!Array.isArray(data)) {
+            tableBody.innerHTML = `<tr><td colspan="8" class="text-center">Không có dữ liệu sản phẩm gần hết hàng</td></tr>`;
             return;
         }
 
-        const html = data.data
-            .filter(item => item.variations.some(v => v.stock <= threshold))
-            .map((item, index) => {
-                const lowStockVariations = item.variations.filter(v => v.stock <= threshold);
-                const sizesHtml = lowStockVariations.map(v => v.size || '---').join('<br>');
-                const stockHtml = lowStockVariations.map(v => v.stock || 0).join('<br>');
-                const colorHtml = item.color || '-';
-                const rowClass = index % 2 === 0 ? 'row-white' : 'row-black'; // Xen kẽ màu trắng đen
+        if (JSON.stringify(data) === JSON.stringify(previousLowStockData)) {
+            return;
+        }
+        previousLowStockData = data;
 
-                return `
-                    <tr class="${rowClass}">
-                        <td>${item.name || '---'}</td>
-                        <td>${item.category || '---'}</td>
-                        <td>${colorHtml}</td>
-                        <td>${Number(item.price || 0).toLocaleString('vi-VN')} ₫</td>
-                        <td>${item.sale_price ? Number(item.sale_price).toLocaleString('vi-VN') + ' ₫' : '-'}</td>
-                        <td>${sizesHtml}</td>
-                        <td>${stockHtml}</td>
-                        <td>
-                            <img src="${UPLOADS_BASE}/${item.avt_imgproduct || 'default.png'}" width="100" height="100" style="object-fit:cover;" 
+        tableBody.innerHTML = '';
+        if (!data.length) {
+            tableBody.innerHTML = `<tr><td colspan="8" class="text-center">Không có sản phẩm gần hết hàng (threshold=${threshold})</td></tr>`;
+            return;
+        }
+
+        const fragment = document.createDocumentFragment();
+
+        data.forEach((product, index) => {
+            const tr = document.createElement('tr');
+            tr.className = index % 2 === 0 ? 'row-white' : 'row-black';
+
+            // Xử lý các biến thể theo từng sản phẩm/màu
+            const sizesHtml = product.variations.map(v => v.size || '-').join('<br>');
+            const stockHtml = product.variations.map(v => v.stock || 0).join('<br>');
+
+            tr.innerHTML = `
+                <td>${product.name || '---'}</td>
+                <td>${product.category || '---'}</td>
+                <td>
+                    <div style="display:flex;align-items:center;gap:5px;">
+                        <span style="display:inline-block;width:15px;height:15px;border:1px solid #ccc;background:${product.colorCode || '#000'}"></span>
+                        ${product.color || '---'}
+                    </div>
+                </td>
+                <td>${Number(product.price || 0).toLocaleString('vi-VN')} ₫</td>
+                <td>${product.sale_price ? Number(product.sale_price).toLocaleString('vi-VN') + ' ₫' : '-'}</td>
+                <td>${sizesHtml}</td>
+                <td>${stockHtml}</td>
+                <td>
+                    <img src="${UPLOADS_BASE}/${product.avt_imgproduct || 'default.png'}" width="100" height="100" style="object-fit:cover;" 
                                  onerror="this.src='https://via.placeholder.com/100'"/>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
+                </td>
+            `;
+            fragment.appendChild(tr);
+        });
 
-        tableBody.innerHTML = sanitizeHtml(html);
+        tableBody.appendChild(fragment);
+
     } catch (error) {
         console.error('Error fetching low-stock products:', error);
-        tableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Lỗi tải dữ liệu sản phẩm gần hết hàng</td></tr>';
+        tableBody.innerHTML = `<tr><td colspan="8" class="text-center text-danger">Lỗi tải dữ liệu sản phẩm gần hết hàng: ${error.message}</td></tr>`;
         Toastify({
-            text: "Lỗi tải danh sách sản phẩm gần hết hàng!",
-            duration: 3000,
+            text: `Lỗi tải danh sách sản phẩm gần hết hàng: ${error.message}`,
+            duration: 5000,
             gravity: "top",
             position: "right",
             backgroundColor: "#dc3545"
@@ -239,16 +267,26 @@ async function fetchLowStockProducts() {
 
 const debouncedFetchStagnantProducts = debounce(async (page = 1) => {
     const tableBody = document.getElementById('stagnantTable');
-    if (!tableBody) return;
+    if (!tableBody) {
+        console.error('stagnantTable element not found');
+        return;
+    }
 
     tableBody.innerHTML = '<tr><td colspan="8" class="text-center"><div class="spinner-border text-primary" role="status"></div></td></tr>';
 
     try {
         const days = localStorage.getItem('stagnantDays') || 7;
-        const soldLimit = localStorage.getItem('stagnantSoldLimit') || 50;
+        const soldLimit = localStorage.getItem('stagnantSoldLimit') || 10;
         console.log(`Fetching stagnant products: days=${days}, soldLimit=${soldLimit}, page=${page}`);
-        const res = await fetchWithRetry(`${API_BASE}/products/stagnant?days=${days}&soldLimit=${soldLimit}&page=${page}&limit=10`);
-        const { data, pagination } = res;
+        const response = await fetchWithRetry(`${API_BASE}/products/stagnant?soldLimit=${soldLimit}&page=${page}&limit=10`);
+        console.log('Stagnant products response:', response);
+
+        const { data, pagination } = response;
+        if (!Array.isArray(data)) {
+            console.error('Invalid stagnant products data:', data);
+            tableBody.innerHTML = `<tr><td colspan="8" class="text-center">Không có dữ liệu sản phẩm tồn kho lâu</td></tr>`;
+            return;
+        }
 
         if (JSON.stringify(data) === JSON.stringify(previousStagnantData)) {
             console.log('No changes in stagnant products data, skipping DOM update');
@@ -260,9 +298,9 @@ const debouncedFetchStagnantProducts = debounce(async (page = 1) => {
 
         tableBody.innerHTML = '';
         if (!data.length) {
-            tableBody.innerHTML = '<tr><td colspan="8" class="text-center">Không có sản phẩm tồn kho lâu. Vui lòng kiểm tra dữ liệu hoặc điều chỉnh tham số (ngày: ' + days + ', giới hạn bán: ' + soldLimit + ').</td></tr>';
+            tableBody.innerHTML = `<tr><td colspan="8" class="text-center">Không có sản phẩm tồn kho lâu (soldLimit=${soldLimit})</td></tr>`;
             Toastify({
-                text: `Không tìm thấy sản phẩm tồn kho lâu (days=${days}, soldLimit=${soldLimit})`,
+                text: `Không tìm thấy sản phẩm tồn kho lâu (soldLimit=${soldLimit})`,
                 duration: 5000,
                 gravity: "top",
                 position: "right",
@@ -273,15 +311,17 @@ const debouncedFetchStagnantProducts = debounce(async (page = 1) => {
 
         const fragment = document.createDocumentFragment();
         data.forEach((product, index) => {
+            console.log('Rendering stagnant product:', product);
             const tr = document.createElement('tr');
-            tr.className = index % 2 === 0 ? 'row-white' : 'row-black'; // Xen kẽ màu trắng đen
-            const variationsHtml = Object.entries(product.variationsByColor || {}).map(([color, { variations }]) =>
-                variations.map(v =>
-                    `Size: ${v.size || '---'}, Tồn: ${v.stock || 0}, Đã bán: ${v.sold || 0} <br>
-                     <img src="${UPLOADS_BASE}/${v.image || 'default.png'}" width="50" height="50" style="object-fit:cover;" 
-                          onerror="this.src='https://via.placeholder.com/50'"/>`
-                ).join('<hr>')
-            ).join('<hr>');
+            tr.className = index % 2 === 0 ? 'row-white' : 'row-black';
+            const variationsHtml = Object.entries(product.variationsByColor || {})
+                .map(([color, { variations }]) =>
+                    variations.map(v =>
+                        `Size: ${v.size || '---'}, Tồn: ${v.stock || 0}, Đã bán: ${v.sold || 0} <br>
+                         <img src="${UPLOADS_BASE}/${v.image || 'default.png'}" width="50" height="50" style="object-fit:cover;" 
+                              onerror="this.src='https://via.placeholder.com/50'"/>`
+                    ).join('<hr>')
+                ).join('<hr>');
 
             tr.innerHTML = `
                 <td>${product.name || '---'}</td>
@@ -302,15 +342,15 @@ const debouncedFetchStagnantProducts = debounce(async (page = 1) => {
         tableBody.appendChild(fragment);
 
         const wrapper = document.getElementById('stagnantTableWrapper');
-        const existingPagination = wrapper.nextElementSibling;
+        const existingPagination = wrapper?.nextElementSibling;
         if (existingPagination && existingPagination.classList.contains('pagination-info')) {
             existingPagination.remove();
         }
     } catch (error) {
         console.error('Error fetching stagnant products:', error);
-        tableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Lỗi tải dữ liệu sản phẩm tồn kho lâu</td></tr>';
+        tableBody.innerHTML = `<tr><td colspan="8" class="text-center text-danger">Lỗi tải dữ liệu sản phẩm tồn kho lâu: ${error.message}</td></tr>`;
         Toastify({
-            text: "Lỗi tải danh sách sản phẩm tồn kho lâu: " + error.message,
+            text: `Lỗi tải danh sách sản phẩm tồn kho lâu: ${error.message}`,
             duration: 5000,
             gravity: "top",
             position: "right",
@@ -348,7 +388,6 @@ function displayOrderDetail(order) {
         ? `<p class="text-danger"><strong>Lý do hủy:</strong> ${order.cancelReason || 'Không có lý do cụ thể'}</p>`
         : '';
 
-    // 👉 Thêm checkedAt + checkedBy
     const checkedHtml = order.checkedAt || order.checkedBy ? `
         <p><strong>Thời gian cập nhật:</strong> 
             ${order.checkedAt 
@@ -396,7 +435,6 @@ function displayOrderDetail(order) {
     });
 }
 
-
 async function fetchAndDisplayOrdersToday() {
     const modalBody = document.querySelector('#orderModal .modal-body');
     const modalTitle = document.querySelector('#orderModal .modal-title');
@@ -406,10 +444,18 @@ async function fetchAndDisplayOrdersToday() {
     modalTitle.textContent = 'Danh sách đơn hàng hôm nay';
 
     try {
-        const allOrders = await fetchWithRetry(`${API_BASE}/list_order`);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        todayOrdersData = allOrders.filter(order => new Date(order.date) >= today);
+        console.log('Fetching today orders...');
+        const response = await fetchWithRetry(`${API_BASE}/orders-today`);
+        console.log('Today orders response:', response);
+        const orders = response.orders || [];
+        todayOrdersData = orders.filter(order => order.status !== 'Đã hủy'); // Lọc client-side để đảm bảo không có đơn Đã hủy
+
+        console.log('Filtered today orders:', todayOrdersData.map(o => ({
+            id_order: o.id_order,
+            total: o.total,
+            status: o.status,
+            date: o.date
+        })));
 
         const html = todayOrdersData.length
             ? todayOrdersData.map((order, index) => `
@@ -455,9 +501,9 @@ async function fetchAndDisplayOrdersToday() {
         });
     } catch (error) {
         console.error('Error fetching today\'s orders:', error);
-        modalBody.innerHTML = '<p class="text-center text-danger">Lỗi tải dữ liệu đơn hàng.</p>';
+        modalBody.innerHTML = '<p class="text-center text-danger">Lỗi tải dữ liệu đơn hàng: ' + (error.message || 'Unknown error') + '</p>';
         Toastify({
-            text: "Lỗi tải danh sách đơn hàng hôm nay!",
+            text: "Lỗi tải danh sách đơn hàng hôm nay: " + (error.message || 'Unknown error'),
             duration: 3000,
             gravity: "top",
             position: "right",
@@ -468,7 +514,9 @@ async function fetchAndDisplayOrdersToday() {
 
 async function fetchPendingOrders() {
     try {
+        console.log('Fetching pending orders...');
         const data = await fetchWithRetry(`${API_BASE}/orders/pending`);
+        console.log('Pending orders response:', data);
         pendingOrdersData = Array.isArray(data.orders) ? data.orders : [];
         setTextIfExists('pendingOrders', pendingOrdersData.length);
         renderPendingOrdersTable();
@@ -476,7 +524,7 @@ async function fetchPendingOrders() {
         console.error('Error fetching pending orders:', error);
         setTextIfExists('pendingOrders', 'Error');
         Toastify({
-            text: "Lỗi tải danh sách đơn hàng chờ xác nhận!",
+            text: "Lỗi tải danh sách đơn hàng chờ xác nhận: " + (error.message || 'Unknown error'),
             duration: 3000,
             gravity: "top",
             position: "right",
@@ -680,6 +728,7 @@ fetch('../Style_Sidebar/Sidebar.html')
 
 async function refreshDashboard() {
     try {
+        console.log('Refreshing dashboard...');
         await debouncedFetchStagnantProducts(currentStagnantPage);
         await Promise.all([
             fetchOnlineCount(),
@@ -690,7 +739,7 @@ async function refreshDashboard() {
     } catch (error) {
         console.error('Error refreshing dashboard:', error);
         Toastify({
-            text: "Lỗi làm mới dashboard: " + error.message,
+            text: "Lỗi làm mới dashboard: " + (error.message || 'Unknown error'),
             duration: 5000,
             gravity: "top",
             position: "right",
@@ -702,6 +751,6 @@ async function refreshDashboard() {
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM fully loaded, initializing dashboard');
     if (!localStorage.getItem('stagnantDays')) localStorage.setItem('stagnantDays', 7);
-    if (!localStorage.getItem('stagnantSoldLimit')) localStorage.setItem('stagnantSoldLimit', 50);
+    if (!localStorage.getItem('stagnantSoldLimit')) localStorage.setItem('stagnantSoldLimit', 10);
     refreshDashboard();
 });

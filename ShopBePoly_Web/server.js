@@ -2653,6 +2653,7 @@ router.get("/reviews", async (req, res) => {
   }
 });
 
+
 router.get('/statistics-today', async (req, res) => {
     try {
         const now = new Date();
@@ -2668,34 +2669,189 @@ router.get('/statistics-today', async (req, res) => {
         const startDate = new Date(`${todayStr}T00:00:00.000+07:00`);
         const endDate = new Date(`${todayStr}T23:59:59.999+07:00`);
 
+        console.log(`Fetching statistics-today: start=${startDate.toISOString()}, end=${endDate.toISOString()}`);
+
         const result = await orderModel.aggregate([
             {
                 $match: {
-                    status: { $ne: 'Đã hủy' },
+                    status: { $ne: 'Đã hủy' }, // Loại bỏ đơn hàng Đã hủy
                     date: { $gte: startDate, $lte: endDate }
                 }
             },
             {
                 $group: {
                     _id: null,
-                    totalRevenue: { $sum: { $toDouble: "$total" } },
+                    totalRevenue: { $sum: { $toDouble: { $ifNull: ["$total", "0"] } } },
                     totalOrders: { $sum: 1 }
                 }
             }
         ]);
 
+        const stats = result[0] || { totalOrders: 0, totalRevenue: 0 };
+        console.log('Today statistics:', stats);
+
         res.json({
             date: todayStr,
-            totalOrders: result[0]?.totalOrders || 0,
-            totalRevenue: result[0]?.totalRevenue || 0
+            totalOrders: stats.totalOrders,
+            totalRevenue: stats.totalRevenue
         });
-
     } catch (error) {
         console.error('Lỗi lấy doanh thu hôm nay:', error);
-        res.status(500).json({ message: 'Lỗi server khi lấy doanh thu hôm nay' });
+        res.status(500).json({ message: 'Lỗi server khi lấy doanh thu hôm nay', error: error.message });
     }
 });
 
+router.get('/statistics-today/orders', async (req, res) => {
+    try {
+        const now = new Date();
+        const vnOffsetMs = 7 * 60 * 60 * 1000;
+        const vnTime = new Date(now.getTime() + vnOffsetMs);
+
+        const year = vnTime.getUTCFullYear();
+        const month = String(vnTime.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(vnTime.getUTCDate()).padStart(2, '0');
+
+        const todayStr = `${year}-${month}-${day}`;
+
+        const startDate = new Date(`${todayStr}T00:00:00.000+07:00`);
+        const endDate = new Date(`${todayStr}T23:59:59.999+07:00`);
+
+        console.log(`Fetching today orders: start=${startDate.toISOString()}, end=${endDate.toISOString()}`);
+
+        const orders = await orderModel.find({
+            status: { $ne: 'Đã hủy' }, // Loại bỏ đơn hàng Đã hủy
+            date: { $gte: startDate, $lte: endDate }
+        })
+        .populate('id_user', 'name phone_number')
+        .lean();
+
+        console.log('Today orders:', orders.map(o => ({
+            id_order: o.id_order,
+            total: o.total,
+            status: o.status,
+            date: o.date
+        })));
+
+        res.json(orders);
+    } catch (error) {
+        console.error('Lỗi lấy đơn hàng hôm nay:', error);
+        res.status(500).json({ message: 'Lỗi server khi lấy đơn hàng hôm nay', error: error.message });
+    }
+});
+
+
+// API lấy danh sách sản phẩm tồn kho lâu
+router.get('/products/stagnant', async (req, res) => {
+    try {
+        // Query params with validation
+        const soldLimit = parseInt(req.query.soldLimit) || 10;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+
+        // Validate query parameters
+        if (soldLimit < 0 || isNaN(soldLimit)) {
+            return res.status(400).json({ message: 'Invalid soldLimit parameter: must be a non-negative number' });
+        }
+        if (page < 1 || isNaN(page)) {
+            return res.status(400).json({ message: 'Invalid page parameter: must be a positive number' });
+        }
+        if (limit < 1 || isNaN(limit)) {
+            return res.status(400).json({ message: 'Invalid limit parameter: must be a positive number' });
+        }
+
+        // Log query parameters
+        console.log(`Fetching stagnant products: soldLimit=${soldLimit}, page=${page}, limit=${limit}`);
+
+        // Check MongoDB connection
+        const mongoose = require('mongoose');
+        console.log('MongoDB connection state:', mongoose.connection.readyState);
+
+        // Log collection name and total documents
+        const collectionName = productModel.collection.collectionName;
+        console.log('Collection name:', collectionName);
+        const totalDocs = await productModel.countDocuments();
+        console.log('Total documents in collection:', totalDocs);
+
+        // Calculate skip for pagination
+        const skip = (page - 1) * limit;
+
+        // Fetch products with pagination
+        const products = await productModel
+            .find()
+            .populate('id_category', 'title')
+            .skip(skip)
+            .limit(limit)
+            .lean();
+        console.log('Products before filtering:', products.length, products.map(p => ({
+            name: p.nameproduct,
+            totalSold: p.variations?.reduce((sum, v) => sum + (v.sold || 0), 0) || 0
+        })));
+
+        // Filter and format data
+        const stagnantProducts = products
+            .filter(p => {
+                const totalSold = p.variations?.reduce((sum, v) => sum + (v.sold || 0), 0) || 0;
+                console.log(`Product ${p.nameproduct}: totalSold=${totalSold}`);
+                return totalSold < soldLimit;
+            })
+            .map(p => {
+                const totalStock = p.variations?.reduce((sum, v) => sum + (v.stock || 0), 0) || 0;
+
+                // Group variations by color
+                const variationsByColor = {};
+                (p.variations || []).forEach(v => {
+                    const colorName = v.color?.name || 'Unknown';
+                    const colorCode = v.color?.code || '#000000';
+                    if (!variationsByColor[colorName]) {
+                        variationsByColor[colorName] = { colorCode, variations: [] };
+                    }
+                    variationsByColor[colorName].variations.push({
+                        size: v.size || 'Unknown',
+                        stock: v.stock || 0,
+                        sold: v.sold || 0,
+                        image: v.image || null
+                    });
+                });
+
+                return {
+                    productId: p._id,
+                    name: p.nameproduct || 'Unknown',
+                    category: p.id_category?.title || 'Unknown',
+                    totalSold: p.variations?.reduce((sum, v) => sum + (v.sold || 0), 0) || 0,
+                    totalStock,
+                    price: p.price || 0,
+                    sale_price: p.price_sale || null,
+                    avt_imgproduct: p.avt_imgproduct || null,
+                    createdAt: p.createdAt || null,
+                    updatedAt: p.updatedAt || null,
+                    variationsByColor
+                };
+            });
+        console.log('Products after filtering:', stagnantProducts.length);
+
+        // Get total count for pagination metadata
+        const totalProducts = await productModel.countDocuments();
+
+        // Send response
+        res.status(200).json({
+            message: 'Danh sách sản phẩm tồn kho lâu',
+            data: stagnantProducts,
+            pagination: {
+                totalProducts,
+                totalStagnant: stagnantProducts.length,
+                page,
+                limit,
+                totalPages: Math.ceil(totalProducts / limit)
+            }
+        });
+
+    } catch (error) {
+        console.error('Error in /products/stagnant API:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
+// API lấy danh sách sản phẩm gần hết hàng
 router.get('/products/low-stock', async (req, res) => {
     try {
         const threshold = parseInt(req.query.threshold) || 20;
@@ -2742,151 +2898,6 @@ router.get('/products/low-stock', async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Lỗi server', error: error.message });
-    }
-});
-
-router.get('/products/stagnant', async (req, res) => {
-    try {
-        // Query params with validation
-        const daysAgo = parseInt(req.query.days) || 7; // Default to 7 days
-        const soldLimit = parseInt(req.query.soldLimit) || 50; // Default to 50
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
-
-        // Validate query parameters
-        if (daysAgo < 0 || isNaN(daysAgo)) {
-            return res.status(400).json({ message: 'Invalid days parameter: must be a non-negative number' });
-        }
-        if (soldLimit < 0 || isNaN(soldLimit)) {
-            return res.status(400).json({ message: 'Invalid soldLimit parameter: must be a non-negative number' });
-        }
-        if (page < 1 || isNaN(page)) {
-            return res.status(400).json({ message: 'Invalid page parameter: must be a positive number' });
-        }
-        if (limit < 1 || isNaN(limit)) {
-            return res.status(400).json({ message: 'Invalid limit parameter: must be a positive number' });
-        }
-
-        // Log query parameters
-        console.log(`Fetching stagnant products: days=${daysAgo}, soldLimit=${soldLimit}, page=${page}, limit=${limit}`);
-
-        // Check MongoDB connection
-        const mongoose = require('mongoose');
-        console.log('MongoDB connection state:', mongoose.connection.readyState); // 1 = connected, 0 = disconnected
-
-        // Log collection name and total documents
-        const collectionName = productModel.collection.collectionName;
-        console.log('Collection name:', collectionName);
-        const totalDocs = await productModel.countDocuments({});
-        console.log('Total documents in collection:', totalDocs);
-
-        // Calculate skip for pagination
-        const skip = (page - 1) * limit;
-
-        // Calculate cutoff date
-        const cutoffDate = new Date();
-        cutoffDate.setDate(cutoffDate.getDate() - daysAgo);
-        console.log('Cutoff Date:', cutoffDate.toISOString());
-
-        // Fetch products
-        let products;
-        if (daysAgo === 0) {
-            products = await productModel
-                .find()
-                .populate('id_category', 'title')
-                .skip(skip)
-                .limit(limit)
-                .lean();
-        } else {
-            products = await productModel
-                .find({
-                    $or: [
-                        { updatedAt: { $lte: cutoffDate } },
-                        { updatedAt: { $exists: false } },
-                        { updatedAt: null }
-                    ]
-                })
-                .populate('id_category', 'title')
-                .skip(skip)
-                .limit(limit)
-                .lean();
-        }
-        console.log('Products before filtering:', products.length, products.map(p => ({
-            name: p.nameproduct,
-            updatedAt: p.updatedAt || 'null',
-            totalSold: p.variations?.reduce((sum, v) => sum + (v.sold || 0), 0) || 0
-        })));
-
-        // Filter and format data
-        const stagnantProducts = products
-            .filter(p => {
-                const totalSold = p.variations?.reduce((sum, v) => sum + (v.sold || 0), 0) || 0;
-                console.log(`Product ${p.nameproduct}: totalSold=${totalSold}, updatedAt=${p.updatedAt || 'null'}`);
-                return totalSold <= soldLimit;
-            })
-            .map(p => {
-                const totalStock = p.variations?.reduce((sum, v) => sum + (v.stock || 0), 0) || 0;
-
-                // Group variations by color
-                const variationsByColor = {};
-                (p.variations || []).forEach(v => {
-                    const colorName = v.color?.name || 'Unknown';
-                    const colorCode = v.color?.code || '#000000';
-                    if (!variationsByColor[colorName]) {
-                        variationsByColor[colorName] = { colorCode, variations: [] };
-                    }
-                    variationsByColor[colorName].variations.push({
-                        size: v.size || 'Unknown',
-                        stock: v.stock || 0,
-                        sold: v.sold || 0,
-                        image: v.image || null
-                    });
-                });
-
-                return {
-                    productId: p._id,
-                    name: p.nameproduct || 'Unknown',
-                    category: p.id_category?.title || 'Unknown',
-                    totalSold: p.variations?.reduce((sum, v) => sum + (v.sold || 0), 0) || 0,
-                    totalStock,
-                    price: p.price || 0,
-                    sale_price: p.price_sale || null,
-                    avt_imgproduct: p.avt_imgproduct || null,
-                    createdAt: p.createdAt || null,
-                    updatedAt: p.updatedAt || null,
-                    variationsByColor
-                };
-            });
-        console.log('Products after filtering:', stagnantProducts.length);
-
-        // Get total count for pagination metadata
-        const totalProducts = await productModel.countDocuments(
-            daysAgo === 0 ? {} : {
-                $or: [
-                    { updatedAt: { $lte: new Date(new Date().setDate(new Date().getDate() - daysAgo)) } },
-                    { updatedAt: { $exists: false } },
-                    { updatedAt: null }
-                ]
-            }
-        );
-        const totalStagnant = stagnantProducts.length;
-
-        // Send response
-        res.status(200).json({
-            message: 'Danh sách sản phẩm tồn kho lâu',
-            data: stagnantProducts,
-            pagination: {
-                totalProducts,
-                totalStagnant,
-                page,
-                limit,
-                totalPages: Math.ceil(totalProducts / limit)
-            }
-        });
-
-    } catch (error) {
-        console.error('Error in /products/stagnant API:', error);
-        res.status(500).json({ message: 'Server error', error: error.message });
     }
 });
 
