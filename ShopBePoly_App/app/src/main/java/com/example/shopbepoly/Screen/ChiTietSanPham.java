@@ -19,6 +19,7 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RatingBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -34,6 +35,7 @@ import com.example.shopbepoly.DTO.Cart;
 import com.example.shopbepoly.DTO.Favorite;
 import com.example.shopbepoly.DTO.ListReview;
 import com.example.shopbepoly.DTO.Product;
+import com.example.shopbepoly.DTO.RatingResponse;
 import com.example.shopbepoly.DTO.Variation;
 import com.example.shopbepoly.DanhSachDanhGia;
 import com.example.shopbepoly.R;
@@ -46,6 +48,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -89,6 +92,7 @@ public class ChiTietSanPham extends AppCompatActivity {
         if (product != null) {
             isFavorite = FavoriteFragment.isFavorite(product);
             updateFavoriteButton();
+            loadAverageRating(product.get_id());
         }
 
         imageSliderAdapter = new ImageSliderAdapter(this, new ArrayList<>());
@@ -196,6 +200,53 @@ public class ChiTietSanPham extends AppCompatActivity {
         intent.putExtra("productId", product.get_id());
         startActivity(intent);
     };
+
+    // Hàm cập nhật hiển thị sao trung bình
+    // Cập nhật hiển thị sao + điểm + số lượt đánh giá
+    private void updateStarDisplay(float avgRating, int totalReviews) {
+        ImageView[] stars = {star1, star2, star3, star4, star5};
+
+        for (int i = 0; i < stars.length; i++) {
+            if (avgRating >= i + 1) {
+                stars[i].setImageResource(R.drawable.star); // sao đầy
+            } else if (avgRating > i && avgRating < i + 1) {
+                stars[i].setImageResource(R.drawable.left_half_star); // sao nửa
+            } else {
+                stars[i].setImageResource(R.drawable.star_filled); // sao rỗng
+            }
+        }
+
+        TextView txtAverageRating = findViewById(R.id.txtAverageRating);
+        txtAverageRating.setText(
+                String.format(Locale.getDefault(), "%.1f/5 (%d đánh giá)", avgRating, totalReviews)
+        );
+    }
+
+    private void loadAverageRating(String productId) {
+        ApiService apiService = ApiClient.getApiService();
+        Log.d("ChiTietSanPham", "Gọi API: /reviews/average/" + productId);
+
+        apiService.getAverageRating(productId).enqueue(new Callback<RatingResponse>() {
+            @Override
+            public void onResponse(Call<RatingResponse> call, Response<RatingResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    float avgRating = response.body().getAvgRating();
+                    int totalReviews = response.body().getTotalReviews();
+
+                    Log.d("ChiTietSanPham", "Kết quả: avg=" + avgRating + ", total=" + totalReviews);
+                    updateStarDisplay(avgRating, totalReviews);
+                } else {
+                    Log.e("ChiTietSanPham", "API lỗi: code=" + response.code());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<RatingResponse> call, Throwable t) {
+                Log.e("ChiTietSanPham", "API thất bại: " + t.getMessage(), t);
+                Toast.makeText(ChiTietSanPham.this, "Lỗi khi load đánh giá", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
 
     private void setupClickListeners() {
         btnBack.setOnClickListener(v -> finish());

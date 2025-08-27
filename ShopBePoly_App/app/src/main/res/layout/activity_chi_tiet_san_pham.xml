@@ -157,6 +157,16 @@
                             android:layout_width="20dp"
                             android:layout_height="20dp"
                             android:src="@drawable/star" />
+
+                        <TextView
+                            android:id="@+id/txtAverageRating"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="0.0/5"
+                            android:textColor="#333333"
+                            android:textSize="14sp"
+                            android:gravity="center_vertical"/>
                     </LinearLayout>
 
                     <ImageView

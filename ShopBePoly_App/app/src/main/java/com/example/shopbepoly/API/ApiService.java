@@ -193,6 +193,9 @@ public interface ApiService {
     @GET("reviews")
     Call<List<ListReview>> getAllReviews();
 
+    @GET("average/{productId}")
+    Call<RatingResponse> getAverageRating(@Path("productId") String productId);
+
     // Voucher endpoints
     @GET("vouchers")
     Call<List<Voucher>> getVouchers();

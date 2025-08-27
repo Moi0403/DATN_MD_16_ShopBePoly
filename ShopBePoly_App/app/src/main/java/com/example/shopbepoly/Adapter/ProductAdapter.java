@@ -15,6 +15,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.RatingBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -28,6 +29,7 @@ import com.example.shopbepoly.API.ApiService;
 import com.example.shopbepoly.DTO.Cart;
 import com.example.shopbepoly.DTO.Favorite;
 import com.example.shopbepoly.DTO.Product;
+import com.example.shopbepoly.DTO.RatingResponse;
 import com.example.shopbepoly.DTO.Variation;
 import com.example.shopbepoly.R;
 import com.example.shopbepoly.Screen.ChiTietSanPham;
@@ -37,6 +39,7 @@ import com.squareup.picasso.Picasso;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import okhttp3.ResponseBody;
@@ -47,7 +50,6 @@ import retrofit2.Response;
 public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductViewHolder> {
     private Context context;
     private List<Product> productList;
-
 
 
     public ProductAdapter(Context context, List<Product> productList) {
@@ -69,9 +71,9 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
         Product product = productList.get(position);
         holder.tvProductName.setText(product.getNameproduct());
 
-        int originalPrice = product.getPrice(); // Giá gốc
+        int originalPrice = product.getPrice();
         int price_sale = product.getPrice_sale();
-        int discount = product.getSale(); // % giảm giá
+        int discount = product.getSale();
 
         if (discount > 0) {
             SpannableString originalPriceStr = new SpannableString(product.getFormattedPrice());
@@ -96,6 +98,7 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
             holder.tvProductDiscount.setText(product.getSale() + "%");
         } else {
             holder.tvProductPrice.setText(product.getFormattedPrice());
+            holder.tvProductDiscount.setVisibility(View.GONE);
         }
 
         int totalSold = 0;
@@ -104,25 +107,47 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
         }
         holder.tvProductSold.setText("Đã bán: " + totalSold + " sp");
 
+        // --- Rating + Review ---
+        ApiService api = ApiClient.getApiService();
+        // Trong onBindViewHolder của ProductAdapter
+        api.getAverageRating(product.get_id()).enqueue(new Callback<RatingResponse>() {
+            @Override
+            public void onResponse(Call<RatingResponse> call, Response<RatingResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    float avg = (float) response.body().getAvgRating();
+                    int count = response.body().getTotalReviews();
 
+                    // Cập nhật hiển thị sao bằng mảng stars[]
+                    updateStarDisplay(holder.stars, holder.txtAverageRating, avg, count);
+                } else {
+                    updateStarDisplay(holder.stars, holder.txtAverageRating, 0f, 0);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<RatingResponse> call, Throwable t) {
+                updateStarDisplay(holder.stars, holder.txtAverageRating, 0f, 0);
+            }
+        });
+
+        // --- Load ảnh sản phẩm ---
         Glide.with(context)
                 .load(ApiClient.IMAGE_URL + product.getAvt_imgproduct())
-                .placeholder(R.drawable.ic_launcher_background) // thêm ảnh chờ
-                .error(R.drawable.ic_launcher_foreground) // thêm ảnh lỗi
-                .override(300, 300) // giảm độ phân giải để nhẹ
+                .placeholder(R.drawable.ic_launcher_background)
+                .error(R.drawable.ic_launcher_foreground)
+                .override(300, 300)
                 .centerCrop()
                 .into(holder.ivProductImage);
 
+        // --- Favorite ---
+        updateFavoriteIcon(holder.imgFavorite, product);
 
-        updateFavoriteIcon(holder.imgFavorite,product);
-        holder.ivProductImage.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(context, ChiTietSanPham.class);
-                intent.putExtra("product",product);
-                context.startActivity(intent);
-            }
+        holder.ivProductImage.setOnClickListener(v -> {
+            Intent intent = new Intent(context, ChiTietSanPham.class);
+            intent.putExtra("product", product);
+            context.startActivity(intent);
         });
+
         holder.imgFavorite.setOnClickListener(v -> {
             int pos = holder.getAdapterPosition();
             if (pos == RecyclerView.NO_POSITION) return;
@@ -136,22 +161,20 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
                 return;
             }
 
-            ApiService api = ApiClient.getApiService();
+            ApiService api1 = ApiClient.getApiService();
             boolean wasFavorite = FavoriteFragment.isFavorite(p);
 
             if (wasFavorite) {
-                // UI cập nhật trước
-                FavoriteFragment.remove(context,p);
+                FavoriteFragment.remove(context, p);
                 updateFavoriteIcon(holder.imgFavorite, p);
                 notifyItemChanged(pos);
                 Toast.makeText(context, "Đã xoá khỏi yêu thích", Toast.LENGTH_SHORT).show();
 
-
-                api.removeFavorite(userId,p.get_id()).enqueue(new Callback<ResponseBody>() {
+                api1.removeFavorite(userId, p.get_id()).enqueue(new Callback<ResponseBody>() {
                     @Override
                     public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                         if (!response.isSuccessful()) {
-                            FavoriteFragment.add(context,p);
+                            FavoriteFragment.add(context, p);
                             updateFavoriteIcon(holder.imgFavorite, p);
                             notifyItemChanged(pos);
                             new Handler(Looper.getMainLooper()).post(() ->
@@ -162,23 +185,21 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
 
                     @Override
                     public void onFailure(Call<ResponseBody> call, Throwable t) {
-                        FavoriteFragment.add(context,p);
+                        FavoriteFragment.add(context, p);
                         notifyItemChanged(pos);
                         Toast.makeText(context, "Lỗi kết nối khi xoá yêu thích", Toast.LENGTH_SHORT).show();
                     }
                 });
 
             } else {
-                // UI cập nhật trước
-                FavoriteFragment.add(context,p);
+                FavoriteFragment.add(context, p);
                 notifyItemChanged(pos);
 
                 Favorite fav = new Favorite(userId, product.get_id());
-                api.addFavorite(fav).enqueue(new Callback<Favorite>() {
+                api1.addFavorite(fav).enqueue(new Callback<Favorite>() {
                     @Override
                     public void onResponse(Call<Favorite> call, Response<Favorite> response) {
                         if (response.isSuccessful()) {
-                            // ✅ Thêm thành công → hiển thị toast trên main thread
                             new Handler(Looper.getMainLooper()).post(() ->
                                     Toast.makeText(context, "Đã thêm vào yêu thích", Toast.LENGTH_SHORT).show()
                             );
@@ -188,7 +209,6 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
                                 if (errorMsg.contains("tồn tại")) {
                                     new Handler(Looper.getMainLooper()).post(() ->
                                             Toast.makeText(context, "Sản phẩm đã có trong yêu thích", Toast.LENGTH_SHORT).show()
-
                                     );
                                     return;
                                 } else {
@@ -202,14 +222,14 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
                                 );
                             }
 
-                            FavoriteFragment.remove(context,p);
+                            FavoriteFragment.remove(context, p);
                             notifyItemChanged(pos);
                         }
                     }
 
                     @Override
                     public void onFailure(Call<Favorite> call, Throwable t) {
-                        FavoriteFragment.remove(context,p);
+                        FavoriteFragment.remove(context, p);
                         notifyItemChanged(pos);
 
                         new Handler(Looper.getMainLooper()).post(() ->
@@ -219,34 +239,31 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
                 });
             }
         });
-        holder.ivCart.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-//                // Lấy userId từ SharedPreferences
-//                SharedPreferences sharedPreferences = context.getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
-//                String userId = sharedPreferences.getString("userId", null);
-//
-//                if (userId == null) {
-//                    Toast.makeText(context, "Không tìm thấy thông tin người dùng", Toast.LENGTH_SHORT).show();
-//                    return;
-//                }
-//
-//                Cart cart = new Cart();
-//                cart.setIdProduct(product);
-//                cart.setIdUser(userId); // Gán userId lấy từ SharedPreferences
-//                cart.setPrice(product.getPrice());
-//                cart.setQuantity(1);
-//                cart.setTotal(product.getPrice() * 1);
-//                cart.setStatus(0);
-//                Add_Cart(cart);
-                CartBottomSheetDialog dialog = new CartBottomSheetDialog(context, product);
-                dialog.show(((AppCompatActivity) context).getSupportFragmentManager(), "CartBottomSheetDialog");
-            }
-        });
 
+        // --- Giỏ hàng ---
+        holder.ivCart.setOnClickListener(view -> {
+            CartBottomSheetDialog dialog = new CartBottomSheetDialog(context, product);
+            dialog.show(((AppCompatActivity) context).getSupportFragmentManager(), "CartBottomSheetDialog");
+        });
     }
     {   // khối init
 
+    }
+
+    private void updateStarDisplay(ImageView[] stars, TextView txtAverageRating, float avgRating, int totalReviews) {
+        for (int i = 0; i < stars.length; i++) {
+            if (avgRating >= i + 1) {
+                stars[i].setImageResource(R.drawable.star); // sao đầy
+            } else if (avgRating > i && avgRating < i + 1) {
+                stars[i].setImageResource(R.drawable.left_half_star); // sao nửa
+            } else {
+                stars[i].setImageResource(R.drawable.star_filled); // sao rỗng
+            }
+        }
+
+        txtAverageRating.setText(
+                String.format(Locale.getDefault(), "%.1f/5 (%d)", avgRating, totalReviews)
+        );
     }
 
     @Override
@@ -274,11 +291,13 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
     }
 
     public static class ProductViewHolder extends RecyclerView.ViewHolder {
-        ImageView ivProductImage,imgFavorite, ivCart;
+        ImageView ivProductImage, imgFavorite, ivCart;
         TextView tvProductName;
         TextView tvProductPrice;
         TextView tvProductSold;
         TextView tvProductDiscount;
+        TextView txtAverageRating;
+        ImageView[] stars;
 
         public ProductViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -289,6 +308,16 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
             tvProductDiscount = itemView.findViewById(R.id.tvProductDiscount);
             imgFavorite = itemView.findViewById(R.id.imgFavorite);
             ivCart = itemView.findViewById(R.id.ivCart);
+
+            txtAverageRating = itemView.findViewById(R.id.txtAverageRating);
+
+            stars = new ImageView[]{
+                    itemView.findViewById(R.id.star1_),
+                    itemView.findViewById(R.id.star2_),
+                    itemView.findViewById(R.id.star3_),
+                    itemView.findViewById(R.id.star4_),
+                    itemView.findViewById(R.id.star5_)
+            };
         }
     }
 
