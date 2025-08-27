@@ -11,7 +11,7 @@ const hienthiOrder = async () => {
     const filteredOrders = data.filter(order => order.status === "Đã giao hàng");
 
     filteredOrders.forEach((order, index) => {
-      const { _id, id_order, id_user, products, total, date, status } = order;
+      const { _id, id_order, id_user, products, total, date, status, pay } = order;
 
       const tongSoLuong = products.reduce((sum, product) => sum + (product.quantity || 0), 0);
       const statusColor = `<span style="color: green; font-weight: bold;">${status}</span>`;
@@ -24,11 +24,11 @@ const hienthiOrder = async () => {
         <td>${index + 1}</td> <!-- STT -->
         <td>${id_order}</td>
         <td>${id_user?.name || 'Không có'}<br>
-            <small>SĐT: ${id_user?.phone_number || '---'}</small>
         </td>
         <td>${tongSoLuong}</td> <!-- Số lượng -->
         <td>${formattedDate}</td> <!-- Ngày -->
         <td>${formattedTotal} ₫</td> <!-- Tổng tiền -->
+        <td>${pay}</td> <!-- Số lượng -->
         <td>${statusColor}</td> <!-- Trạng thái -->
         <td>
             <button class="btn btn-info btn-sm mt-1" onclick="xemChiTietDon('${_id}')">Chi tiết</button>
@@ -94,8 +94,10 @@ const xemChiTietDon = async (orderId) => {
       <p><strong>Thanh toán:</strong> ${pay}</p>
       <p><strong>Tổng tiền:</strong> ${Number(total).toLocaleString('vi-VN')} ₫</p>
       <p><strong>Trạng thái:</strong> ${status}</p>
-      <p><strong>Thời gian cập nhật:</strong> ${new Date(checkedAt).toLocaleString("vi-VN")}</p>
+      <p><strong>Thời gian xác nhận:</strong> ${new Date(checkedAt).toLocaleString("vi-VN")}</p>
       <p><strong>Người xác nhận:</strong> ${checkedBy}</p>
+      <p><strong>Thời gian giao:</strong> ${new Date(checkedAt).toLocaleString("vi-VN")}</p>
+      <p><strong>Người giao:</strong> ${checkedBy}</p>
       <hr>
       <h6>Sản phẩm:</h6>
       ${productHtml}
@@ -111,19 +113,3 @@ const xemChiTietDon = async (orderId) => {
     console.error('Lỗi khi hiển thị chi tiết đơn:', err);
   }
 };
-
-
-fetch('../Style_Sidebar/Sidebar.html')
-  .then(res => res.text())
-  .then(data => {
-    document.getElementById('sidebar-container').innerHTML = data;
-    const dangxuat = document.getElementById('dangxuat');
-    if (dangxuat) {
-      dangxuat.addEventListener('click', () => {
-        const confirmLogout = confirm('Bạn có chắc chắn muốn đăng xuất không?');
-        if (confirmLogout) {
-          window.location.href = '../Web_TrangChu/TrangChu.html';
-        }
-      });
-    }
-  });

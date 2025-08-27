@@ -377,7 +377,7 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
                     orderUpdate.set_id(order.get_id());
                     orderUpdate.setStatus("Đang giao hàng"); // Vẫn giữ trạng thái này
                     orderUpdate.setDelicercheckedAt(getCurrentTime()); // Sử dụng delicercheckedAt
-                    orderUpdate.setDelicercheckedBy("delivery_confirmed:" + staffName); // Sử dụng delicercheckedBy
+                    orderUpdate.setDelicercheckedBy("" + staffName+ " - Nhân Viên"); // Sử dụng delicercheckedBy
                     Log.d("delivery_confirmed:" , staffName);
                     updateOrder(orderUpdate);
                     Toast.makeText(context, "Đã xác nhận giao hàng thành công", Toast.LENGTH_SHORT).show();

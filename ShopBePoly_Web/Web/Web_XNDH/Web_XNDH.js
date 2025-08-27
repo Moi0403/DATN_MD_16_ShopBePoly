@@ -11,7 +11,7 @@ const hienthiOrder = async () => {
     const filteredOrders = data.filter(order => order.status === "Đang xử lý");
 
     filteredOrders.forEach((order, index) => {
-      const { _id, id_order, id_user, products, total, date, status } = order;
+      const { _id, id_order, id_user, products, total, date,pay, status } = order;
 
       const tongSoLuong = products.reduce((sum, product) => sum + (product.quantity || 0), 0);
       const statusColor = `<span style="color: green; font-weight: bold;">${status}</span>`;
@@ -24,11 +24,11 @@ const hienthiOrder = async () => {
         <td>${index + 1}</td> <!-- STT -->
         <td>${id_order}</td>
         <td>${id_user?.name || 'Không có'}<br>
-            <small>SĐT: ${id_user?.phone_number || '---'}</small>
         </td>
         <td>${tongSoLuong}</td> <!-- Số lượng -->
         <td>${formattedDate}</td> <!-- Ngày -->
         <td>${formattedTotal} ₫</td> <!-- Tổng tiền -->
+        <td>${pay}</td> <!-- Tổng tiền -->
         <td>${statusColor}</td> <!-- Trạng thái -->
         <td>
             <button class="btn btn-info btn-sm mt-1" onclick="xemChiTietDon('${_id}')">Chi tiết</button>
@@ -159,25 +159,3 @@ async function confirmOrder(orderId) {
     alert('Lỗi khi xác nhận đơn hàng');
   }
 }
-
-document.getElementById('btnDeleteAll').addEventListener('click', async () => {
-  if (!confirm('Bạn có chắc chắn muốn xóa tất cả đơn hàng không?')) return;
-
-  try {
-    const res = await fetch(`http://${config.host}:${config.port}/api/delete_all_orders`, {
-      method: 'DELETE',
-    });
-
-    const data = await res.json();
-
-    if (res.ok) {
-      alert(data.message);
-      hienthiOrder(); // Gọi lại hàm load lại danh sách đơn hàng
-    } else {
-      alert('Lỗi: ' + data.message);
-    }
-  } catch (error) {
-    console.error('Lỗi khi xóa đơn hàng:', error);
-    alert('Lỗi khi xóa đơn hàng');
-  }
-});

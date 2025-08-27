@@ -268,92 +268,40 @@ router.post('/add_product', uploadProduct.any(), async (req, res) => {
 
         const avt_imgpro = files.find(f => f.fieldname === 'avt_imgpro');
 
-        // 🪵 Log file để debug nếu cần
-        console.log("📦 FILES UPLOADED:");
-        files.forEach(f => {
-            console.log(` - field: ${f.fieldname}, name: ${f.filename}`);
-        });
+        // Log file để debug
+        console.log("📦 FILES UPLOADED:", files.map(f => ({ fieldname: f.fieldname, filename: f.filename, originalname: f.originalname })));
 
-        // ✅ Gán ảnh cho từng variation (cải tiến: fallback tốt hơn)
-        // variations.forEach((variation, index) => {
-        //     const colorCode = variation.color?.code?.toLowerCase() || '';
-        //     const size = variation.size;
-
-        //     const fieldByKey = `variation-${colorCode}-${size}`;
-        //     let matchedFiles = files.filter(f => f.fieldname === fieldByKey);
-
-        //     // Fallback theo index: variationImages-0, variationImages-1
-        //     if (matchedFiles.length === 0) {
-        //         const fieldByIndex = `variationImages-${index}`;
-        //         matchedFiles = files.filter(f => f.fieldname === fieldByIndex);
-        //     }
-
-        //     // Fallback cuối: tìm ảnh có tên chứa màu hoặc size
-        //     if (matchedFiles.length === 0) {
-        //         matchedFiles = files.filter(f =>
-        //             f.originalname?.toLowerCase().includes(colorCode) ||
-        //             f.originalname?.includes(size?.toString())
-        //         );
-        //     }
-
-        //     // ✅ Luôn gán ảnh nếu tìm được
-        //     variation.list_imgproduct = matchedFiles.map(f => f.filename);
-        //     variation.image = matchedFiles[0]?.filename || '';
-        // });
-        variations.forEach((variation, vIndex) => {
-            const colorIndex = vIndex; // fallback theo index gửi từ client
-            const matchedFiles = [];
-
-            // Quét tất cả file có fieldname dạng 'variationImages-<colorIndex>-<subIndex>'
-            files.forEach(file => {
-                const regex = new RegExp(`^variationImages-${colorIndex}-\\d+$`);
-                if (regex.test(file.fieldname)) {
-                    matchedFiles.push(file);
+        // Gán ảnh cho từng variation dựa trên fieldname
+        const variationImages = {};
+        files.forEach(file => {
+            if (file.fieldname.startsWith('variationImages-')) {
+                const [_, colorIndex] = file.fieldname.match(/variationImages-(\d+)/) || [];
+                if (colorIndex) {
+                    if (!variationImages[colorIndex]) variationImages[colorIndex] = [];
+                    variationImages[colorIndex].push(file.filename);
                 }
-            });
-
-            // Nếu không có ảnh theo index thì fallback tìm theo màu (color code)
-            if (matchedFiles.length === 0 && variation.color?.code) {
-                const colorCode = variation.color.code.replace("#", "").toLowerCase();
-                files.forEach(file => {
-                    if (file.originalname?.toLowerCase().includes(colorCode)) {
-                        matchedFiles.push(file);
-                    }
-                });
-            }
-
-            // Gán ảnh
-            variation.list_imgproduct = matchedFiles.map(f => f.filename);
-            variation.image = matchedFiles[0]?.filename || '';
-        });
-
-        // ✅ Gộp toàn bộ ảnh lại cho list_imgproduct chính
-        const mergedImages = [];
-
-        variations.forEach(variation => {
-            if (Array.isArray(variation.list_imgproduct)) {
-                variation.list_imgproduct.forEach(img => {
-                    if (img && !mergedImages.includes(img)) {
-                        mergedImages.push(img);
-                    }
-                });
             }
         });
 
-        const additionalImgs = files.filter(f => f.fieldname === 'list_imgproduct');
-        additionalImgs.forEach(f => {
-            if (!mergedImages.includes(f.filename)) {
-                mergedImages.push(f.filename);
-            }
+        variations.forEach((variation, vIndex) => {
+            const colorIndex = vIndex.toString(); // Sử dụng index làm key
+            variation.list_imgproduct = variationImages[colorIndex] || [];
+            variation.image = variation.list_imgproduct[0] || '';
         });
 
-        // ✅ Tạo sản phẩm mới
+        // Gộp toàn bộ ảnh cho list_imgproduct chính
+        const mergedImages = [
+            ...(avt_imgpro ? [avt_imgpro.filename] : []),
+            ...variations.flatMap(v => v.list_imgproduct).filter(img => img)
+        ];
+
+        // Tạo sản phẩm mới
         const newProduct = new productModel({
             nameproduct: body.name_pro,
             id_category: body.category_pro,
             price_enter: body.price_enter,
             price: body.price_pro,
-            price_sale: body.price_pro ,
+            price_sale: body.price_pro,
             description: body.mota_pro,
             avt_imgproduct: avt_imgpro?.filename || '',
             list_imgproduct: mergedImages,
@@ -387,27 +335,28 @@ router.put('/update_product/:id', uploadProduct.any(), async (req, res) => {
             return res.status(404).json({ error: 'Sản phẩm không tồn tại' });
         }
 
-        const avt_imgproduct = req.files.find(file => file.fieldname === 'avt_imgpro')?.filename || existingProduct.avt_imgproduct;
+        const avt_imgpro = req.files.find(file => file.fieldname === 'avt_imgpro')?.filename || existingProduct.avt_imgproduct;
 
+        // Tạo mapping ảnh theo colorIndex
         const variationImages = {};
         req.files.forEach(file => {
             if (file.fieldname.startsWith('variationImages-')) {
-                const [_, colorIndex, fileIndex] = file.fieldname.match(/variationImages-(\d+)-(\d+)/) || [];
-                if (colorIndex && fileIndex) {
-                    if (!variationImages[colorIndex]) {
-                        variationImages[colorIndex] = [];
-                    }
+                const [_, colorIndex] = file.fieldname.match(/variationImages-(\d+)/) || [];
+                if (colorIndex) {
+                    if (!variationImages[colorIndex]) variationImages[colorIndex] = [];
                     variationImages[colorIndex].push(file.filename);
                 }
             }
         });
 
-        console.log('req.files:', req.files);
+        console.log('req.files:', req.files.map(f => ({ fieldname: f.fieldname, filename: f.filename })));
         console.log('variationImages:', variationImages);
         console.log('parsedVariations:', parsedVariations);
 
+        // Cập nhật variations với ảnh mới
         const updatedVariations = parsedVariations.map((variation, index) => {
-            const images = variationImages[index] || variation.list_imgproduct || [];
+            const colorIndex = index.toString();
+            const images = variationImages[colorIndex] || [];
             const existingVariation = existingProduct.variations.find(
                 v => v.size === variation.size && v.color.name === variation.color.name && v.color.code === variation.color.code
             );
@@ -423,9 +372,11 @@ router.put('/update_product/:id', uploadProduct.any(), async (req, res) => {
             };
         });
 
-        const list_imgproduct = updatedVariations
-            .flatMap(variation => variation.list_imgproduct)
-            .filter((img, index, self) => img && self.indexOf(img) === index);
+        // Gộp list_imgproduct
+        const list_imgproduct = [
+            avt_imgpro,
+            ...updatedVariations.flatMap(v => v.list_imgproduct).filter(img => img)
+        ].filter((img, index, self) => img && self.indexOf(img) === index);
 
         const updatedProduct = await productModel.findByIdAndUpdate(
             id,
@@ -436,7 +387,7 @@ router.put('/update_product/:id', uploadProduct.any(), async (req, res) => {
                 price_enter: price_enter ? Number(price_enter) : existingProduct.price_enter,
                 description: mota_pro || existingProduct.description,
                 sale: sale !== undefined ? Number(sale) : existingProduct.sale,
-                avt_imgproduct,
+                avt_imgpro,
                 list_imgproduct: list_imgproduct.length > 0 ? list_imgproduct : existingProduct.list_imgproduct,
                 variations: updatedVariations,
             },
@@ -1020,6 +971,33 @@ router.get('/list_order', async (req, res) => {
     }
 });
 
+router.get('/search_order/id_order', async (req, res) => {
+  try {
+    const { id_order, name } = req.query; // Thêm tham số name để tìm kiếm theo tên
+    let query = {};
+
+    if (id_order) {
+      query.id_order = new RegExp(id_order, 'i'); // Tìm kiếm không phân biệt chữ cái theo id_order
+    }
+    if (name) {
+      query['id_user.name'] = new RegExp(name, 'i'); // Tìm kiếm không phân biệt chữ cái theo tên người dùng
+    }
+
+    const orders = await orderModel
+      .find(query)
+      .populate('id_user', 'name') // Lấy chỉ trường name từ collection user
+      .exec();
+
+    if (orders.length === 0 && (id_order || name)) {
+      return res.status(404).json({ message: 'Không tìm thấy đơn hàng với điều kiện này.' });
+    }
+    res.status(200).json(orders);
+  } catch (error) {
+    console.error('Lỗi khi tìm kiếm đơn hàng:', error);
+    res.status(500).json({ message: 'Lỗi server khi tìm kiếm đơn hàng' });
+  }
+});
+
 router.get('/list_order/:userId', async (req, res) => {
     try {
         const orders = await orderModel.find({ id_user: req.params.userId })
@@ -1304,14 +1282,26 @@ router.delete('/delete_all_orders', async (req, res) => {
 router.put('/cancel_order/:id', async (req, res) => {
     try {
         const id = req.params.id;
+        const { reason } = req.body; // Nhận lý do từ client
+
+        // Tìm và cập nhật đơn hàng, giữ nguyên các trường không liên quan
         const updatedOrder = await orderModel.findByIdAndUpdate(
             id,
-            { status: 'Đã hủy' },
-            { new: true }
+            { 
+                status: 'Đã hủy',
+                cancelReason: reason || 'Không có lý do', // Cập nhật lý do hủy
+                // Không chạm vào delicercheckedBy và delicercheckedAt
+            },
+            { new: true, runValidators: true }
         );
 
         if (!updatedOrder) {
             return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+        }
+
+        // Kiểm tra và ghi log để xác nhận các trường không bị thay đổi
+        if (updatedOrder.delicercheckedBy || updatedOrder.delicercheckedAt) {
+            console.log(`Đơn hàng ${id} đã hủy nhưng giữ nguyên: delicercheckedBy=${updatedOrder.delicercheckedBy}, delicercheckedAt=${updatedOrder.delicercheckedAt}`);
         }
 
         res.status(200).json({
@@ -1324,131 +1314,238 @@ router.put('/cancel_order/:id', async (req, res) => {
     }
 });
 
+
 router.put('/updateOrderStatus/:orderId', async (req, res) => {
-    try {
-        const orderId = req.params.orderId;
-        const { status, cancelReason, checkedBy, delicercheckedAt, delicercheckedBy } = req.body;
+  try {
+    const orderId = req.params.orderId;
+    const { status, cancelReason, checkedBy, delicercheckedAt, delicercheckedBy } = req.body;
 
-        if (!status) {
-            return res.status(400).json({ message: 'Trạng thái không được để trống' });
-        }
-
-        const order = await orderModel.findById(orderId)
-            .populate('id_user')
-            .populate('products.id_product');
-        if (!order) {
-            return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
-        }
-
-        // Logic validation mới với trường riêng biệt
-        if (status === 'Đang giao hàng') {
-            // Cho phép chuyển từ "Đang xử lý" sang "Đang giao hàng" (nhân viên xác nhận đơn)
-            if (order.status === 'Đang xử lý') {
-                // Đây là lần đầu nhân viên xác nhận đơn
-            } 
-            // Cho phép cập nhật "Đang giao hàng" khi có delicercheckedBy 
-            // (nhân viên giao hàng xác nhận đã giao thành công)
-            else if (order.status === 'Đang giao hàng' && delicercheckedBy) {
-                // Đây là nhân viên giao hàng xác nhận đã giao hàng thành công
-            } 
-            else {
-                return res.status(400).json({ message: 'Không thể cập nhật trạng thái này' });
-            }
-        }
-
-        const updateData = { status };
-
-        if (cancelReason) {
-            updateData.cancelReason = cancelReason;
-        }
-
-        // Cập nhật checkedBy và checkedAt cho nhân viên xác nhận đơn
-        if (checkedBy) {
-            updateData.checkedBy = checkedBy;
-            updateData.checkedAt = new Date();
-            
-            // Log thông tin nhân viên từ checkedBy
-            let staffName = 'Unknown';
-            if (checkedBy.startsWith('staff_confirmed:')) {
-                staffName = checkedBy.replace('staff_confirmed:', '');
-                console.log('Nhân viên xác nhận đơn:', staffName, 'cho đơn hàng:', orderId);
-            }
-            
-            console.log('Cập nhật checkedAt và checkedBy cho đơn hàng:', orderId, 'bởi nhân viên:', staffName);
-        }
-
-        // Cập nhật delicercheckedBy và delicercheckedAt cho nhân viên giao hàng
-        if (delicercheckedBy) {
-            updateData.delicercheckedBy = delicercheckedBy;
-            updateData.delicercheckedAt = new Date();
-            
-            // Log thông tin nhân viên giao hàng
-            let deliveryStaffName = 'Unknown';
-            if (delicercheckedBy.startsWith('delivery_confirmed:')) {
-                deliveryStaffName = delicercheckedBy.replace('delivery_confirmed:', '');
-                console.log('Nhân viên giao hàng xác nhận:', deliveryStaffName, 'cho đơn hàng:', orderId);
-            }
-            
-            console.log('Cập nhật delicercheckedAt và delicercheckedBy cho đơn hàng:', orderId, 'bởi nhân viên giao hàng:', deliveryStaffName);
-        }
-
-        const updatedOrder = await orderModel.findByIdAndUpdate(
-            orderId,
-            updateData,
-            { new: true, runValidators: true }
-        );
-        if (!updatedOrder) {
-            return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
-        }   
-
-        // Tạo thông báo khi đơn hàng được giao thành công
-        if (status === 'Đã giao' || status === 'delivered' || status === 'Đã giao hàng') {
-            console.log('Creating delivery success notification for order:', orderId);
-            const newNotification = new notificationModel({
-                userId: order.id_user._id,
-                title: 'Giao hàng thành công',
-                content: `Đơn hàng <font color='#2196F3'>${order.id_order}</font> của bạn đã được giao thành công. Cảm ơn bạn đã mua sắm tại ShopBePoly!`,
-                type: 'delivery',
-                isRead: false,
-                createdAt: new Date(),
-                orderId: order._id,
-                products: order.products.map(item => ({
-                    id_product: item.id_product?._id,
-                    productName: item.id_product?.nameproduct || '',
-                    img: item.id_product?.avt_imgproduct || ''
-                }))
-            });
-
-            await newNotification.save();
-        }
-        
-        // Chuẩn bị thông tin staff để trả về
-        let staffInfo = null;
-        if (checkedBy) {
-            staffInfo = {
-                action: 'Xác nhận đơn',
-                staffName: checkedBy.includes(':') ? checkedBy.split(':')[1] : 'Unknown',
-                type: 'order_confirmation'
-            };
-        }
-        if (delicercheckedBy) {
-            staffInfo = {
-                action: 'Xác nhận giao hàng',
-                staffName: delicercheckedBy.includes(':') ? delicercheckedBy.split(':')[1] : 'Unknown',
-                type: 'delivery_confirmation'
-            };
-        }
-        
-        return res.status(200).json({ 
-            message: 'Cập nhật trạng thái thành công', 
-            order: updatedOrder,
-            staffInfo: staffInfo
-        });
-    } catch (error) {
-        console.error('Lỗi khi cập nhật trạng thái:', error);
-        return res.status(500).json({ message: 'Lỗi máy chủ nội bộ', error: error.message });
+    if (!status) {
+      return res.status(400).json({ message: 'Trạng thái không được để trống' });
     }
+
+    const order = await orderModel.findById(orderId)
+      .populate('id_user')
+      .populate('products.id_product');
+    if (!order) {
+      return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+    }
+
+    // Logic validation mới với trường riêng biệt
+    if (status === 'Đang giao hàng') {
+      if (order.status === 'Đang xử lý' && checkedBy) {
+        // Duyệt đơn: chỉ cập nhật checkedBy và checkedAt
+      } else if (order.status === 'Đang giao hàng' && delicercheckedBy) {
+        // Xác nhận giao hàng: cập nhật delicercheckedBy và delicercheckedAt
+      } else {
+        return res.status(400).json({ message: 'Không thể cập nhật trạng thái này' });
+      }
+    }
+
+    const updateData = { status };
+
+    if (cancelReason) {
+      updateData.cancelReason = cancelReason;
+    }
+
+    // Cập nhật checkedBy và checkedAt cho nhân viên xác nhận đơn
+    if (checkedBy) {
+      updateData.checkedBy = checkedBy;
+      updateData.checkedAt = new Date();
+      
+      let staffName = checkedBy.includes(':') ? checkedBy.split(':')[1] : checkedBy;
+      console.log('Nhân viên xác nhận đơn:', staffName, 'cho đơn hàng:', orderId);
+    }
+
+    // Cập nhật delicercheckedBy và delicercheckedAt chỉ khi có giá trị hợp lệ
+    if (delicercheckedBy && typeof delicercheckedBy === 'string' && delicercheckedBy.trim() !== 'Chưa cập nhật') {
+      updateData.delicercheckedBy = delicercheckedBy;
+      updateData.delicercheckedAt = new Date();
+      
+      let deliveryStaffName = delicercheckedBy.includes(':') ? delicercheckedBy.split(':')[1] : delicercheckedBy;
+      console.log('Nhân viên giao hàng xác nhận:', deliveryStaffName, 'cho đơn hàng:', orderId);
+    }
+
+    const updatedOrder = await orderModel.findByIdAndUpdate(
+      orderId,
+      updateData,
+      { new: true, runValidators: true }
+    );
+    if (!updatedOrder) {
+      return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+    }
+
+    // Tạo thông báo khi đơn hàng được giao thành công
+    if (status === 'Đã giao' || status === 'delivered' || status === 'Đã giao hàng') {
+      const newNotification = new notificationModel({
+        userId: order.id_user._id,
+        title: 'Giao hàng thành công',
+        content: `Đơn hàng <font color='#2196F3'>${order.id_order}</font> của bạn đã được giao thành công. Cảm ơn bạn đã mua sắm tại ShopBePoly!`,
+        type: 'delivery',
+        isRead: false,
+        createdAt: new Date(),
+        orderId: order._id,
+        products: order.products.map(item => ({
+          id_product: item.id_product?._id,
+          productName: item.id_product?.nameproduct || '',
+          img: item.id_product?.avt_imgproduct || ''
+        }))
+      });
+
+      await newNotification.save();
+    }
+    
+    let staffInfo = null;
+    if (checkedBy) {
+      staffInfo = {
+        action: 'Xác nhận đơn',
+        staffName: checkedBy.includes(':') ? checkedBy.split(':')[1] : checkedBy,
+        type: 'order_confirmation'
+      };
+    }
+    if (delicercheckedBy && typeof delicercheckedBy === 'string' && delicercheckedBy.trim() !== 'Chưa cập nhật') {
+      staffInfo = {
+        action: 'Xác nhận giao hàng',
+        staffName: delicercheckedBy.includes(':') ? delicercheckedBy.split(':')[1] : delicercheckedBy,
+        type: 'delivery_confirmation'
+      };
+    }
+    
+    return res.status(200).json({ 
+      message: 'Cập nhật trạng thái thành công', 
+      order: updatedOrder,
+      staffInfo: staffInfo
+    });
+  } catch (error) {
+    console.error('Lỗi khi cập nhật trạng thái:', error);
+    return res.status(500).json({ message: 'Lỗi máy chủ nội bộ', error: error.message });
+  }
 });
+// router.put('/updateOrderStatus/:orderId', async (req, res) => {
+//     try {
+//         const orderId = req.params.orderId;
+//         const { status, cancelReason, checkedBy, delicercheckedAt, delicercheckedBy } = req.body;
+
+//         if (!status) {
+//             return res.status(400).json({ message: 'Trạng thái không được để trống' });
+//         }
+
+//         const order = await orderModel.findById(orderId)
+//             .populate('id_user')
+//             .populate('products.id_product');
+//         if (!order) {
+//             return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+//         }
+
+//         // Logic validation mới với trường riêng biệt
+//         if (status === 'Đang giao hàng') {
+//             // Cho phép chuyển từ "Đang xử lý" sang "Đang giao hàng" (nhân viên xác nhận đơn)
+//             if (order.status === 'Đang xử lý') {
+//                 // Đây là lần đầu nhân viên xác nhận đơn
+//             } 
+//             // Cho phép cập nhật "Đang giao hàng" khi có delicercheckedBy 
+//             // (nhân viên giao hàng xác nhận đã giao thành công)
+//             else if (order.status === 'Đang giao hàng' && delicercheckedBy) {
+//                 // Đây là nhân viên giao hàng xác nhận đã giao hàng thành công
+//             } 
+//             else {
+//                 return res.status(400).json({ message: 'Không thể cập nhật trạng thái này' });
+//             }
+//         }
+
+//         const updateData = { status };
+
+//         if (cancelReason) {
+//             updateData.cancelReason = cancelReason;
+//         }
+
+//         // Cập nhật checkedBy và checkedAt cho nhân viên xác nhận đơn
+//         if (checkedBy) {
+//             updateData.checkedBy = checkedBy;
+//             updateData.checkedAt = new Date();
+            
+//             // Log thông tin nhân viên từ checkedBy
+//             let staffName = 'Unknown';
+//             if (checkedBy.startsWith('staff_confirmed:')) {
+//                 staffName = checkedBy.replace('staff_confirmed:', '');
+//                 console.log('Nhân viên xác nhận đơn:', staffName, 'cho đơn hàng:', orderId);
+//             }
+            
+//             console.log('Cập nhật checkedAt và checkedBy cho đơn hàng:', orderId, 'bởi nhân viên:', staffName);
+//         }
+
+//         // Cập nhật delicercheckedBy và delicercheckedAt cho nhân viên giao hàng
+//         if (delicercheckedBy) {
+//             updateData.delicercheckedBy = delicercheckedBy;
+//             updateData.delicercheckedAt = new Date();
+            
+//             // Log thông tin nhân viên giao hàng
+//             let deliveryStaffName = 'Unknown';
+//             if (delicercheckedBy.startsWith('delivery_confirmed:')) {
+//                 deliveryStaffName = delicercheckedBy.replace('delivery_confirmed:', '');
+//                 console.log('Nhân viên giao hàng xác nhận:', deliveryStaffName, 'cho đơn hàng:', orderId);
+//             }
+            
+//             console.log('Cập nhật delicercheckedAt và delicercheckedBy cho đơn hàng:', orderId, 'bởi nhân viên giao hàng:', deliveryStaffName);
+//         }
+
+//         const updatedOrder = await orderModel.findByIdAndUpdate(
+//             orderId,
+//             updateData,
+//             { new: true, runValidators: true }
+//         );
+//         if (!updatedOrder) {
+//             return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+//         }   
+
+//         // Tạo thông báo khi đơn hàng được giao thành công
+//         if (status === 'Đã giao' || status === 'delivered' || status === 'Đã giao hàng') {
+//             console.log('Creating delivery success notification for order:', orderId);
+//             const newNotification = new notificationModel({
+//                 userId: order.id_user._id,
+//                 title: 'Giao hàng thành công',
+//                 content: `Đơn hàng <font color='#2196F3'>${order.id_order}</font> của bạn đã được giao thành công. Cảm ơn bạn đã mua sắm tại ShopBePoly!`,
+//                 type: 'delivery',
+//                 isRead: false,
+//                 createdAt: new Date(),
+//                 orderId: order._id,
+//                 products: order.products.map(item => ({
+//                     id_product: item.id_product?._id,
+//                     productName: item.id_product?.nameproduct || '',
+//                     img: item.id_product?.avt_imgproduct || ''
+//                 }))
+//             });
+
+//             await newNotification.save();
+//         }
+        
+//         // Chuẩn bị thông tin staff để trả về
+//         let staffInfo = null;
+//         if (checkedBy) {
+//             staffInfo = {
+//                 action: 'Xác nhận đơn',
+//                 staffName: checkedBy.includes(':') ? checkedBy.split(':')[1] : 'Unknown',
+//                 type: 'order_confirmation'
+//             };
+//         }
+//         if (delicercheckedBy) {
+//             staffInfo = {
+//                 action: 'Xác nhận giao hàng',
+//                 staffName: delicercheckedBy.includes(':') ? delicercheckedBy.split(':')[1] : 'Unknown',
+//                 type: 'delivery_confirmation'
+//             };
+//         }
+        
+//         return res.status(200).json({ 
+//             message: 'Cập nhật trạng thái thành công', 
+//             order: updatedOrder,
+//             staffInfo: staffInfo
+//         });
+//     } catch (error) {
+//         console.error('Lỗi khi cập nhật trạng thái:', error);
+//         return res.status(500).json({ message: 'Lỗi máy chủ nội bộ', error: error.message });
+//     }
+// });
 
 router.get('/getStatusOder', async (req, res) => {
     try {
