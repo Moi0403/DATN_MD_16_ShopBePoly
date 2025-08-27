@@ -15,7 +15,9 @@ const hienthiOrder = async () => {
 
       const tongSoLuong = products.reduce((sum, product) => sum + (product.quantity || 0), 0);
       const statusColor = `<span style="color: green; font-weight: bold;">${status}</span>`;
-      const formattedTotal = isNaN(Number(total)) ? '0' : Number(total).toLocaleString('vi-VN');
+      const formattedTotal = pay === "ZaloPay - Đã thanh toán"
+        ? '0'
+        : (isNaN(Number(total)) ? '0' : Number(total).toLocaleString('vi-VN'));
       const formattedDate = date ? new Date(date).toLocaleDateString('vi-VN') : '';
 
       const tr = document.createElement('tr');

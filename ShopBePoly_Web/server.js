@@ -535,13 +535,15 @@ router.post('/add_user', uploadAvatar.fields([{ name: 'avt_user', maxCount: 1 }]
             phone_number: body.phone_user,
             birthday: body.birthday_user,
             gender: body.gender_user,
-            avt_user: (files && files.avt_user && files.avt_user[0]) ? files.avt_user[0].filename : '',
+            avt_user: (files && files.avt_user && files.avt_user[0])
+            ? files.avt_user[0].filename
+            : 'default-avatar.png',
             role: body.role_user
         });
         await newUser.save();
         console.log('Thêm tài khoản thành công');
-        const allUsers = await userModel.find();
-        res.json(allUsers);
+        // const allUsers = await userModel.find();
+        // res.json(allUsers);
     } catch (error) {
         console.error('Thêm tài khoản thất bại:', error);
         res.status(500).send('Lỗi server');

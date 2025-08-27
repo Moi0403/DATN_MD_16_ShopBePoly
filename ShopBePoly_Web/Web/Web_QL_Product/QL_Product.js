@@ -38,7 +38,8 @@ function convertToColorCode(color) {
     'hồng': '#FFC0CB',
     'tím': '#800080',
     'nâu': '#8B4513',
-    'cam': '#FFA500'
+    'cam': '#FFA500',
+    'xám': '#DCDCDC'
   };
 
   return colorMap[color.toLowerCase()] || '#CCCCCC'; // fallback nếu không khớp
@@ -47,7 +48,7 @@ function convertToColorCode(color) {
 function updateColorSpinner() {
   const colorSpinner = document.getElementById('colorSpinner');
   const existingColors = [...document.querySelectorAll('.var-color-name')].map(el => el.value.toLowerCase());
-  const allColors = ['Đen', 'Trắng', 'Đỏ', 'Xanh', 'Vàng', 'Hồng', 'Tím', 'Nâu', 'Cam'];
+  const allColors = ['Đen', 'Trắng', 'Đỏ', 'Xám', 'Xanh', 'Vàng', 'Hồng', 'Tím', 'Nâu', 'Cam'];
 
   // Lấy các màu chưa tồn tại
   const availableColors = allColors.filter(color => !existingColors.includes(color.toLowerCase()));
