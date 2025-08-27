@@ -101,17 +101,18 @@ public class AppStaff extends AppCompatActivity {
                             for (Order order : deliveringResponse.getOrders()) {
                                 String delicercheckedBy = order.getDelicercheckedBy();
 
-                                // Chỉ thêm vào danh sách nếu chưa có delicercheckedBy hoặc không bắt đầu với "delivery_confirmed:"
-                                if (delicercheckedBy == null ||
-                                        delicercheckedBy.isEmpty() ||
-                                        !delicercheckedBy.startsWith("delivery_confirmed:")) {
+                                // ✅ SỬA LOGIC FILTER NÀY - chỉ thêm vào nếu chưa có prefix "delivery_confirmed:"
+                                boolean isDeliveryConfirmed = delicercheckedBy != null &&
+                                        !delicercheckedBy.trim().isEmpty() &&
+                                        delicercheckedBy.startsWith("Shipper:");
 
+                                if (!isDeliveryConfirmed) {
                                     deliveringOrders.add(order);
                                     Log.d("STAFF_FILTER", "Added order: " + order.get_id() +
                                             ", delicercheckedBy: " + delicercheckedBy);
                                 } else {
                                     Log.d("STAFF_FILTER", "Filtered out order: " + order.get_id() +
-                                            ", already delivery confirmed by: " + delicercheckedBy);
+                                            ", already delivery confirmed: " + delicercheckedBy);
                                 }
                             }
                         }
