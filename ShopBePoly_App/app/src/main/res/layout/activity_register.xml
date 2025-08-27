@@ -2,6 +2,7 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:fillViewport="true"
     android:scrollbars="none"
     android:overScrollMode="never"
@@ -226,8 +227,9 @@
             android:layout_width="match_parent"
             android:layout_height="50dp"
             android:text="Đăng Ký"
-            android:background="@drawable/button_bg"
             android:textAllCaps="false"
+            app:backgroundTint="@null"
+            android:background="@drawable/button_bg"
             android:textColor="#FFFFFF"
             android:layout_marginBottom="25dp" />
 

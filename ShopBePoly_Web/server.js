@@ -974,32 +974,40 @@ router.get('/list_order', async (req, res) => {
     }
 });
 
-router.get('/search_order/id_order', async (req, res) => {
+router.get('/search_order', async (req, res) => {
   try {
-    const { id_order, name } = req.query; // Thêm tham số name để tìm kiếm theo tên
+    const { id_order, name, nameproduct } = req.query; // thêm name_product
     let query = {};
 
     if (id_order) {
-      query.id_order = new RegExp(id_order, 'i'); // Tìm kiếm không phân biệt chữ cái theo id_order
+      query.id_order = new RegExp(id_order, 'i'); // tìm theo id_order
     }
+
     if (name) {
-      query['id_user.name'] = new RegExp(name, 'i'); // Tìm kiếm không phân biệt chữ cái theo tên người dùng
+      query['id_user.name'] = new RegExp(name, 'i'); // tìm theo tên user
+    }
+
+    if (nameproduct) {
+      query['products.nameproduct'] = new RegExp(nameproduct, 'i'); // tìm theo tên sản phẩm
     }
 
     const orders = await orderModel
       .find(query)
-      .populate('id_user', 'name') // Lấy chỉ trường name từ collection user
+      .populate('id_user', 'name') // lấy tên user
+      .populate('products.id_product', 'nameproduct') // populate thêm sản phẩm (nếu products có ref đến bảng product)
       .exec();
 
-    if (orders.length === 0 && (id_order || name)) {
+    if (orders.length === 0 && (id_order || name || nameproduct)) {
       return res.status(404).json({ message: 'Không tìm thấy đơn hàng với điều kiện này.' });
     }
+
     res.status(200).json(orders);
   } catch (error) {
     console.error('Lỗi khi tìm kiếm đơn hàng:', error);
     res.status(500).json({ message: 'Lỗi server khi tìm kiếm đơn hàng' });
   }
 });
+
 
 router.get('/list_order/:userId', async (req, res) => {
     try {
