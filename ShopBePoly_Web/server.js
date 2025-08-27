@@ -2653,6 +2653,36 @@ router.get("/reviews", async (req, res) => {
   }
 });
 
+// Lấy trung bình sao cho 1 sản phẩm
+router.get("/average/:productId", async (req, res) => {
+  try {
+    const { productId } = req.params;
+
+    const result = await reviewModel.aggregate([
+      { $match: { productId: new mongoose.Types.ObjectId(productId) } }, // cần ép sang ObjectId
+      {
+        $group: {
+          _id: "$productId",
+          avgRating: { $avg: "$rating" },
+          totalReviews: { $sum: 1 }
+        }
+      }
+    ]);
+
+    if (result.length === 0) {
+      return res.json({ avgRating: 0, totalReviews: 0 });
+    }
+
+    res.json({
+      avgRating: result[0].avgRating,
+      totalReviews: result[0].totalReviews
+    });
+  } catch (error) {
+    console.error("[GetAverage Error]", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 
 router.get('/statistics-today', async (req, res) => {
     try {
